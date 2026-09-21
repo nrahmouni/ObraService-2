@@ -28,6 +28,19 @@ service cloud.firestore {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    // Dynamic Company Tenant Isolation Helper
+    function userCompanyId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
+    }
+
+    function isSameCompany(companyId) {
+      return isSignedIn() && (
+        (request.auth.token.company_id == companyId) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         userCompanyId() == companyId)
+      );
+    }
+
     function isAdmin() {
       return isSignedIn() && (
         (request.auth.token.email == 'naimrahmouni1998@gmail.com') ||
@@ -124,27 +137,30 @@ service cloud.firestore {
 
     // 1. Companies
     match /companies/{companyId} {
-      allow get: if isUserVerified() && isValidId(companyId);
+      allow get: if isUserVerified() && isValidId(companyId) && (isAdmin() || isSameCompany(companyId));
       allow list: if isUserVerified();
       allow create: if isUserVerified() && isValidId(companyId) && isValidCompany(incoming());
       allow update: if isUserVerified() && isValidId(companyId) && isValidCompany(incoming()) && (
         isAdmin() ||
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'address', 'inviteCode', 'active'])
+        (isSameCompany(companyId) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'address', 'inviteCode', 'active']))
       );
       allow delete: if isAdmin() && isValidId(companyId);
     }
 
     // 2. Users
     match /users/{userId} {
-      allow get: if isUserVerified() && isValidId(userId);
+      allow get: if isUserVerified() && isValidId(userId) && (isAdmin() || isOwner(userId) || isSameCompany(existing().companyId));
       allow list: if isUserVerified();
       allow create: if isUserVerified() && isValidId(userId) && isValidUser(incoming()) && (
-        isAdmin() || isOwner(userId)
+        isAdmin() || isOwner(userId) || isSameCompany(incoming().companyId)
       );
       allow update: if isUserVerified() && isValidId(userId) && isValidUser(incoming()) && (
         isAdmin() || (
           isOwner(userId) &&
           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'companyId', 'companyName', 'assignedProjectIds', 'active', 'createdAt', 'role', 'email'])
+        ) || (
+          isSameCompany(existing().companyId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['assignedProjectIds', 'active', 'role'])
         )
       );
       allow delete: if isAdmin() && isValidId(userId);
@@ -152,37 +168,52 @@ service cloud.firestore {
 
     // 3. Projects
     match /projects/{projectId} {
-      allow get: if isUserVerified() && isValidId(projectId);
+      allow get: if isUserVerified() && isValidId(projectId) && (isAdmin() || isSameCompany(existing().companyId));
       allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(projectId) && isValidProject(incoming());
+      allow create: if isUserVerified() && isValidId(projectId) && isValidProject(incoming()) && (
+        isAdmin() || isSameCompany(incoming().companyId)
+      );
       allow update: if isUserVerified() && isValidId(projectId) && isValidProject(incoming()) && (
-        isAdmin() ||
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'status', 'location', 'validationRadiusMeters', 'plannedHours', 'startDate', 'endDate', 'assignedUserIds', 'address', 'latitude', 'longitude', 'updatedAt'])
+        isAdmin() || (
+          isSameCompany(existing().companyId) && isSameCompany(incoming().companyId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'status', 'location', 'validationRadiusMeters', 'plannedHours', 'startDate', 'endDate', 'assignedUserIds', 'address', 'latitude', 'longitude', 'client', 'initialBudget', 'spentBudget', 'coverImage', 'projectType', 'description', 'updatedAt'])
+        )
       );
       allow delete: if isAdmin() && isValidId(projectId);
     }
 
     // 4. Workers
     match /workers/{workerId} {
-      allow get: if isUserVerified() && isValidId(workerId);
+      allow get: if isUserVerified() && isValidId(workerId) && (isAdmin() || isSameCompany(existing().companyId));
       allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(workerId) && isValidWorker(incoming());
+      allow create: if isUserVerified() && isValidId(workerId) && isValidWorker(incoming()) && (
+        isAdmin() || isSameCompany(incoming().companyId)
+      );
       allow update: if isUserVerified() && isValidId(workerId) && isValidWorker(incoming()) && (
-        isAdmin() ||
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'companyId', 'nationalId', 'active'])
+        isAdmin() || (
+          isSameCompany(existing().companyId) && isSameCompany(incoming().companyId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'companyId', 'nationalId', 'active'])
+        )
       );
       allow delete: if isAdmin() && isValidId(workerId);
     }
 
     // 5. Daily Reports
     match /dailyReports/{reportId} {
-      allow get: if isUserVerified() && isValidId(reportId);
+      allow get: if isUserVerified() && isValidId(reportId) && (
+        isAdmin() ||
+        isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId)
+      );
       allow list: if isUserVerified();
       allow create: if isUserVerified() && isValidId(reportId) && isValidDailyReport(incoming()) && (
-        incoming().creatorId == request.auth.uid || isAdmin()
+        isAdmin() || (
+          isSameCompany(get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.companyId) &&
+          (incoming().creatorId == request.auth.uid)
+        )
       );
       allow update: if isUserVerified() && isValidId(reportId) && isValidDailyReport(incoming()) && (
         isAdmin() || (
+          isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId) &&
           (existing().status == 'Draft' || existing().status == 'Submitted') &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'status', 'workEntries', 'totalNormalHours', 'totalExtraHours', 'totalHours', 
@@ -196,31 +227,62 @@ service cloud.firestore {
 
     // 6. Delivery Notes
     match /deliveryNotes/{deliveryNoteId} {
-      allow get: if isUserVerified() && isValidId(deliveryNoteId);
+      allow get: if isUserVerified() && isValidId(deliveryNoteId) && (
+        isAdmin() ||
+        isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId) ||
+        isSameCompany(existing().subcontractorCompanyId)
+      );
       allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(deliveryNoteId) && isValidDeliveryNote(incoming());
+      allow create: if isUserVerified() && isValidId(deliveryNoteId) && isValidDeliveryNote(incoming()) && (
+        isAdmin() ||
+        isSameCompany(get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.companyId) ||
+        isSameCompany(incoming().subcontractorCompanyId)
+      );
       allow update: if isUserVerified() && isValidId(deliveryNoteId) && isValidDeliveryNote(incoming()) && (
-        isAdmin() || (
-          // Transition from Pending to Confirmed or Disputed
+        isAdmin() ||
+        (isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId) &&
           existing().status == 'Pending' &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'status', 'confirmationDetails', 'confirmedBy', 'disputeRecord', 'dispute', 'correctionNotice', 'updatedAt'
           ])
-        )
+        ) ||
+        isSameCompany(existing().subcontractorCompanyId)
       );
       allow delete: if isAdmin() && isValidId(deliveryNoteId);
     }
 
     // 7. Audit Events (Append-Only Log)
     match /auditEvents/{auditEventId} {
-      allow get: if isUserVerified() && isValidId(auditEventId);
+      allow get: if isUserVerified() && isValidId(auditEventId) && (
+        isAdmin() || existing().actorId == request.auth.uid
+      );
       allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(auditEventId) && isValidAuditEvent(incoming());
+      allow create: if isUserVerified() && isValidId(auditEventId) && isValidAuditEvent(incoming()) && (
+        isAdmin() || incoming().actorId == request.auth.uid || isUserVerified()
+      );
       // Append-only: updates and deletes are strictly forbidden to all
       allow update, delete: if false;
     }
 
-    // 8. Connection Test Probe
+    // 8. Time Logs (Field Check-ins)
+    match /time_logs/{timeLogId} {
+      allow get: if isUserVerified() && isValidId(timeLogId);
+      allow list: if isUserVerified();
+      allow create: if isUserVerified() && isValidId(timeLogId);
+      allow update: if isUserVerified() && isValidId(timeLogId) && (isAdmin() || incoming().userId == request.auth.uid);
+      allow delete: if isAdmin() && isValidId(timeLogId);
+    }
+
+    // 9. Invitations (Guest access & Team Onboarding)
+    match /invitations/{invitationId} {
+      allow get: if isValidId(invitationId);
+      allow list: if isUserVerified();
+      allow create: if isUserVerified() && isValidId(invitationId);
+      allow update: if isValidId(invitationId);
+      allow delete: if isAdmin() && isValidId(invitationId);
+    }
+
+    // 10. Connection Test Probe
     match /test/connection {
       allow get: if isSignedIn();
     }

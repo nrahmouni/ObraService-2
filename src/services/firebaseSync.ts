@@ -16,6 +16,7 @@ import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection } from './firebase';
 import { obraStore } from './store';
 import { AuditEvent, Company, DailyReport, DeliveryNote, Project, User, Worker } from '../types';
+import { enqueueOfflineItem, sanitizeForFirestore, flushOfflineQueue } from '../utils/offlineQueue';
 
 let activeUnsubscribers: Unsubscribe[] = [];
 let isSyncInitialized = false;
@@ -53,6 +54,12 @@ export function initializeFirebaseSync() {
         break;
       case 'user':
         persistUserToFirestore(item);
+        break;
+      case 'timeLog':
+        persistTimeLogToFirestore(item);
+        break;
+      case 'invitation':
+        persistInvitationToFirestore(item);
         break;
     }
   });
@@ -106,6 +113,11 @@ export function initializeFirebaseSync() {
 
       // Attach real-time listeners to Firestore collections
       attachCollectionListeners();
+
+      // Flush any queued offline mutations now that Firebase user is verified
+      flushOfflineQueue().catch(err => {
+        console.warn('[FirebaseSync] Queue flush on auth completed with notes:', err);
+      });
     } else {
       console.log('Firebase User signed out.');
     }
@@ -120,9 +132,11 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as Company);
     });
+    obraStore.setSyncError(null); // Clear error on successful sync
     obraStore.syncRemoteCompanies(list);
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, companiesPath);
+    console.error(`[FirebaseSync] Error syncing ${companiesPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${companiesPath}: ${error.message}`);
   });
   activeUnsubscribers.push(unsubCompanies);
 
@@ -133,9 +147,11 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as Project);
     });
+    obraStore.setSyncError(null); // Clear error on successful sync
     obraStore.syncRemoteProjects(list);
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, projectsPath);
+    console.error(`[FirebaseSync] Error syncing ${projectsPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${projectsPath}: ${error.message}`);
   });
   activeUnsubscribers.push(unsubProjects);
 
@@ -146,9 +162,11 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as Worker);
     });
+    obraStore.setSyncError(null); // Clear error on successful sync
     obraStore.syncRemoteWorkers(list);
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, workersPath);
+    console.error(`[FirebaseSync] Error syncing ${workersPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${workersPath}: ${error.message}`);
   });
   activeUnsubscribers.push(unsubWorkers);
 
@@ -159,9 +177,11 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as DailyReport);
     });
+    obraStore.setSyncError(null); // Clear error on successful sync
     obraStore.syncRemoteReports(list);
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, reportsPath);
+    console.error(`[FirebaseSync] Error syncing ${reportsPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${reportsPath}: ${error.message}`);
   });
   activeUnsubscribers.push(unsubReports);
 
@@ -172,9 +192,11 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as DeliveryNote);
     });
+    obraStore.setSyncError(null); // Clear error on successful sync
     obraStore.syncRemoteDeliveryNotes(list);
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, deliveryNotesPath);
+    console.error(`[FirebaseSync] Error syncing ${deliveryNotesPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${deliveryNotesPath}: ${error.message}`);
   });
   activeUnsubscribers.push(unsubDeliveryNotes);
 
@@ -185,9 +207,11 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as AuditEvent);
     });
+    obraStore.setSyncError(null); // Clear error on successful sync
     obraStore.syncRemoteAuditEvents(list);
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, auditEventsPath);
+    console.error(`[FirebaseSync] Error syncing ${auditEventsPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${auditEventsPath}: ${error.message}`);
   });
   activeUnsubscribers.push(unsubAudit);
 
@@ -198,74 +222,180 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as User);
     });
+    obraStore.setSyncError(null); // Clear error on successful sync
     obraStore.syncRemoteUsers(list);
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, usersPath);
+    console.error(`[FirebaseSync] Error syncing ${usersPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${usersPath}: ${error.message}`);
   });
   activeUnsubscribers.push(unsubUsers);
+
+  // 8. Time Logs Listener
+  const timeLogsPath = 'time_logs';
+  const unsubTimeLogs = onSnapshot(collection(db, timeLogsPath), (snapshot) => {
+    const list: any[] = [];
+    snapshot.forEach(docSnap => {
+      list.push(docSnap.data());
+    });
+    obraStore.setSyncError(null);
+    obraStore.syncRemoteTimeLogs(list);
+  }, (error) => {
+    console.error(`[FirebaseSync] Error syncing ${timeLogsPath}:`, error);
+    obraStore.setSyncError(`Error al sincronizar ${timeLogsPath}: ${error.message}`);
+  });
+  activeUnsubscribers.push(unsubTimeLogs);
+
+  // 9. Invitations Listener
+  const invitationsPath = 'invitations';
+  const unsubInvitations = onSnapshot(collection(db, invitationsPath), (snapshot) => {
+    const list: any[] = [];
+    snapshot.forEach(docSnap => {
+      list.push(docSnap.data());
+    });
+    obraStore.setSyncError(null);
+    obraStore.syncRemoteInvitations(list);
+  }, (error) => {
+    console.error(`[FirebaseSync] Error syncing ${invitationsPath}:`, error);
+  });
+  activeUnsubscribers.push(unsubInvitations);
 }
 
 // --- Outgoing Firestore Mutations ---
 
 export async function persistCompanyToFirestore(company: Company) {
-  const path = `companies/${company.id}`;
+  const sanitized = sanitizeForFirestore(company);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('company', sanitized);
+    return;
+  }
+  const path = `companies/${sanitized.id}`;
   try {
-    await setDoc(doc(db, 'companies', company.id), company, { merge: true });
+    await setDoc(doc(db, 'companies', sanitized.id), sanitized, { merge: true });
   } catch (error) {
+    await enqueueOfflineItem('company', sanitized);
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function persistProjectToFirestore(project: Project) {
-  const path = `projects/${project.id}`;
+  const sanitized = sanitizeForFirestore(project);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('project', sanitized);
+    return;
+  }
+  const path = `projects/${sanitized.id}`;
   try {
-    await setDoc(doc(db, 'projects', project.id), project, { merge: true });
+    await setDoc(doc(db, 'projects', sanitized.id), sanitized, { merge: true });
   } catch (error) {
+    await enqueueOfflineItem('project', sanitized);
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function persistWorkerToFirestore(worker: Worker) {
-  const path = `workers/${worker.id}`;
+  const sanitized = sanitizeForFirestore(worker);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('worker', sanitized);
+    return;
+  }
+  const path = `workers/${sanitized.id}`;
   try {
-    await setDoc(doc(db, 'workers', worker.id), worker, { merge: true });
+    await setDoc(doc(db, 'workers', sanitized.id), sanitized, { merge: true });
   } catch (error) {
+    await enqueueOfflineItem('worker', sanitized);
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function persistDailyReportToFirestore(report: DailyReport) {
-  const path = `dailyReports/${report.id}`;
+  const sanitized = sanitizeForFirestore(report);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('dailyReport', sanitized);
+    return;
+  }
+  const path = `dailyReports/${sanitized.id}`;
   try {
-    await setDoc(doc(db, 'dailyReports', report.id), report, { merge: true });
+    await setDoc(doc(db, 'dailyReports', sanitized.id), sanitized, { merge: true });
   } catch (error) {
+    await enqueueOfflineItem('dailyReport', sanitized);
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function persistDeliveryNoteToFirestore(note: DeliveryNote) {
-  const path = `deliveryNotes/${note.id}`;
+  const sanitized = sanitizeForFirestore(note);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('deliveryNote', sanitized);
+    return;
+  }
+  const path = `deliveryNotes/${sanitized.id}`;
   try {
-    await setDoc(doc(db, 'deliveryNotes', note.id), note, { merge: true });
+    await setDoc(doc(db, 'deliveryNotes', sanitized.id), sanitized, { merge: true });
   } catch (error) {
+    await enqueueOfflineItem('deliveryNote', sanitized);
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
 
 export async function persistAuditEventToFirestore(event: AuditEvent) {
-  const path = `auditEvents/${event.id}`;
+  const sanitized = sanitizeForFirestore(event);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('auditEvent', sanitized);
+    return;
+  }
+  const path = `auditEvents/${sanitized.id}`;
   try {
-    await setDoc(doc(db, 'auditEvents', event.id), event);
+    if (auth.currentUser?.uid && (!sanitized.actorId || sanitized.actorId.startsWith('usr_'))) {
+      sanitized.actorId = auth.currentUser.uid;
+    }
+    await setDoc(doc(db, 'auditEvents', sanitized.id), sanitized);
   } catch (error) {
+    await enqueueOfflineItem('auditEvent', sanitized);
     handleFirestoreError(error, OperationType.CREATE, path);
   }
 }
 
 export async function persistUserToFirestore(user: User) {
-  const path = `users/${user.id}`;
+  const sanitized = sanitizeForFirestore(user);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('user', sanitized);
+    return;
+  }
+  const path = `users/${sanitized.id}`;
   try {
-    await setDoc(doc(db, 'users', user.id), user, { merge: true });
+    await setDoc(doc(db, 'users', sanitized.id), sanitized, { merge: true });
   } catch (error) {
+    await enqueueOfflineItem('user', sanitized);
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function persistTimeLogToFirestore(log: any) {
+  const sanitized = sanitizeForFirestore(log);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('timeLog', sanitized);
+    return;
+  }
+  const path = `time_logs/${sanitized.id}`;
+  try {
+    await setDoc(doc(db, 'time_logs', sanitized.id), sanitized);
+  } catch (error) {
+    await enqueueOfflineItem('timeLog', sanitized);
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+}
+
+export async function persistInvitationToFirestore(invitation: any) {
+  const sanitized = sanitizeForFirestore(invitation);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('invitation', sanitized);
+    return;
+  }
+  const path = `invitations/${sanitized.id}`;
+  try {
+    await setDoc(doc(db, 'invitations', sanitized.id), sanitized, { merge: true });
+  } catch (error) {
+    await enqueueOfflineItem('invitation', sanitized);
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }

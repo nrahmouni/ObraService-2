@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { obraStore } from './services/store';
 import { initializeFirebaseSync } from './services/firebaseSync';
-import { AppState, User } from './types';
+import { AppState, User, Role } from './types';
+import { AppDataProvider } from './context/AppDataContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicEntryView } from './views/PublicEntryView';
 import { AuthModal } from './views/AuthModal';
 import { OnboardingView } from './views/OnboardingView';
 import { AppShell, TabKey } from './components/AppShell';
+import { MainLayout } from './components/MainLayout';
+import { MobileLayout } from './components/MobileLayout';
 import { DashboardView } from './views/DashboardView';
 import { DailyReportsView } from './views/DailyReportsView';
 import { DeliveryNotesView } from './views/DeliveryNotesView';
@@ -20,6 +24,7 @@ import { IntegrationsView } from './views/IntegrationsView';
 import { DocsView } from './views/DocsView';
 import { NewReportModal } from './views/NewReportModal';
 import { NotFoundView } from './views/NotFoundView';
+import { InviteAcceptanceView } from './views/InviteAcceptanceView';
 import { PublicLayout } from './components/PublicLayout';
 import { ScrollToTop } from './components/ScrollToTop';
 import { DemoProfileSelector } from './components/DemoProfileSelector';
@@ -68,6 +73,17 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const queryParams = new URLSearchParams(location.search);
+  const inviteParam = queryParams.get('invite') || queryParams.get('code');
+  const [activeInviteCode, setActiveInviteCode] = useState<string | null>(inviteParam);
+
+  useEffect(() => {
+    const code = queryParams.get('invite') || queryParams.get('code');
+    if (code) {
+      setActiveInviteCode(code);
+    }
+  }, [location.search]);
+
   // Dark Mode Toggle
   useEffect(() => {
     if (appState.theme === 'dark') {
@@ -112,45 +128,70 @@ export default function App() {
     }
 
     return (
-      <AppShell
-        currentTab={currentTab}
-        onSelectTab={setCurrentTab}
-        currentUser={currentUser}
-        isDemoMode={appState.isDemoMode}
-        onOpenNewReport={() => setNewReportModalOpen(true)}
-        onExitDemoToProduction={() => obraStore.exitDemoMode()}
-      >
-        {currentTab === 'dashboard' && (
-          <DashboardView
-            state={appState}
-            onNavigate={(tab) => setCurrentTab(tab)}
-            onOpenNewReport={() => setNewReportModalOpen(true)}
-          />
-        )}
-        {currentTab === 'reports' && (currentUser.role === 'MAIN_CONTRACTOR_ADMIN' || currentUser.role === 'SITE_MANAGER') && (
-          <DailyReportsView state={appState} onOpenReportModal={() => setNewReportModalOpen(true)} />
-        )}
-        {currentTab === 'delivery_notes' && <DeliveryNotesView state={appState} />}
-        {currentTab === 'projects' && (currentUser.role === 'MAIN_CONTRACTOR_ADMIN' || currentUser.role === 'SITE_MANAGER') && (
-          <ProjectsView state={appState} />
-        )}
-        {currentTab === 'map' && (currentUser.role === 'MAIN_CONTRACTOR_ADMIN' || currentUser.role === 'SITE_MANAGER') && (
-          <MapView state={appState} />
-        )}
-        {currentTab === 'team' && currentUser.role === 'MAIN_CONTRACTOR_ADMIN' && <TeamView state={appState} />}
-        {currentTab === 'audit' && currentUser.role === 'MAIN_CONTRACTOR_ADMIN' && <AuditTrailView state={appState} />}
-        {currentTab === 'integrations' && currentUser.role === 'MAIN_CONTRACTOR_ADMIN' && <IntegrationsView state={appState} />}
-        {currentTab === 'docs' && <DocsView state={appState} />}
-        {currentTab === 'settings' && <SettingsView state={appState} />}
+      <AppDataProvider companyId={currentUser.companyId}>
+        <MobileLayout
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          currentUser={currentUser}
+          isDemoMode={appState.isDemoMode}
+          onExitDemoToProduction={() => obraStore.exitDemoMode()}
+          onOpenNewReport={() => setNewReportModalOpen(true)}
+        >
+          {currentTab === 'dashboard' && (
+            <DashboardView
+              state={appState}
+              onNavigate={(tab) => setCurrentTab(tab)}
+              onOpenNewReport={() => setNewReportModalOpen(true)}
+            />
+          )}
+          {currentTab === 'reports' && (
+            <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
+              <DailyReportsView state={appState} onOpenReportModal={() => setNewReportModalOpen(true)} />
+            </ProtectedRoute>
+          )}
+          {currentTab === 'delivery_notes' && <DeliveryNotesView state={appState} />}
+          {currentTab === 'projects' && (
+            <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
+              <ProjectsView state={appState} onNavigate={(tab) => setCurrentTab(tab as any)} />
+            </ProtectedRoute>
+          )}
+          {currentTab === 'chat' && <ChatView state={appState} />}
+          {currentTab === 'map' && (
+            <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
+              <MapView state={appState} />
+            </ProtectedRoute>
+          )}
+          {currentTab === 'team' && (
+            <ProtectedRoute currentUser={currentUser} minRole={Role.ADMIN}>
+              <TeamView state={appState} />
+            </ProtectedRoute>
+          )}
+          {currentTab === 'audit' && (
+            <ProtectedRoute currentUser={currentUser} minRole={Role.ADMIN}>
+              <AuditTrailView state={appState} />
+            </ProtectedRoute>
+          )}
+          {currentTab === 'integrations' && (
+            <ProtectedRoute currentUser={currentUser} minRole={Role.ADMIN}>
+              <IntegrationsView state={appState} />
+            </ProtectedRoute>
+          )}
+          {currentTab === 'docs' && <DocsView state={appState} />}
+          {currentTab === 'settings' && (
+            <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
+              <SettingsView state={appState} />
+            </ProtectedRoute>
+          )}
 
-        {newReportModalOpen && (
-          <NewReportModal
-            state={appState}
-            onClose={() => setNewReportModalOpen(false)}
-            onSuccess={() => setCurrentTab('reports')}
-          />
-        )}
-      </AppShell>
+          {newReportModalOpen && (
+            <NewReportModal
+              state={appState}
+              onClose={() => setNewReportModalOpen(false)}
+              onSuccess={() => setCurrentTab('reports')}
+            />
+          )}
+        </MobileLayout>
+      </AppDataProvider>
     );
   };
 
@@ -204,7 +245,25 @@ export default function App() {
         <Route path="*" element={<NotFoundView />} />
       </Routes>
 
-      {authModalMode && (
+      {(activeInviteCode || authModalMode === 'join_code') && (
+        <InviteAcceptanceView
+          initialCode={activeInviteCode || ''}
+          onClose={() => {
+            setActiveInviteCode(null);
+            if (authModalMode === 'join_code') setAuthModalMode(null);
+            if (queryParams.get('invite') || queryParams.get('code')) {
+              navigate(location.pathname, { replace: true });
+            }
+          }}
+          onSuccess={() => {
+            setActiveInviteCode(null);
+            if (authModalMode === 'join_code') setAuthModalMode(null);
+            navigate('/app');
+          }}
+        />
+      )}
+
+      {authModalMode && authModalMode !== 'join_code' && (
         <AuthModal
           initialMode={authModalMode}
           onClose={() => setAuthModalMode(null)}

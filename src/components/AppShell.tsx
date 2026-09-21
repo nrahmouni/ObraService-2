@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   FileSpreadsheet, 
@@ -34,6 +34,7 @@ import { dispatcher } from '../services/dispatcher';
 import { User, UserRole } from '../types';
 import { ObraServiceLogo } from './ObraServiceLogo';
 import { ComplianceOverlays } from './ComplianceOverlays';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export type TabKey = 
   | 'dashboard' 
@@ -71,7 +72,27 @@ export const AppShell: React.FC<AppShellProps> = ({
 }) => {
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const state = obraStore.getState();
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (state.syncError) {
+      toast.error(`Sincronización interrumpida: ${state.syncError}`, { id: 'sync-error-toast' });
+    } else {
+      toast.dismiss('sync-error-toast');
+    }
+  }, [state.syncError]);
 
   const handleLogout = async () => {
     try {
@@ -132,7 +153,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     { key: 'map', label: 'Mapa', icon: MapIcon, roles: ['MAIN_CONTRACTOR_ADMIN', 'SITE_MANAGER'] },
     { key: 'team', label: 'Equipo', icon: Users, roles: ['MAIN_CONTRACTOR_ADMIN'] },
     { key: 'audit', label: 'Audit', icon: History, roles: ['MAIN_CONTRACTOR_ADMIN'] },
-    { key: 'settings', label: 'Config', icon: Settings },
+    { key: 'settings', label: 'Config', icon: Settings, roles: ['MAIN_CONTRACTOR_ADMIN', 'SITE_MANAGER'] },
   ].filter(item => !item.roles || item.roles.includes(currentUser.role));
 
   return (
@@ -162,6 +183,15 @@ export const AppShell: React.FC<AppShellProps> = ({
             >
               Salir de la Demo
             </button>
+          </div>
+        </div>
+      )}
+
+      {!isOnline && (
+        <div className="bg-amber-600 text-white px-4 py-1.5 text-xs font-bold flex items-center justify-between z-50 sticky top-0 md:relative">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-white rounded-full animate-ping" />
+            <span>Modo sin conexión — Los partes y albaranes se guardarán en IndexedDB y se sincronizarán al recuperar 4G.</span>
           </div>
         </div>
       )}
@@ -240,6 +270,10 @@ export const AppShell: React.FC<AppShellProps> = ({
               </div>
             </div>
           )}
+
+          <div className="px-3 pt-2">
+            <PWAInstallButton />
+          </div>
 
           <div className="p-3 border-t border-[var(--brand-border)]">
             <button

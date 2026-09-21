@@ -8,6 +8,12 @@ export type UserRole =
   | 'SITE_MANAGER'          // Jefe de Obra
   | 'SUBCONTRACTOR_USER';   // Usuario Subcontrata
 
+export enum Role {
+  ADMIN = 'MAIN_CONTRACTOR_ADMIN',
+  MANAGER = 'SITE_MANAGER',
+  WORKER = 'SUBCONTRACTOR_USER',
+}
+
 export type AccountStatus = 
   | 'unauthenticated'
   | 'no_company'
@@ -73,6 +79,13 @@ export interface Project {
   endDate?: string;
   assignedUserIds?: string[];
   assignedSubcontractorIds?: string[];
+  client?: string;
+  initialBudget?: number;
+  budget?: number;
+  spentBudget?: number;
+  coverImage?: string;
+  projectType?: string;
+  description?: string;
 }
 
 export type WorkerCategory = 
@@ -336,12 +349,16 @@ export interface NotificationItem {
 
 export interface Invitation {
   id: string;
+  code: string;
   email: string;
   role: UserRole;
   companyId: string;
+  companyName: string;
+  assignedProjectIds: string[];
   invitedBy: string;
   status: 'Pending' | 'Accepted' | 'Expired';
   createdAt: string;
+  acceptedAt?: string;
 }
 
 export interface ChatMessage {
@@ -352,6 +369,32 @@ export interface ChatMessage {
   senderCompanyName: string;
   channelId: string; // 'general' | 'delivery_notes' | 'coordination'
   text: string;
+  createdAt: string;
+}
+
+export interface TimeLog {
+  id: string;
+  userId: string;
+  userNameSnapshot: string;
+  userRoleSnapshot: UserRole;
+  companyId: string;
+  projectId: string;
+  projectNameSnapshot: string;
+  timestamp: string;
+  lat: number;
+  lng: number;
+  distanceMeters: number;
+  status: 'In' | 'Out';
+}
+
+export interface ComplianceDocument {
+  id: string;
+  companyId: string;
+  docType: 'TC2' | 'REA' | 'PRL_CERTIFICATE' | 'INSURANCE' | 'ID_CARD';
+  title: string;
+  status: 'VALID' | 'EXPIRED' | 'PENDING';
+  expiryDate: string;
+  fileUrl?: string;
   createdAt: string;
 }
 
@@ -370,4 +413,6 @@ export interface AppState {
   auditEvents: AuditEvent[];
   invitations: Invitation[];
   messages?: ChatMessage[];
+  timeLogs?: TimeLog[];
+  complianceDocuments?: ComplianceDocument[];
 }

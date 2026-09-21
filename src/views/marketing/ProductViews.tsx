@@ -1,4 +1,5 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { PageTemplate } from '../../components/marketing/PageTemplate';
 import { LandingValueProp } from '../../components/landing/LandingValueProp';
 import { LandingAppFlows } from '../../components/landing/LandingAppFlows';
@@ -92,11 +93,14 @@ export const ProductSecurityView = () => (
   </PageTemplate>
 );
 
-export const PricingPage = () => (
-  <PageTemplate 
-    title="Planes y Precios" 
-    subtitle="Escalabilidad total para autónomos, PYMES y grandes constructoras nacionales."
-  >
-    <LandingPricing />
-  </PageTemplate>
-);
+export const PricingPage = () => {
+  const context = useOutletContext<{ onOpenRegister?: (planName?: string) => void }>();
+  return (
+    <PageTemplate 
+      title="Planes y Precios" 
+      subtitle="Escalabilidad total para autónomos, PYMES y grandes constructoras nacionales."
+    >
+      <LandingPricing onOpenRegister={context?.onOpenRegister} />
+    </PageTemplate>
+  );
+};

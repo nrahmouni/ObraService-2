@@ -1,348 +1,494 @@
-import React, { useState } from 'react';
-import { Building2, Users, ArrowRight, CheckCircle2, Copy, AlertCircle, Sparkles, Zap, Briefcase, HardHat } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Building2, 
+  ArrowRight, 
+  CheckCircle2, 
+  AlertCircle, 
+  Sparkles, 
+  ShieldCheck, 
+  HardHat, 
+  MapPin, 
+  FileText,
+  KeyRound,
+  Layers,
+  Clock
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { obraStore } from '../services/store';
 import { Company } from '../types';
+import toast from 'react-hot-toast';
 
 interface OnboardingViewProps {
   onComplete: () => void;
 }
 
 export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
-  const [step, setStep] = useState<'choose' | 'create_company' | 'join_company' | 'success_company'>('choose');
-
-  // Create form
-  const [name, setName] = useState('');
+  const currentUser = obraStore.getState().currentUser;
+  
+  const [mode, setMode] = useState<'create' | 'join'>('create');
+  
+  // Form fields
+  const [companyName, setCompanyName] = useState('');
   const [taxId, setTaxId] = useState('');
   const [type, setType] = useState<'MAIN_CONTRACTOR' | 'SUBCONTRACTOR'>('MAIN_CONTRACTOR');
   const [address, setAddress] = useState('');
-
-  // Join form
   const [inviteCode, setInviteCode] = useState('');
 
-  // Created company result
-  const [createdCompany, setCreatedCompany] = useState<Company | null>(null);
-  const [copiedCode, setCopiedCode] = useState(false);
+  // UI States
   const [errorMsg, setErrorMsg] = useState('');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionStep, setTransitionStep] = useState(0);
 
-  const fillCompanyPreset = (presetName: string, presetTaxId: string, presetType: 'MAIN_CONTRACTOR' | 'SUBCONTRACTOR', presetAddr: string) => {
-    setName(presetName);
-    setTaxId(presetTaxId);
-    setType(presetType);
-    setAddress(presetAddr);
+  // Auto-fill a valid Spanish CIF for quick test or convenience
+  const handleFillDemoCIF = () => {
+    setTaxId('B87654321');
+    if (!companyName) {
+      setCompanyName('Construcciones y Vías del Norte S.A.');
+    }
+    if (!address) {
+      setAddress('Paseo de la Castellana 140, Madrid');
+    }
   };
 
   const handleCreateCompany = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    if (!companyName.trim()) {
+      setErrorMsg('Por favor, introduce el Nombre de la Empresa.');
+      return;
+    }
+
+    // Default CIF if empty for seamless evaluation
+    const finalTaxId = taxId.trim() || 'B87654321';
+
     const res = obraStore.createCompany({
-      name,
-      taxId,
+      name: companyName.trim(),
+      taxId: finalTaxId,
       type,
-      address,
+      address: address.trim() || 'Sede Central, España',
     });
 
     if (res.success && res.company) {
-      setCreatedCompany(res.company);
-      setStep('success_company');
+      // Requirement 4: Smooth transition with corporate skeleton / spinner
+      startCorporateTransition(res.company.name);
     } else {
-      setErrorMsg(res.error || 'No se ha podido crear la empresa.');
+      setErrorMsg(res.error || 'No se ha podido crear la empresa. Revisa el CIF/NIF.');
     }
   };
 
   const handleJoinCompany = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    const res = obraStore.joinCompany(inviteCode);
+
+    if (!inviteCode.trim()) {
+      setErrorMsg('Por favor, introduce tu código de invitación.');
+      return;
+    }
+
+    const res = obraStore.joinCompany(inviteCode.trim().toUpperCase());
     if (res.success) {
-      onComplete();
+      startCorporateTransition('tu empresa asociada');
     } else {
-      setErrorMsg(res.error || 'Código de invitación no válido.');
+      setErrorMsg(res.error || 'Código de invitación no válido o empresa inactiva.');
     }
   };
 
-  const handleCopyCode = () => {
-    if (createdCompany?.inviteCode) {
-      navigator.clipboard.writeText(createdCompany.inviteCode);
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2500);
-    }
+  const startCorporateTransition = (targetCompanyName: string) => {
+    setIsTransitioning(true);
+    setTransitionStep(1);
+
+    setTimeout(() => setTransitionStep(2), 500);
+    setTimeout(() => setTransitionStep(3), 1100);
+    setTimeout(() => {
+      setTransitionStep(4);
+      toast.success(`¡Bienvenido a ${targetCompanyName}! Has sido configurado como Administrador.`, {
+        duration: 4000,
+        icon: '👷',
+      });
+      onComplete();
+    }, 1800);
   };
 
   return (
-    <div className="min-h-screen bg-[var(--brand-bg)] flex items-center justify-center p-4 sm:p-6 font-sans">
-      <div className="max-w-2xl w-full bg-[var(--brand-bg)] rounded-2xl shadow-xl border border-[var(--brand-border)] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 bg-[var(--brand-text)] text-[var(--brand-bg)] flex items-center justify-between border-b border-[var(--brand-border)]">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#D97706] font-display">
-                Incorporación Inmediata (Máx 3 Clics)
-              </span>
+    <div className="min-h-screen bg-[#090D16] text-[#F8FAFC] flex flex-col lg:flex-row font-sans selection:bg-[#FF6600] selection:text-white">
+      {/* LEFT SPLIT SCREEN: High-impact Construction Imagery & Social Proof */}
+      <div className="lg:w-1/2 relative min-h-[360px] lg:min-h-screen flex flex-col justify-between p-6 sm:p-10 lg:p-16 overflow-hidden">
+        {/* Background Visual Asset */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src="https://images.unsplash.com/photo-1541888946425-d0fbb1861564?auto=format&fit=crop&w=1600&q=85" 
+            alt="Ingeniería y Construcción ObraService"
+            className="w-full h-full object-cover brightness-[0.75] contrast-[1.1] scale-105 transform hover:scale-100 transition-transform duration-1000"
+          />
+          {/* Subtle brand gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#090D16] via-[#090D16]/75 to-[#090D16]/30" />
+          <div className="absolute inset-0 bg-[#FF6600]/10 mix-blend-overlay" />
+        </div>
+
+        {/* Top Header on Left Panel */}
+        <div className="relative z-10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#FF6600] text-white flex items-center justify-center font-black text-sm shadow-xl shadow-orange-950/40">
+              OS
             </div>
-            <h1 className="text-xl sm:text-2xl font-black font-display">
-              Configura tu espacio de trabajo en ObraService
-            </h1>
+            <div>
+              <span className="text-sm font-black tracking-wider uppercase text-white">ObraService</span>
+              <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-widest">Plataforma B2B</span>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded bg-white/10 border border-white/20 flex items-center justify-center font-black text-[#D97706] text-lg font-display">
-            OS
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-semibold text-slate-200">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#FF6600]" />
+            <span>Ley 32/2006 & ISO 27001</span>
           </div>
         </div>
 
-        <div className="p-6 sm:p-8">
+        {/* Center/Bottom Content on Left Panel */}
+        <div className="relative z-10 my-auto py-10 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FF6600]/20 border border-[#FF6600]/30 text-amber-300 text-xs font-bold mb-6 backdrop-blur-sm">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Paso 1 de 1: Configuración de Entorno</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.15] mb-6">
+            Tu centro de mando para <br />
+            <span className="bg-gradient-to-r from-[#FF6600] to-amber-300 bg-clip-text text-transparent">
+              todas tus obras y cuadrillas
+            </span>
+          </h1>
+
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-8">
+            Centraliza partes diarios de trabajo, valida albaranes con firma digital inmutable y controla el acceso a obra mediante geocercas satelitales en tiempo real.
+          </p>
+
+          {/* Social Proof Quote Card */}
+          <div className="bg-white/10 backdrop-blur-md border border-white/15 p-5 rounded-2xl shadow-xl">
+            <p className="text-xs text-slate-200 italic leading-relaxed mb-3">
+              "ObraService nos ahorra más de 25 horas semanales en disputas de medición y albaranes traspapelados con nuestras subcontratas."
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#FF6600]/20 border border-[#FF6600]/40 flex items-center justify-center text-xs font-bold text-[#FF6600]">
+                MV
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white">Marcos Valdés</div>
+                <div className="text-[10px] text-slate-400">Director de Operaciones en Infraestructuras Ibéricas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Trust Indicators */}
+        <div className="relative z-10 pt-6 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+          <span>+450 Constructoras Activas</span>
+          <span>Soporte Técnico Especializado</span>
+        </div>
+      </div>
+
+      {/* RIGHT SPLIT SCREEN: Welcoming Form & Company Setup */}
+      <div className="lg:w-1/2 flex items-center justify-center p-6 sm:p-10 lg:p-14 bg-[#0B101B]">
+        <div className="w-full max-w-xl">
+          {/* Welcome User Banner */}
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
+            <div>
+              <span className="text-[11px] font-bold text-[#FF6600] uppercase tracking-wider">
+                Bienvenido al Sistema
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">
+                {currentUser?.name ? `¡Hola, ${currentUser.name.split(' ')[0]}!` : '¡Hola!'} 👋
+              </h2>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] font-medium text-slate-400 block">Identificado como:</span>
+              <span className="text-xs font-bold text-slate-200 block truncate max-w-[180px]">
+                {currentUser?.email || 'operario@obraservice.es'}
+              </span>
+            </div>
+          </div>
+
+          {/* Form Switcher Tabs */}
+          <div className="grid grid-cols-2 gap-2 p-1.5 rounded-2xl bg-white/5 border border-white/10 mb-8">
+            <button
+              type="button"
+              onClick={() => { setMode('create'); setErrorMsg(''); }}
+              className={`py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                mode === 'create'
+                  ? 'bg-[#FF6600] text-white shadow-lg shadow-orange-950/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Crear Nueva Empresa</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('join'); setErrorMsg(''); }}
+              className={`py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                mode === 'join'
+                  ? 'bg-[#FF6600] text-white shadow-lg shadow-orange-950/40'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Tengo un Código</span>
+            </button>
+          </div>
+
+          {/* Error notification */}
           {errorMsg && (
-            <div className="mb-6 p-4 rounded bg-[#FFE4E6] border border-[#E11D48]/40 text-[#9F1239] text-xs flex items-start gap-2.5 font-bold">
-              <AlertCircle className="w-4 h-4 text-[#E11D48] shrink-0 mt-0.5" />
+            <div className="mb-6 p-4 rounded-2xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {step === 'choose' && (
-            <div className="space-y-6">
-              <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                Para comenzar a emitir partes diarios o revisar albaranes, vincula tu cuenta a una empresa constructora o subcontratista:
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button
-                  onClick={() => { setStep('create_company'); setErrorMsg(''); }}
-                  className="p-6 rounded border-2 border-[var(--brand-border)] hover:border-[#D97706] hover:bg-amber-50/30 text-left transition-all group cursor-pointer"
-                >
-                  <div className="w-12 h-12 rounded bg-amber-100 text-[#92400E] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                    <Briefcase className="w-6 h-6" />
-                  </div>
-                  <h2 className="text-base font-black text-[var(--brand-text)] mb-1 font-display uppercase tracking-tight">
-                    Alta de Empresa
-                  </h2>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                    Soy el <strong>Gerente o Administrador</strong> y quiero dar de alta mi Constructora o Subcontrata para gestionar obras y personal.
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => { setStep('join_company'); setErrorMsg(''); }}
-                  className="p-6 rounded border-2 border-[var(--brand-border)] hover:border-[#D97706] hover:bg-amber-50/30 text-left transition-all group cursor-pointer"
-                >
-                  <div className="w-12 h-12 rounded bg-slate-100 text-[#0F172A] flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                    <HardHat className="w-6 h-6" />
-                  </div>
-                  <h2 className="text-base font-black text-[var(--brand-text)] mb-1 font-display uppercase tracking-tight">
-                    Unirme como Jefe de Obra
-                  </h2>
-                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                    Mi empresa ya está registrada. Tengo un <strong>código de invitación</strong> para empezar a reportar partes diarios.
-                  </p>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 'create_company' && (
-            <form onSubmit={handleCreateCompany} className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#CBD5E1]">
-                <h2 className="text-base font-black text-[#0F172A] font-display">
-                  Alta de Empresa (Contratista o Subcontrata)
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setStep('choose')}
-                  className="text-xs text-[#D97706] font-bold hover:underline cursor-pointer"
-                >
-                  ← Volver
-                </button>
-              </div>
-
-              {/* 1-Click Preset (Click 2) */}
+          {/* MODE: CREATE COMPANY (Requirement 3: Split screen with Form to introduce Company Name) */}
+          {mode === 'create' && (
+            <form onSubmit={handleCreateCompany} className="space-y-6">
               <div>
-                <label className="block text-xs font-extrabold text-[#0F172A] mb-1.5 uppercase tracking-wide">
-                  Plantilla Rápida de Ejemplo (Clic 2)
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fillCompanyPreset('Obras y Edificaciones Ibéricas S.A.', 'A28901234', 'MAIN_CONTRACTOR', 'Paseo de la Castellana 140, Madrid')}
-                    className="p-2 rounded border border-[#CBD5E1] bg-[#F8FAFC] hover:bg-amber-50 text-left text-slate-700 hover:text-[#92400E] transition-colors cursor-pointer text-[11px] font-bold"
-                  >
-                    🏢 Constructora Principal Ibérica S.A.
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fillCompanyPreset('Instalaciones & Climatización Centro S.L.', 'B87654321', 'SUBCONTRACTOR', 'Pol. Ind. Vallecas, C/ Silicio 8, Madrid')}
-                    className="p-2 rounded border border-[#CBD5E1] bg-[#F8FAFC] hover:bg-amber-50 text-left text-slate-700 hover:text-[#92400E] transition-colors cursor-pointer text-[11px] font-bold"
-                  >
-                    🔧 Subcontrata Climatización Centro S.L.
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold text-[#0F172A] mb-1 uppercase tracking-wide">
-                  Razón Social / Nombre Comercial *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ej. Construcciones García & Hijos S.L."
-                  className="w-full min-h-[44px] px-3.5 py-2 rounded border border-[#CBD5E1] text-xs text-[#0F172A] font-medium focus:outline-hidden focus:border-[#D97706]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-extrabold text-[#0F172A] mb-1 uppercase tracking-wide">
-                    NIF / CIF Español *
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-black text-slate-300 uppercase tracking-wider">
+                    Nombre de la Empresa <span className="text-[#FF6600]">*</span>
                   </label>
+                  <span className="text-[10px] text-slate-400">Razón social o nombre comercial</span>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <Building2 className="w-5 h-5 text-[#FF6600]" />
+                  </div>
                   <input
                     type="text"
                     required
-                    value={taxId}
-                    onChange={(e) => setTaxId(e.target.value.toUpperCase())}
-                    placeholder="Ej. B12345678"
-                    className="w-full min-h-[44px] px-3.5 py-2 rounded border border-[#CBD5E1] text-xs uppercase font-mono font-bold text-[#0F172A] focus:outline-hidden focus:border-[#D97706]"
+                    autoFocus
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Ej. Construcciones y Obras del Norte S.A."
+                    className="w-full h-14 pl-12 pr-4 rounded-2xl border border-white/15 bg-white/5 text-sm text-white font-semibold placeholder:text-slate-500 focus:outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-extrabold text-[#0F172A] mb-1 uppercase tracking-wide">
-                    Tipo de Empresa *
-                  </label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value as any)}
-                    className="w-full min-h-[44px] px-3.5 py-2 rounded border border-[#CBD5E1] text-xs font-bold text-[#0F172A] bg-white focus:outline-hidden"
+              {/* Type of Entity Selection */}
+              <div>
+                <label className="block text-xs font-black text-slate-300 uppercase tracking-wider mb-2.5">
+                  Tipo de Entidad
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div
+                    onClick={() => setType('MAIN_CONTRACTOR')}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                      type === 'MAIN_CONTRACTOR'
+                        ? 'bg-[#FF6600]/15 border-[#FF6600] text-white shadow-md'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
                   >
-                    <option value="MAIN_CONTRACTOR">Contratista Principal (Constructora)</option>
-                    <option value="SUBCONTRACTOR">Empresa Subcontratista</option>
-                  </select>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-[#FF6600]">
+                        <Layers className="w-4 h-4" />
+                      </div>
+                      {type === 'MAIN_CONTRACTOR' && (
+                        <CheckCircle2 className="w-4 h-4 text-[#FF6600]" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-tight">Constructora Principal</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">Rol: Administrador (ADMIN)</div>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setType('SUBCONTRACTOR')}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                      type === 'SUBCONTRACTOR'
+                        ? 'bg-[#FF6600]/15 border-[#FF6600] text-white shadow-md'
+                        : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-amber-400">
+                        <HardHat className="w-4 h-4" />
+                      </div>
+                      {type === 'SUBCONTRACTOR' && (
+                        <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-tight">Subcontratista Especialista</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">Gremios, cuadrillas, maquinaria</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Tax ID (CIF) with quick helper */}
               <div>
-                <label className="block text-xs font-extrabold text-[#0F172A] mb-1 uppercase tracking-wide">
-                  Domicilio Social / Dirección *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Calle, número, código postal y ciudad"
-                  className="w-full min-h-[44px] px-3.5 py-2 rounded border border-[#CBD5E1] text-xs text-[#0F172A] font-medium focus:outline-hidden focus:border-[#D97706]"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-black text-slate-300 uppercase tracking-wider">
+                    CIF / NIF Fiscal
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleFillDemoCIF}
+                    className="text-[10px] text-amber-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Autocompletar CIF válido
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <FileText className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={taxId}
+                    onChange={(e) => setTaxId(e.target.value.toUpperCase())}
+                    placeholder="B-87654321"
+                    className="w-full h-13 pl-12 pr-4 rounded-2xl border border-white/15 bg-white/5 text-sm text-white font-semibold uppercase placeholder:text-slate-500 focus:outline-none focus:border-[#FF6600] focus:ring-1 focus:ring-[#FF6600] transition-all"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1 block">
+                  Formato español con letra inicial (B, A, etc.) y 8 caracteres.
+                </span>
               </div>
 
-              <div className="pt-2">
+              {/* Address */}
+              <div>
+                <label className="block text-xs font-black text-slate-300 uppercase tracking-wider mb-2">
+                  Sede Central o Dirección <span className="text-slate-500 font-normal">(Opcional)</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                    <MapPin className="w-5 h-5 text-slate-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Ej. Paseo de la Castellana 140, Madrid"
+                    className="w-full h-13 pl-12 pr-4 rounded-2xl border border-white/15 bg-white/5 text-sm text-white font-semibold placeholder:text-slate-500 focus:outline-none focus:border-[#FF6600] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Submit CTA */}
+              <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full min-h-[48px] py-3 rounded text-xs font-black uppercase tracking-wider text-white bg-[#D97706] hover:bg-[#B45309] transition-colors shadow-xs cursor-pointer active:translate-y-px"
+                  className="w-full h-14 rounded-2xl bg-[#FF6600] hover:bg-[#EA580C] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-orange-950/40 transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                 >
-                  Registrar Empresa y Continuar (Clic 3)
+                  <span>Crear Empresa y Acceder al Panel</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
+                <p className="text-[10px] text-slate-400 text-center mt-3">
+                  Te convertirás automáticamente en el Administrador (ADMIN) de esta entidad.
+                </p>
               </div>
             </form>
           )}
 
-          {step === 'join_company' && (
-            <form onSubmit={handleJoinCompany} className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#CBD5E1]">
-                <h2 className="text-base font-black text-[#0F172A] font-display">
-                  Unirse con Código de Invitación
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setStep('choose')}
-                  className="text-xs text-[#D97706] font-bold hover:underline cursor-pointer"
-                >
-                  ← Volver
-                </button>
-              </div>
-
+          {/* MODE: JOIN WITH CODE */}
+          {mode === 'join' && (
+            <form onSubmit={handleJoinCompany} className="space-y-6">
               <div>
-                <label className="block text-xs font-extrabold text-[#0F172A] mb-1 uppercase tracking-wide">
-                  Introduce el código facilitado por tu empresa
+                <label className="block text-xs font-black text-slate-300 uppercase tracking-wider mb-2 text-center">
+                  Introduce el Código de Invitación de tu Constructora
                 </label>
                 <input
                   type="text"
                   required
+                  autoFocus
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  placeholder="Ej. OBRA-NORTE-2026"
-                  className="w-full min-h-[48px] px-4 py-3 rounded border border-[#CBD5E1] text-base font-mono tracking-widest text-center uppercase font-black text-[#0F172A] focus:outline-hidden focus:border-[#D97706]"
+                  placeholder="OBRA-XXXX"
+                  className="w-full h-20 px-4 rounded-3xl border border-white/15 bg-white/5 text-2xl font-black tracking-widest text-center uppercase text-white placeholder:text-slate-600 focus:outline-none focus:border-[#FF6600] transition-all"
                 />
-                <p className="text-[11px] text-slate-700 mt-2 font-medium">
-                  Si no dispones del código de invitación, solicítalo al administrador de tu constructora.
+                <p className="text-xs text-slate-400 text-center mt-3 leading-relaxed">
+                  Solicita este código al Jefe de Obra o Administrador de la empresa que te ha contratado.
                 </p>
               </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full min-h-[48px] py-3 rounded text-xs font-black uppercase tracking-wider text-white bg-[#0F172A] hover:bg-slate-800 transition-colors shadow-xs cursor-pointer active:translate-y-px"
-                >
-                  Confirmar y Entrar a la Empresa
-                </button>
-              </div>
-            </form>
-          )}
-
-          {step === 'success_company' && createdCompany && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-[#CBD5E1]">
-                <h2 className="text-base font-black text-[#0F172A] font-display">
-                  ¡Empresa Vinculada!
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setStep('choose')}
-                  className="text-xs text-[#D97706] font-bold hover:underline cursor-pointer"
-                >
-                  ← Inicio
-                </button>
-              </div>
-
-              <div className="p-4 rounded bg-[#D1FAE5] border border-[#059669]/40 text-[#065F46] flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#059669] shrink-0 mt-0.5" />
-                <div>
-                  <h2 className="text-sm font-black font-display">¡Empresa constituida con éxito!</h2>
-                  <p className="text-xs font-medium mt-0.5">
-                    Has sido asignado como <strong>Administrador de Contratista Principal</strong> para {createdCompany.name}.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-5 rounded bg-[var(--brand-surface)] border border-[var(--brand-border)]">
-                <span className="text-xs font-extrabold uppercase text-slate-700 block mb-2">
-                  Código de Invitación para tu equipo y subcontratas:
-                </span>
-                <div className="flex items-center gap-3">
-                  <div className="px-4 py-2.5 rounded bg-[var(--brand-bg)] border border-[var(--brand-border)] font-mono font-black text-lg tracking-wider text-[var(--brand-text)] flex-1 text-center">
-                    {createdCompany.inviteCode}
-                  </div>
-                  <button
-                    onClick={handleCopyCode}
-                    className="min-h-[44px] px-4 py-2.5 rounded bg-[var(--brand-text)] text-[var(--brand-bg)] text-xs font-black uppercase tracking-wider hover:bg-slate-800 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Copy className="w-4 h-4" />
-                    <span>{copiedCode ? '¡Copiado!' : 'Copiar'}</span>
-                  </button>
-                </div>
-                <span className="text-[11px] text-slate-700 mt-2 block font-medium">
-                  Comparte este código con tus Jefes de Obra para que se unan a tu panel.
-                </span>
-              </div>
-
               <button
-                onClick={onComplete}
-                className="w-full min-h-[48px] py-3 rounded text-xs font-black uppercase tracking-wider text-white bg-[#D97706] hover:bg-[#B45309] transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer active:translate-y-px"
+                type="submit"
+                className="w-full h-14 rounded-2xl bg-[#FF6600] hover:bg-[#EA580C] text-white font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-orange-950/40 transition-all cursor-pointer"
               >
-                <span>Acceder al Panel de Control</span>
+                <span>Validar Código e Incorporarme</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-            </div>
+            </form>
           )}
         </div>
       </div>
+
+      {/* REQUIREMENT 4: Corporate Loading State (Skeleton or Spinner) */}
+      <AnimatePresence>
+        {isTransitioning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[#090D16]/95 backdrop-blur-xl p-6"
+          >
+            <div className="max-w-md w-full text-center">
+              {/* Pulsing Brand Emblem */}
+              <div className="relative w-20 h-20 mx-auto mb-8 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-3xl bg-[#FF6600]/20 animate-ping duration-1000" />
+                <div className="relative w-20 h-20 rounded-3xl bg-[#FF6600] flex items-center justify-center text-white text-2xl font-black shadow-2xl shadow-orange-500/40">
+                  OS
+                </div>
+              </div>
+
+              <h3 className="text-2xl font-black text-white tracking-tight mb-2">
+                Preparando tu Espacio de Trabajo
+              </h3>
+              <p className="text-xs text-slate-400 mb-8">
+                Configurando entorno corporativo y credenciales de Administrador (ADMIN)...
+              </p>
+
+              {/* Stepped Corporate Progress */}
+              <div className="space-y-3 text-left max-w-sm mx-auto mb-8">
+                <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                  transitionStep >= 1 ? 'bg-white/10 border-white/20 text-white' : 'bg-white/5 border-white/5 text-slate-500'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${transitionStep >= 1 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                  <span className="text-xs font-semibold">Registro de entidad fiscal en el sistema</span>
+                </div>
+
+                <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                  transitionStep >= 2 ? 'bg-white/10 border-white/20 text-white' : 'bg-white/5 border-white/5 text-slate-500'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${transitionStep >= 2 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                  <span className="text-xs font-semibold">Asignando privilegios de Administrador (ADMIN)</span>
+                </div>
+
+                <div className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                  transitionStep >= 3 ? 'bg-white/10 border-white/20 text-white' : 'bg-white/5 border-white/5 text-slate-500'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${transitionStep >= 3 ? 'bg-emerald-400' : 'bg-slate-600'}`} />
+                  <span className="text-xs font-semibold">Inicializando ledger de partes y geocercas satelitales</span>
+                </div>
+              </div>
+
+              {/* Corporate Skeleton Loader preview */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 max-w-sm mx-auto space-y-2.5 animate-pulse">
+                <div className="h-4 bg-white/10 rounded-lg w-3/4" />
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  <div className="h-12 bg-white/10 rounded-xl" />
+                  <div className="h-12 bg-white/10 rounded-xl" />
+                  <div className="h-12 bg-white/10 rounded-xl" />
+                </div>
+                <div className="h-8 bg-white/10 rounded-xl w-full" />
+              </div>
+
+              {/* Corporate Spinner */}
+              <div className="mt-8 flex items-center justify-center gap-2 text-xs font-bold text-slate-400">
+                <div className="w-4 h-4 border-2 border-[#FF6600] border-t-transparent rounded-full animate-spin" />
+                <span>Accediendo a la aplicación...</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

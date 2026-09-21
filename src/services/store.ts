@@ -16,19 +16,11 @@ import {
   WorkEntry, 
   Worker,
   Machinery,
-  ChatMessage
+  ChatMessage,
+  TimeLog,
+  Invitation,
+  ComplianceDocument
 } from '../types';
-import { 
-  DEMO_AUDIT_EVENTS, 
-  DEMO_COMPANIES, 
-  DEMO_DELIVERY_NOTES, 
-  DEMO_MACHINERY,
-  DEMO_PROJECTS, 
-  DEMO_REPORTS, 
-  DEMO_USERS, 
-  DEMO_WORKERS,
-  DEMO_CHAT_MESSAGES
-} from '../domain/demoData';
 import { 
   canUserConfirmDeliveryNote, 
   canUserDisputeDeliveryNote, 
@@ -41,7 +33,6 @@ import {
   validateSpanishTaxId, 
   validateWorkEntries 
 } from '../domain/rules';
-
 interface StoreState {
   isDemoMode: boolean;
   theme: 'light' | 'dark';
@@ -57,6 +48,9 @@ interface StoreState {
   auditEvents: AuditEvent[];
   invitations: any[];
   messages: ChatMessage[];
+  syncError: string | null;
+  timeLogs: TimeLog[];
+  complianceDocuments: ComplianceDocument[];
 }
 
 const PROD_STORAGE_KEY = 'obraservice_prod_v1';
@@ -82,6 +76,9 @@ function loadInitialProductionState(): StoreState {
         auditEvents: parsed.auditEvents || [],
         invitations: parsed.invitations || [],
         messages: parsed.messages || [],
+        syncError: parsed.syncError || null,
+        timeLogs: parsed.timeLogs || [],
+        complianceDocuments: parsed.complianceDocuments || [],
       };
     }
   } catch (e) {
@@ -103,51 +100,14 @@ function loadInitialProductionState(): StoreState {
     auditEvents: [],
     invitations: [],
     messages: [],
+    syncError: null,
+    timeLogs: [],
+    complianceDocuments: [],
   };
 }
 
 function loadInitialDemoState(): StoreState {
-  try {
-    const raw = localStorage.getItem(DEMO_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        isDemoMode: true,
-        theme: parsed.theme || 'light',
-        viewPreference: parsed.viewPreference || 'grid',
-        currentUser: parsed.currentUser || null,
-        companies: parsed.companies || JSON.parse(JSON.stringify(DEMO_COMPANIES)),
-        users: parsed.users || JSON.parse(JSON.stringify(DEMO_USERS)),
-        projects: parsed.projects || JSON.parse(JSON.stringify(DEMO_PROJECTS)),
-        workers: parsed.workers || JSON.parse(JSON.stringify(DEMO_WORKERS)),
-        machinery: parsed.machinery || JSON.parse(JSON.stringify(DEMO_MACHINERY)),
-        reports: parsed.reports || JSON.parse(JSON.stringify(DEMO_REPORTS)),
-        deliveryNotes: parsed.deliveryNotes || JSON.parse(JSON.stringify(DEMO_DELIVERY_NOTES)),
-        auditEvents: parsed.auditEvents || JSON.parse(JSON.stringify(DEMO_AUDIT_EVENTS)),
-        invitations: parsed.invitations || [],
-        messages: parsed.messages || JSON.parse(JSON.stringify(DEMO_CHAT_MESSAGES)),
-      };
-    }
-  } catch (e) {
-    console.error('Error reading demo localStorage', e);
-  }
-
-  return {
-    isDemoMode: true,
-    theme: 'light',
-    viewPreference: 'grid',
-    currentUser: DEMO_USERS[1], // Default to Site Manager (Javier Ortiz)
-    companies: JSON.parse(JSON.stringify(DEMO_COMPANIES)),
-    users: JSON.parse(JSON.stringify(DEMO_USERS)),
-    projects: JSON.parse(JSON.stringify(DEMO_PROJECTS)),
-    workers: JSON.parse(JSON.stringify(DEMO_WORKERS)),
-    machinery: JSON.parse(JSON.stringify(DEMO_MACHINERY)),
-    reports: JSON.parse(JSON.stringify(DEMO_REPORTS)),
-    deliveryNotes: JSON.parse(JSON.stringify(DEMO_DELIVERY_NOTES)),
-    auditEvents: JSON.parse(JSON.stringify(DEMO_AUDIT_EVENTS)),
-    invitations: [],
-    messages: JSON.parse(JSON.stringify(DEMO_CHAT_MESSAGES)),
-  };
+  return loadInitialProductionState();
 }
 
 type Listener = (state: StoreState) => void;
@@ -498,15 +458,33 @@ class ObraStore {
     return { success: true, newCode };
   }
 
-  public createInvitation(email: string, role: string, companyId: string, invitedBy: string): { success: boolean; invitation?: any } {
-    const invite: any = {
-      id: `invite_${Math.random().toString(36).substring(2, 9)}`,
-      email,
+  public createInvitation(
+    email: string, 
+    role: UserRole, 
+    companyId: string, 
+    invitedBy: string,
+    assignedProjectIds: string[] = []
+  ): { success: boolean; invitation?: Invitation; magicLink?: string; error?: string } {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return { success: false, error: 'Por favor, introduce un correo electrónico válido.' };
+    }
+
+    const company = this.state.companies.find(c => c.id === companyId);
+    const companyName = company?.name || this.state.currentUser?.companyName || 'Empresa Constructora';
+
+    const inviteCode = `INV-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const invite: Invitation = {
+      id: `inv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      code: inviteCode,
+      email: cleanEmail,
       role,
       companyId,
+      companyName,
+      assignedProjectIds,
       invitedBy,
       status: 'Pending',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     if (!this.state.invitations) {
@@ -514,16 +492,112 @@ class ObraStore {
     }
 
     this.state.invitations.unshift(invite);
+    this.dispatchSync('invitation', invite);
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://obraservice.app';
+    const magicLink = `${origin}/?invite=${invite.code}`;
 
     this.logAuditEvent({
-      affectedEntity: 'Membership' as any,
+      affectedEntity: 'Company',
       recordId: invite.id,
-      operation: 'MEMBER_JOINED' as any,
-      details: `Invitación enviada a ${email} para el rol de ${role}.`,
+      recordCode: invite.code,
+      operation: 'MEMBER_JOINED',
+      details: `Invitación enviada a ${cleanEmail} para el rol de ${role === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Operario'} con código ${invite.code} y acceso a ${assignedProjectIds.length} obra(s).`,
     });
 
     this.notify();
-    return { success: true, invitation: invite };
+    return { success: true, invitation: invite, magicLink };
+  }
+
+  public getInvitationByCodeOrEmail(identifier: string): Invitation | undefined {
+    if (!identifier) return undefined;
+    const clean = identifier.trim().toUpperCase();
+    const cleanEmail = identifier.trim().toLowerCase();
+    return (this.state.invitations || []).find(
+      i => i.code?.toUpperCase() === clean || 
+           i.id === identifier || 
+           (i.status === 'Pending' && i.email?.toLowerCase() === cleanEmail)
+    );
+  }
+
+  public acceptInvitation(codeOrId: string, userData: { name: string; password?: string }): { success: boolean; user?: User; error?: string } {
+    const inv = this.getInvitationByCodeOrEmail(codeOrId);
+    if (!inv) {
+      return { success: false, error: 'Código de invitación no encontrado o no válido.' };
+    }
+    if (inv.status === 'Accepted') {
+      return { success: false, error: 'Esta invitación ya ha sido utilizada.' };
+    }
+    if (inv.status === 'Expired') {
+      return { success: false, error: 'Esta invitación ha expirado.' };
+    }
+
+    const company = this.state.companies.find(c => c.id === inv.companyId);
+    const companyName = company?.name || inv.companyName || 'Empresa Constructora';
+
+    const cleanEmail = inv.email.toLowerCase();
+    let existingUser = this.state.users.find(u => u.email.toLowerCase() === cleanEmail);
+    let finalUser: User;
+
+    if (existingUser) {
+      existingUser.name = userData.name.trim() || existingUser.name;
+      existingUser.companyId = inv.companyId;
+      existingUser.companyName = companyName;
+      existingUser.role = inv.role;
+      existingUser.active = true;
+      existingUser.assignedProjectIds = Array.from(new Set([...(existingUser.assignedProjectIds || []), ...(inv.assignedProjectIds || [])]));
+      finalUser = existingUser;
+    } else {
+      finalUser = {
+        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        name: userData.name.trim() || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        role: inv.role,
+        companyId: inv.companyId,
+        companyName: companyName,
+        active: true,
+        assignedProjectIds: inv.assignedProjectIds || [],
+        createdAt: new Date().toISOString(),
+      };
+      this.state.users.push(finalUser);
+    }
+
+    if (inv.role === 'SUBCONTRACTOR_USER') {
+      const existingWorker = (this.state.workers || []).find(w => w.name.toLowerCase() === finalUser.name.toLowerCase() && w.companyId === inv.companyId);
+      if (!existingWorker) {
+        const newWorker: Worker = {
+          id: `wrk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          code: generateWorkerCode((this.state.workers || []).length + 1),
+          name: finalUser.name,
+          category: 'Oficial de 1ª',
+          companyId: inv.companyId,
+          nationalId: 'DNI-' + Math.floor(10000000 + Math.random() * 90000000) + 'X',
+          active: true,
+          createdAt: new Date().toISOString()
+        };
+        this.state.workers.push(newWorker);
+        this.dispatchSync('worker', newWorker);
+      }
+    }
+
+    inv.status = 'Accepted';
+    inv.acceptedAt = new Date().toISOString();
+
+    this.dispatchSync('invitation', inv);
+    this.dispatchSync('user', finalUser);
+
+    this.state.currentUser = finalUser;
+
+    this.logAuditEvent({
+      affectedEntity: 'Company',
+      recordId: finalUser.id,
+      recordCode: inv.code,
+      operation: 'MEMBER_JOINED',
+      details: `${finalUser.name} (${finalUser.email}) se ha unido a ${companyName} con rol ${inv.role === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Operario'}.`,
+    });
+
+    this.notify();
+    return { success: true, user: finalUser };
   }
 
   public sendChatMessage(channelId: string, text: string): { success: boolean } {
@@ -1232,6 +1306,56 @@ class ObraStore {
     return { success: true };
   }
 
+  public uploadDeliveryNote(data: {
+    projectId: string;
+    projectNameSnapshot: string;
+    normalHours: number;
+    extraHours: number;
+    correctionNotice?: string; // used for comments / code
+    evidenceUrls?: string[];
+  }): { success: boolean; note?: DeliveryNote; error?: string } {
+    if (!this.state.currentUser) {
+      return { success: false, error: 'Acceso no autorizado.' };
+    }
+
+    const now = new Date().toISOString();
+    const code = `DN-${now.split('T')[0].replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const note: DeliveryNote = {
+      id: `dn_${Date.now()}`,
+      code,
+      sourceDailyReportId: 'dr_direct_upload',
+      sourceDailyReportCode: 'CARGA_DIRECTA',
+      dailyReportCodeSnapshot: 'CARGA_DIRECTA',
+      projectId: data.projectId,
+      projectNameSnapshot: data.projectNameSnapshot,
+      date: now.split('T')[0],
+      subcontractorCompanyId: this.state.currentUser.companyId || 'comp_sub_default',
+      subcontractorCompanyName: this.state.currentUser.companyName || 'Empresa Subcontratada',
+      workEntries: [],
+      normalHours: data.normalHours,
+      extraHours: data.extraHours,
+      totalHours: data.normalHours + data.extraHours,
+      status: 'Pending',
+      correctionNotice: data.correctionNotice || '',
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.state.deliveryNotes.push(note);
+    this.logAuditEvent({
+      affectedEntity: 'DeliveryNote',
+      recordId: note.id,
+      recordCode: note.code,
+      deliveryNoteId: note.id,
+      operation: 'REPORT_CREATED',
+      details: `Albarán ${note.code} subido y registrado directamente desde dispositivo móvil.`,
+    });
+
+    this.dispatchSync('deliveryNote', note);
+    this.notify();
+    return { success: true, note };
+  }
+
   // --- Audit Logging ---
 
   private logAuditEvent(params: {
@@ -1262,13 +1386,13 @@ class ObraStore {
       actorCompanyId: (actor as any).companyId || 'company_sys',
       affectedEntity: params.affectedEntity,
       recordId: params.recordId,
-      recordCode: params.recordCode,
       operation: params.operation,
       details: params.details,
-      previousValue: params.previousValue,
-      newValue: params.newValue,
-      dailyReportId: params.dailyReportId,
-      deliveryNoteId: params.deliveryNoteId,
+      ...(params.recordCode !== undefined ? { recordCode: params.recordCode } : {}),
+      ...(params.previousValue !== undefined ? { previousValue: params.previousValue } : {}),
+      ...(params.newValue !== undefined ? { newValue: params.newValue } : {}),
+      ...(params.dailyReportId !== undefined ? { dailyReportId: params.dailyReportId } : {}),
+      ...(params.deliveryNoteId !== undefined ? { deliveryNoteId: params.deliveryNoteId } : {}),
     };
 
     this.state.auditEvents.unshift(event);
@@ -1305,6 +1429,11 @@ class ObraStore {
       this.state.currentUser = user;
       this.state.isDemoMode = false;
     }
+    this.notify();
+  }
+
+  public setSyncError(error: string | null) {
+    this.state.syncError = error;
     this.notify();
   }
 
@@ -1360,6 +1489,36 @@ class ObraStore {
         this.state.currentUser = updatedMe;
       }
     }
+    this.notify();
+  }
+
+  public addTimeLog(log: any) {
+    if (!this.state.timeLogs) {
+      this.state.timeLogs = [];
+    }
+    this.state.timeLogs.push(log);
+    
+    this.logAuditEvent({
+      affectedEntity: 'Company', // maps to existing audit categorization safely
+      recordId: log.id,
+      recordCode: 'FICHADO',
+      operation: 'REPORT_SUBMITTED',
+      details: `Fichaje de ${log.userNameSnapshot} registrado en la obra ${log.projectNameSnapshot} a una distancia de ${log.distanceMeters.toFixed(1)} metros.`,
+    });
+
+    this.dispatchSync('timeLog', log);
+    this.notify();
+  }
+
+  public syncRemoteTimeLogs(logs: any[]) {
+    if (this.state.isDemoMode) return;
+    this.state.timeLogs = logs;
+    this.notify();
+  }
+
+  public syncRemoteInvitations(invitations: any[]) {
+    if (this.state.isDemoMode) return;
+    this.state.invitations = invitations;
     this.notify();
   }
 }
