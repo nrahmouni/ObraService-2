@@ -14,6 +14,7 @@ import {
 import { obraStore } from '../services/store';
 import { Project, TimeLog, AppState } from '../types';
 import { calculateHaversineDistanceMeters, getCurrentGeoPosition } from '../utils/geo';
+import { checkOperationalStatus } from '../utils/compliance';
 import toast from 'react-hot-toast';
 
 interface ClockInButtonProps {
@@ -73,6 +74,15 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
     if (!activeProject) {
       toast.error('No hay ninguna obra activa asignada para fichar');
       return;
+    }
+
+    // 0. PRL Compliance Gateway Check
+    if (currentUser.companyId) {
+      const compliance = checkOperationalStatus(currentUser.companyId);
+      if (compliance.isBlocked) {
+        toast.error(compliance.reason || 'Bloqueo preventivo PRL: Documentación caducada.', { duration: 6000 });
+        return;
+      }
     }
 
     // Extract project coordinates
