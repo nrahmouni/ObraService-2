@@ -1,12 +1,23 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import firebaseConfigPlaceholder from '../../firebase-applet-config.json';
+
+const firebaseConfig = {
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigPlaceholder.projectId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigPlaceholder.appId,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigPlaceholder.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigPlaceholder.authDomain,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || (firebaseConfigPlaceholder as any).firestoreDatabaseId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigPlaceholder.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigPlaceholder.messagingSenderId,
+  oAuthClientId: import.meta.env.VITE_FIREBASE_OAUTH_CLIENT_ID || (firebaseConfigPlaceholder as any).oAuthClientId,
+};
 
 const app = initializeApp(firebaseConfig);
 
 // CRITICAL: The app will break without this line
-export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
