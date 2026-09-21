@@ -31,7 +31,7 @@ import { obraStore } from '../services/store';
 import { Worker, User, WorkerCategory, Machinery, AppState } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
-import { UnifiedCrudModal } from '../components/UnifiedCrudModal';
+import { Modal } from '../components/ui/Modal';
 import { toast } from 'react-hot-toast';
 import { 
   connectGmailAccount, 
@@ -991,7 +991,7 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
       )}
 
       {/* Unified CRUD Modal for Workers */}
-      <UnifiedCrudModal 
+      <Modal 
         isOpen={workerModalOpen} 
         onClose={() => setWorkerModalOpen(false)} 
         title={editingWorker ? "Editar Operario" : "Nuevo Operario"}
@@ -1049,10 +1049,10 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
             )}
           </button>
         </form>
-      </UnifiedCrudModal>
+      </Modal>
 
       {/* Machinery Modal */}
-      <UnifiedCrudModal 
+      <Modal 
         isOpen={machineryModalOpen} 
         onClose={() => setMachineryModalOpen(false)} 
         title={editingMachinery ? "Editar Máquina" : "Nueva Maquinaria"}
@@ -1097,10 +1097,10 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
             )}
           </button>
         </form>
-      </UnifiedCrudModal>
+      </Modal>
 
       {/* Invitation Modal */}
-      <UnifiedCrudModal
+      <Modal
         isOpen={inviteModalOpen}
         onClose={() => {
           setInviteModalOpen(false);
@@ -1339,10 +1339,10 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
             </button>
           </form>
         )}
-      </UnifiedCrudModal>
+      </Modal>
 
       {/* Subcontractor Company Registration Modal */}
-      <UnifiedCrudModal
+      <Modal
         isOpen={companyModalOpen}
         onClose={() => setCompanyModalOpen(false)}
         title="Dar de Alta Subcontratista"
@@ -1415,7 +1415,7 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
             )}
           </button>
         </form>
-      </UnifiedCrudModal>
+      </Modal>
     </div>
   );
 };

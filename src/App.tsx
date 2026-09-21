@@ -17,7 +17,6 @@ import { DeliveryNotesView } from './views/DeliveryNotesView';
 import { ProjectsView } from './views/ProjectsView';
 import { MapView } from './views/MapView';
 import { TeamView } from './views/TeamView';
-import { ChatView } from './views/ChatView';
 import { AuditTrailView } from './views/AuditTrailView';
 import { SettingsView } from './views/SettingsView';
 import { IntegrationsView } from './views/IntegrationsView';
@@ -27,7 +26,6 @@ import { NotFoundView } from './views/NotFoundView';
 import { InviteAcceptanceView } from './views/InviteAcceptanceView';
 import { PublicLayout } from './components/PublicLayout';
 import { ScrollToTop } from './components/ScrollToTop';
-import { DemoProfileSelector } from './components/DemoProfileSelector';
 
 // Marketing Views
 import { 
@@ -56,7 +54,6 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<TabKey>('dashboard');
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'join_code' | null>(null);
   const [newReportModalOpen, setNewReportModalOpen] = useState(false);
-  const [demoProfileSelectorOpen, setDemoProfileSelectorOpen] = useState(false);
 
   useEffect(() => {
     initializeFirebaseSync();
@@ -155,7 +152,6 @@ export default function App() {
               <ProjectsView state={appState} onNavigate={(tab) => setCurrentTab(tab as any)} />
             </ProtectedRoute>
           )}
-          {currentTab === 'chat' && <ChatView state={appState} />}
           {currentTab === 'map' && (
             <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
               <MapView state={appState} />
@@ -205,7 +201,10 @@ export default function App() {
           <PublicLayout 
             onOpenLogin={() => setAuthModalMode('login')} 
             onOpenRegister={() => setAuthModalMode('register')}
-            onDemoAccess={() => setDemoProfileSelectorOpen(true)}
+            onDemoAccess={() => {
+              obraStore.enterDemoMode();
+              obraStore.login('carlos.mendoza@construccionesnorte.es');
+            }}
           />
         }>
           <Route path="/" element={
@@ -213,7 +212,10 @@ export default function App() {
               onOpenLogin={() => setAuthModalMode('login')}
               onOpenRegister={() => setAuthModalMode('register')}
               onOpenJoinCode={() => setAuthModalMode('join_code')}
-              onDemoAccess={() => setDemoProfileSelectorOpen(true)}
+              onDemoAccess={() => {
+                obraStore.enterDemoMode();
+                obraStore.login('carlos.mendoza@construccionesnorte.es');
+              }}
             />
           } />
           
@@ -271,12 +273,6 @@ export default function App() {
             setAuthModalMode(null);
             // Router will handle the redirect via Navigate if state updates
           }}
-        />
-      )}
-
-      {demoProfileSelectorOpen && (
-        <DemoProfileSelector
-          onClose={() => setDemoProfileSelectorOpen(false)}
         />
       )}
     </>

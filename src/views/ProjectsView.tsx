@@ -35,7 +35,7 @@ import { Project, ProjectStatus, Company, AppState } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { ClockInButton } from '../components/ClockInButton';
 import { ProjectSetupWizard } from '../components/ProjectSetupWizard';
-import { UnifiedCrudModal } from '../components/UnifiedCrudModal';
+import { Modal } from '../components/ui/Modal';
 import { toast } from 'react-hot-toast';
 
 interface ProjectsViewProps {
@@ -401,7 +401,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
         </div>
 
         {/* Subcontractor Assignment Modal */}
-        <UnifiedCrudModal
+        <Modal
           isOpen={subAssignmentOpen}
           onClose={() => setSubAssignmentOpen(false)}
           title="Asignar Subcontratas a la Obra"
@@ -451,7 +451,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
               )}
             </div>
           </div>
-        </UnifiedCrudModal>
+        </Modal>
       </div>
     );
   }
