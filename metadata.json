@@ -1,0 +1,6 @@
+{
+  "name": "ObraService",
+  "description": "Plataforma de gestión de partes diarios, subcontratas y geolocalización de obras con Google Maps para el sector de la construcción en España.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

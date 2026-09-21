@@ -1,0 +1,167 @@
+{
+  "entities": {
+    "company": {
+      "title": "Company",
+      "description": "Constructora principal o empresa subcontratista en ObraService",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 150 },
+        "taxId": { "type": "string", "minLength": 5, "maxLength": 20 },
+        "type": { "type": "string", "enum": ["MAIN_CONTRACTOR", "SUBCONTRACTOR"] },
+        "address": { "type": "string", "maxLength": 250 },
+        "inviteCode": { "type": "string", "maxLength": 30 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "taxId", "type", "inviteCode", "active"]
+    },
+    "user": {
+      "title": "User",
+      "description": "Perfil de usuario del sistema (Admin, Jefe de Obra, Subcontrata)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["MAIN_CONTRACTOR_ADMIN", "SITE_MANAGER", "SUBCONTRACTOR_USER"] },
+        "companyId": { "type": "string", "maxLength": 128 },
+        "companyName": { "type": "string", "maxLength": 150 },
+        "active": { "type": "boolean" },
+        "assignedProjectIds": { "type": "array" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "email", "role", "active"]
+    },
+    "project": {
+      "title": "Project",
+      "description": "Obra o proyecto de construcción con geocerca GPS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 30 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 150 },
+        "status": { "type": "string", "enum": ["Planned", "Active", "Paused", "Completed", "Archived"] },
+        "companyId": { "type": "string", "maxLength": 128 },
+        "validationRadiusMeters": { "type": "number" },
+        "address": { "type": "string", "maxLength": 250 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "plannedHours": { "type": "number" },
+        "startDate": { "type": "string", "maxLength": 50 },
+        "endDate": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "code", "name", "status", "companyId", "validationRadiusMeters"]
+    },
+    "worker": {
+      "title": "Worker",
+      "description": "Ficha de operario de plantilla propia o subcontrata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 30 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "category": { "type": "string", "maxLength": 80 },
+        "companyId": { "type": "string", "maxLength": 128 },
+        "nationalId": { "type": "string", "maxLength": 30 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "code", "name", "category", "companyId", "active"]
+    },
+    "dailyReport": {
+      "title": "DailyReport",
+      "description": "Parte diario de obra emitido por el Jefe de Obra",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 40 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "projectNameSnapshot": { "type": "string", "maxLength": 150 },
+        "date": { "type": "string", "maxLength": 20 },
+        "creatorId": { "type": "string", "maxLength": 128 },
+        "creatorNameSnapshot": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["Draft", "Submitted", "Corrected", "Locked", "Cancelled"] },
+        "totalNormalHours": { "type": "number" },
+        "totalExtraHours": { "type": "number" },
+        "totalHours": { "type": "number" },
+        "comments": { "type": "string", "maxLength": 2000 },
+        "version": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "code", "projectId", "date", "creatorId", "status", "version"]
+    },
+    "deliveryNote": {
+      "title": "DeliveryNote",
+      "description": "Albarán digital generado por subcontrata a partir del parte diario",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 40 },
+        "sourceDailyReportId": { "type": "string", "maxLength": 128 },
+        "sourceDailyReportCode": { "type": "string", "maxLength": 40 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "projectNameSnapshot": { "type": "string", "maxLength": 150 },
+        "date": { "type": "string", "maxLength": 20 },
+        "subcontractorCompanyId": { "type": "string", "maxLength": 128 },
+        "subcontractorCompanyName": { "type": "string", "maxLength": 150 },
+        "normalHours": { "type": "number" },
+        "extraHours": { "type": "number" },
+        "totalHours": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Disputed"] },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "code", "sourceDailyReportId", "projectId", "subcontractorCompanyId", "status"]
+    },
+    "auditEvent": {
+      "title": "AuditEvent",
+      "description": "Registro inmutable append-only de auditoría y cadena de custodia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "actorId": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 100 },
+        "actorRole": { "type": "string", "maxLength": 50 },
+        "actorCompanyName": { "type": "string", "maxLength": 150 },
+        "affectedEntity": { "type": "string", "maxLength": 50 },
+        "recordId": { "type": "string", "maxLength": 128 },
+        "operation": { "type": "string", "maxLength": 50 },
+        "details": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["id", "timestamp", "actorId", "actorName", "affectedEntity", "recordId", "operation"]
+    }
+  },
+  "firestore": {
+    "/companies/{companyId}": {
+      "schema": { "$ref": "#/entities/company" },
+      "description": "Empresas principales y subcontratistas registradas"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/user" },
+      "description": "Perfiles y roles de usuario del sistema"
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/project" },
+      "description": "Obras y centros de trabajo con georreferenciación"
+    },
+    "/workers/{workerId}": {
+      "schema": { "$ref": "#/entities/worker" },
+      "description": "Directorio de operarios y categorías profesionales"
+    },
+    "/dailyReports/{reportId}": {
+      "schema": { "$ref": "#/entities/dailyReport" },
+      "description": "Partes diarios de ejecución de obra"
+    },
+    "/deliveryNotes/{deliveryNoteId}": {
+      "schema": { "$ref": "#/entities/deliveryNote" },
+      "description": "Albaranes digitales por subcontrata para validación y firma"
+    },
+    "/auditEvents/{auditEventId}": {
+      "schema": { "$ref": "#/entities/auditEvent" },
+      "description": "Cadena de custodia inmutable append-only"
+    }
+  }
+}

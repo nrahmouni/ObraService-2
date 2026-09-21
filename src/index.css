@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand-bg: #FFFFFF;
+    --brand-surface: #F8FAFC;
+    --brand-accent: #FF6600;
+    --brand-steel: #2563EB;
+    --brand-text: #0F172A;
+    --brand-border: #E2E8F0;
+  }
+
+  .dark {
+    --brand-bg: #121417;
+    --brand-surface: #1F2329;
+    --brand-accent: #FF6600;
+    --brand-steel: #5B8CFF;
+    --brand-text: #F4F5F6;
+    --brand-border: #2D333B;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--brand-bg);
+    color: var(--brand-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    letter-spacing: -0.02em;
+  }
+}

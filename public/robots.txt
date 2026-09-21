@@ -1,0 +1,7 @@
+# Robots.txt for ObraService
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://ais-dev-xknuaj6wshhncoeihl2xys-299281423620.europe-west2.run.app/sitemap.xml
