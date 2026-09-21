@@ -14,14 +14,15 @@ const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 interface AppDataProviderProps {
   children: ReactNode;
-  companyId: string | null | undefined;
+  companyId?: string | null;
+  value?: AppDataContextType;
 }
 
-export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children, companyId }) => {
+export const AppDataProvider: React.FC<AppDataProviderProps> = ({ children, companyId, value }) => {
   const data = useAppData(companyId);
 
   return (
-    <AppDataContext.Provider value={data}>
+    <AppDataContext.Provider value={value || data}>
       {children}
     </AppDataContext.Provider>
   );

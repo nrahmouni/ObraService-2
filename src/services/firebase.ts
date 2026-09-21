@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
 import firebaseConfigPlaceholder from '../../firebase-applet-config.json';
 
@@ -86,6 +86,15 @@ export async function signInWithGoogle() {
   } catch (error: any) {
     console.error('Error signing in with Google:', error);
     return { success: false, error: error.message || 'Error al iniciar sesión con Google' };
+  }
+}
+
+export async function signInWithEmail(email: string, pass: string) {
+  try {
+    const res = await signInWithEmailAndPassword(auth, email, pass);
+    return { success: true, user: res.user };
+  } catch (error: any) {
+    throw new Error(error.message || 'Error al autenticar con correo y contraseña');
   }
 }
 
