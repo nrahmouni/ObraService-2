@@ -6,6 +6,14 @@ export interface AuthRequest extends Request {
   user?: DecodedIdToken;
 }
 
+export const isSuperAdminToken = (token: DecodedIdToken): boolean => {
+  return (
+    token.role === 'SUPER_ADMIN' ||
+    token.SUPER_ADMIN === true ||
+    token.superAdmin === true
+  );
+};
+
 export const requireAuth = async (
   req: AuthRequest,
   res: Response,
@@ -26,3 +34,28 @@ export const requireAuth = async (
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
 };
+
+export const requireSuperAdmin = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const handleCheck = () => {
+    if (!req.user || !isSuperAdminToken(req.user)) {
+      return res.status(403).json({
+        error: 'Forbidden: Se requiere el custom claim SUPER_ADMIN gestionado por backend para acceder a este recurso.',
+        code: 'SUPER_ADMIN_CLAIM_REQUIRED',
+      });
+    }
+    next();
+  };
+
+  if (!req.user) {
+    return requireAuth(req, res, () => {
+      handleCheck();
+    });
+  }
+
+  handleCheck();
+};
+

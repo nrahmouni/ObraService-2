@@ -19,20 +19,15 @@ import {
   ChatMessage,
   TimeLog,
   Invitation,
-  ComplianceDocument
+  ComplianceDocument,
+  NotificationItem
 } from '../types';
-import { 
-  canUserConfirmDeliveryNote, 
-  canUserDisputeDeliveryNote, 
-  generateDailyReportCode, 
-  generateDeliveryNotesFromReport, 
-  generateMachineryCode,
-  generateProjectCode, 
-  generateWorkerCode, 
-  validateProjectLocation, 
-  validateSpanishTaxId, 
-  validateWorkEntries 
-} from '../domain/rules';
+
+import * as companyModule from './store/company';
+import * as projectModule from './store/project';
+import * as workerModule from './store/worker';
+import * as reportModule from './store/report';
+
 interface StoreState {
   isDemoMode: boolean;
   theme: 'light' | 'dark';
@@ -46,11 +41,12 @@ interface StoreState {
   reports: DailyReport[];
   deliveryNotes: DeliveryNote[];
   auditEvents: AuditEvent[];
-  invitations: any[];
+  invitations: Invitation[];
   messages: ChatMessage[];
   syncError: string | null;
   timeLogs: TimeLog[];
   complianceDocuments: ComplianceDocument[];
+  notifications: NotificationItem[];
 }
 
 const PROD_STORAGE_KEY = 'obraservice_prod_v1';
@@ -66,6 +62,7 @@ function getSeedState(): StoreState {
       address: 'Paseo de la Castellana 140, Madrid',
       inviteCode: 'NORTE2026',
       active: true,
+      subscriptionStatus: 'Active',
       createdAt: new Date().toISOString()
     },
     {
@@ -76,6 +73,7 @@ function getSeedState(): StoreState {
       address: 'Avenida Al Vedat 22, Torrent, Valencia',
       inviteCode: 'LEVANTE2026',
       active: true,
+      subscriptionStatus: 'Active',
       createdAt: new Date().toISOString()
     }
   ];
@@ -116,20 +114,10 @@ function getSeedState(): StoreState {
     },
     {
       id: 'usr_master_direct',
-      name: 'King Master',
-      email: 'nmriffan31@obraservice.es',
-      role: 'MAIN_CONTRACTOR_ADMIN',
-      companyId: 'comp_norte',
-      companyName: 'Construcciones Norte S.L.',
-      active: true,
-      assignedProjectIds: ['proj_metro'],
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'usr_master_email',
-      name: 'Naim Rahmouni',
-      email: 'naimrahmouni1998@gmail.com',
-      role: 'MAIN_CONTRACTOR_ADMIN',
+      name: 'Super Admin',
+      email: 'superadmin@obraservice.com',
+      role: 'SUPER_ADMIN',
+      isSuperAdmin: true,
       companyId: 'comp_norte',
       companyName: 'Construcciones Norte S.L.',
       active: true,
@@ -194,7 +182,7 @@ function getSeedState(): StoreState {
     }
   ];
 
-  const seedInvitations = [
+  const seedInvitations: Invitation[] = [
     {
       id: 'inv_levante_1',
       code: 'INV-LEVANTE',
@@ -203,11 +191,19 @@ function getSeedState(): StoreState {
       companyId: 'comp_levante',
       companyName: 'Estructuras Levante S.L.',
       assignedProjectIds: ['proj_metro'],
+      invitedBy: 'usr_admin',
       status: 'Pending',
-      createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+      createdAt: new Date().toISOString()
     }
   ];
+
+  const d15 = new Date();
+  d15.setDate(d15.getDate() + 15);
+  const expiry15 = d15.toISOString().split('T')[0];
+
+  const d5 = new Date();
+  d5.setDate(d5.getDate() + 5);
+  const expiry5 = d5.toISOString().split('T')[0];
 
   return {
     isDemoMode: false,
@@ -236,12 +232,73 @@ function getSeedState(): StoreState {
     messages: [],
     syncError: null,
     timeLogs: [],
-    complianceDocuments: []
+    complianceDocuments: [
+      {
+        id: 'comp_doc_1',
+        companyId: 'comp_levante',
+        docType: 'REA',
+        title: 'Certificado de Registro de Empresas Acreditadas (REA)',
+        status: 'VALID',
+        expiryDate: expiry15,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: 'comp_doc_2',
+        companyId: 'comp_levante',
+        docType: 'INSURANCE',
+        title: 'Seguro de Responsabilidad Civil',
+        status: 'VALID',
+        expiryDate: expiry5,
+        createdAt: new Date().toISOString()
+      }
+    ],
+    notifications: []
   };
+}
+
+function migrateLegacyLocalStorage() {
+  const legacyKeys = ['obraservice_legacy_v1', 'obraservice_legacy', 'obraservice_v1_beta', 'obra_store_state', 'obraservice_v1'];
+  for (const key of legacyKeys) {
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && (parsed.users || parsed.projects || parsed.workers)) {
+          const upgraded: any = {
+            isDemoMode: parsed.isDemoMode ?? false,
+            theme: parsed.theme || 'light',
+            viewPreference: parsed.viewPreference || 'grid',
+            currentUser: parsed.currentUser || null,
+            companies: parsed.companies || [],
+            users: parsed.users || [],
+            projects: parsed.projects || [],
+            workers: parsed.workers || [],
+            machinery: parsed.machinery || [],
+            reports: parsed.reports || [],
+            deliveryNotes: parsed.deliveryNotes || [],
+            auditEvents: parsed.auditEvents || [],
+            invitations: parsed.invitations || [],
+            messages: parsed.messages || [],
+            syncError: parsed.syncError || null,
+            timeLogs: parsed.timeLogs || [],
+            complianceDocuments: parsed.complianceDocuments || [],
+            notifications: parsed.notifications || [],
+          };
+          localStorage.setItem(PROD_STORAGE_KEY, JSON.stringify(upgraded));
+          console.log(`[Migration] Sucesfully migrated legacy store from key "${key}" to "${PROD_STORAGE_KEY}".`);
+          localStorage.removeItem(key);
+          break;
+        }
+      } catch (e) {
+        console.warn(`[Migration] Failed to parse legacy data from key "${key}":`, e);
+      }
+    }
+  }
 }
 
 function loadInitialProductionState(): StoreState {
   try {
+    migrateLegacyLocalStorage();
     const raw = localStorage.getItem(PROD_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -264,6 +321,7 @@ function loadInitialProductionState(): StoreState {
           syncError: parsed.syncError || null,
           timeLogs: parsed.timeLogs || [],
           complianceDocuments: parsed.complianceDocuments || [],
+          notifications: parsed.notifications || [],
         };
       }
     }
@@ -298,6 +356,7 @@ function loadInitialDemoState(): StoreState {
           syncError: parsed.syncError || null,
           timeLogs: parsed.timeLogs || [],
           complianceDocuments: parsed.complianceDocuments || [],
+          notifications: parsed.notifications || [],
         };
       }
     }
@@ -318,6 +377,7 @@ class ObraStore {
 
   constructor() {
     this.state = loadInitialProductionState(); 
+    this.checkComplianceDocumentExpirations();
   }
 
   public subscribe(listener: Listener) {
@@ -344,6 +404,7 @@ class ObraStore {
         auditEvents: this.state.auditEvents,
         invitations: this.state.invitations,
         messages: this.state.messages,
+        notifications: this.state.notifications || [],
       }));
     } catch (e) {
       console.error('Error saving data to localStorage', e);
@@ -543,6 +604,31 @@ class ObraStore {
     this.notify();
   }
 
+  // --- Audit Log Adapter ---
+  private logAuditAdapter = (
+    affectedEntity: string,
+    recordId: string,
+    operation: string,
+    details: string,
+    recordCode?: string,
+    dailyReportId?: string,
+    deliveryNoteId?: string,
+    previousValue?: string,
+    newValue?: string
+  ) => {
+    this.logAuditEvent({
+      affectedEntity: affectedEntity as AuditEvent['affectedEntity'],
+      recordId,
+      operation: operation as AuditEvent['operation'],
+      details,
+      recordCode,
+      dailyReportId,
+      deliveryNoteId,
+      previousValue,
+      newValue
+    });
+  };
+
   // --- Company & Invitation Management ---
 
   public createCompany(data: {
@@ -551,56 +637,39 @@ class ObraStore {
     type: 'MAIN_CONTRACTOR' | 'SUBCONTRACTOR';
     address: string;
   }): { success: boolean; error?: string; company?: Company } {
-    if (!this.state.currentUser) {
-      return { success: false, error: 'Acceso no autorizado para esta operación.' };
-    }
-
-    const taxCheck = validateSpanishTaxId(data.taxId);
-    if (!taxCheck.valid) {
-      return { success: false, error: taxCheck.message };
-    }
-
-    const inviteCode = `OBRA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    const newCompany: Company = {
-      id: `comp_${Date.now()}`,
-      name: data.name.trim(),
-      taxId: data.taxId.trim().toUpperCase(),
-      type: data.type,
-      address: data.address.trim(),
-      inviteCode,
-      active: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    this.state.companies.push(newCompany);
-    this.dispatchSync('company', newCompany);
-
-    // Promote creator to correct Administrator role
-    this.state.currentUser.companyId = newCompany.id;
-    this.state.currentUser.companyName = newCompany.name;
-    this.state.currentUser.role = data.type === 'SUBCONTRACTOR' ? 'SUBCONTRACTOR_USER' : 'MAIN_CONTRACTOR_ADMIN';
-
-    this.logAuditEvent({
-      affectedEntity: 'Company',
-      recordId: newCompany.id,
-      operation: 'COMPANY_CREATED',
-      details: `Empresa "${newCompany.name}" (${newCompany.taxId}) constituida con código de invitación ${inviteCode}.`,
-    });
-
-    this.dispatchSync('user', this.state.currentUser);
+    const res = companyModule.createCompany(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true, company: newCompany };
+    return res;
   }
 
-  public toggleCompanyActive(companyId: string) {
-    const target = this.state.companies.find(c => c.id === companyId);
-    if (target) {
-      target.active = !target.active;
-      this.dispatchSync('company', target);
-      this.notify();
-      return target.active;
+  public toggleCompanyActive(companyId: string, reason: string) {
+    const compBefore = this.state.companies.find(c => c.id === companyId);
+    const wasActive = compBefore ? compBefore.active : true;
+    const res = companyModule.toggleCompanyActive(this.state, companyId, reason, this.logAuditAdapter, this.dispatchSync.bind(this));
+    if (res) {
+      const companyUsers = this.state.users.filter(u => u.companyId === companyId);
+      if (wasActive) {
+        for (const compUser of companyUsers) {
+          this.generateNotification({
+            userId: compUser.id,
+            title: 'Acceso de Empresa Suspendido',
+            message: `La cuenta de tu empresa ha sido suspendida temporalmente por el Administrador Principal. Motivo: ${reason}`,
+            type: 'WARNING'
+          });
+        }
+      } else {
+        for (const compUser of companyUsers) {
+          this.generateNotification({
+            userId: compUser.id,
+            title: 'Acceso de Empresa Reactivado',
+            message: `La cuenta de tu empresa ha sido reactivada con éxito.`,
+            type: 'SUCCESS'
+          });
+        }
+      }
     }
-    return false;
+    this.notify();
+    return res;
   }
 
   public createSubcontractor(data: {
@@ -608,90 +677,21 @@ class ObraStore {
     taxId: string;
     address: string;
   }): { success: boolean; error?: string; company?: Company } {
-    if (!this.state.currentUser) {
-      return { success: false, error: 'Acceso no autorizado para esta operación.' };
-    }
-
-    const taxCheck = validateSpanishTaxId(data.taxId);
-    if (!taxCheck.valid) {
-      return { success: false, error: taxCheck.message };
-    }
-
-    const inviteCode = `OBRA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    const newCompany: Company = {
-      id: `comp_${Date.now()}`,
-      name: data.name.trim(),
-      taxId: data.taxId.trim().toUpperCase(),
-      type: 'SUBCONTRACTOR',
-      address: data.address.trim(),
-      inviteCode,
-      active: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    this.state.companies.push(newCompany);
-    this.dispatchSync('company', newCompany);
-
-    this.logAuditEvent({
-      affectedEntity: 'Company',
-      recordId: newCompany.id,
-      operation: 'COMPANY_CREATED',
-      details: `Subcontratista "${newCompany.name}" (${newCompany.taxId}) de alta en sistema con código de invitación ${inviteCode}.`,
-    });
-
+    const res = companyModule.createSubcontractor(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true, company: newCompany };
+    return res;
   }
 
   public joinCompany(inviteCode: string, requestedRole: UserRole = 'SITE_MANAGER'): { success: boolean; error?: string } {
-    if (!this.state.currentUser) {
-      return { success: false, error: 'Acceso no autorizado para esta operación.' };
-    }
-
-    const cleanCode = inviteCode.trim().toUpperCase();
-    const targetCompany = this.state.companies.find(c => c.inviteCode.toUpperCase() === cleanCode);
-
-    if (!targetCompany) {
-      return { success: false, error: 'Código de invitación no encontrado o no válido.' };
-    }
-
-    if (!targetCompany.active) {
-      return { success: false, error: 'La empresa a la que intentas unirte está inactiva.' };
-    }
-
-    this.state.currentUser.companyId = targetCompany.id;
-    this.state.currentUser.companyName = targetCompany.name;
-    // Role is assigned based on company type or manager workflow
-    this.state.currentUser.role = targetCompany.type === 'SUBCONTRACTOR' ? 'SUBCONTRACTOR_USER' : requestedRole;
-
-    this.logAuditEvent({
-      affectedEntity: 'Membership',
-      recordId: this.state.currentUser.id,
-      operation: 'MEMBER_JOINED',
-      details: `Usuario ${this.state.currentUser.name} se incorporó a "${targetCompany.name}" mediante código de invitación.`,
-    });
-
-    this.dispatchSync('user', this.state.currentUser);
+    const res = companyModule.joinCompany(this.state, inviteCode, requestedRole, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true };
+    return res;
   }
 
   public regenerateInviteCode(companyId: string): { success: boolean; newCode?: string } {
-    const comp = this.state.companies.find(c => c.id === companyId);
-    if (!comp) return { success: false };
-
-    const newCode = `OBRA-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    comp.inviteCode = newCode;
-
-    this.logAuditEvent({
-      affectedEntity: 'Company',
-      recordId: comp.id,
-      operation: 'INVITE_CODE_REGENERATED',
-      details: `Código de invitación regenerado a ${newCode} invalidando el anterior.`,
-    });
-
+    const res = companyModule.regenerateInviteCode(this.state, companyId, this.logAuditAdapter);
     this.notify();
-    return { success: true, newCode };
+    return res;
   }
 
   public createInvitation(
@@ -701,48 +701,9 @@ class ObraStore {
     invitedBy: string,
     assignedProjectIds: string[] = []
   ): { success: boolean; invitation?: Invitation; magicLink?: string; error?: string } {
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      return { success: false, error: 'Por favor, introduce un correo electrónico válido.' };
-    }
-
-    const company = this.state.companies.find(c => c.id === companyId);
-    const companyName = company?.name || this.state.currentUser?.companyName || 'Empresa Constructora';
-
-    const inviteCode = `INV-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    const invite: Invitation = {
-      id: `inv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      code: inviteCode,
-      email: cleanEmail,
-      role,
-      companyId,
-      companyName,
-      assignedProjectIds,
-      invitedBy,
-      status: 'Pending',
-      createdAt: new Date().toISOString(),
-    };
-
-    if (!this.state.invitations) {
-      this.state.invitations = [];
-    }
-
-    this.state.invitations.unshift(invite);
-    this.dispatchSync('invitation', invite);
-
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://obraservice.app';
-    const magicLink = `${origin}/?invite=${invite.code}`;
-
-    this.logAuditEvent({
-      affectedEntity: 'Company',
-      recordId: invite.id,
-      recordCode: invite.code,
-      operation: 'MEMBER_JOINED',
-      details: `Invitación enviada a ${cleanEmail} para el rol de ${role === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Operario'} con código ${invite.code} y acceso a ${assignedProjectIds.length} obra(s).`,
-    });
-
+    const res = companyModule.createInvitation(this.state, email, role, companyId, invitedBy, assignedProjectIds, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true, invitation: invite, magicLink };
+    return res;
   }
 
   public getInvitationByCodeOrEmail(identifier: string): Invitation | undefined {
@@ -750,96 +711,44 @@ class ObraStore {
     const clean = identifier.trim().toUpperCase();
     const cleanEmail = identifier.trim().toLowerCase();
     return (this.state.invitations || []).find(
-      i => i.code?.toUpperCase() === clean || 
+      (i: Invitation) => i.code?.toUpperCase() === clean || 
            i.id === identifier || 
            (i.status === 'Pending' && i.email?.toLowerCase() === cleanEmail)
     );
   }
 
   public acceptInvitation(codeOrId: string, userData: { name: string; password?: string }): { success: boolean; user?: User; error?: string } {
-    const inv = this.getInvitationByCodeOrEmail(codeOrId);
-    if (!inv) {
-      return { success: false, error: 'Código de invitación no encontrado o no válido.' };
-    }
-    if (inv.status === 'Accepted') {
-      return { success: false, error: 'Esta invitación ya ha sido utilizada.' };
-    }
-    if (inv.status === 'Expired') {
-      return { success: false, error: 'Esta invitación ha expirado.' };
-    }
-
-    const company = this.state.companies.find(c => c.id === inv.companyId);
-    const companyName = company?.name || inv.companyName || 'Empresa Constructora';
-
-    const cleanEmail = inv.email.toLowerCase();
-    let existingUser = this.state.users.find(u => u.email.toLowerCase() === cleanEmail);
-    let finalUser: User;
-
-    if (existingUser) {
-      existingUser.name = userData.name.trim() || existingUser.name;
-      existingUser.companyId = inv.companyId;
-      existingUser.companyName = companyName;
-      existingUser.role = inv.role;
-      existingUser.active = true;
-      existingUser.assignedProjectIds = Array.from(new Set([...(existingUser.assignedProjectIds || []), ...(inv.assignedProjectIds || [])]));
-      finalUser = existingUser;
-    } else {
-      finalUser = {
-        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-        name: userData.name.trim() || cleanEmail.split('@')[0],
-        email: cleanEmail,
-        role: inv.role,
-        companyId: inv.companyId,
-        companyName: companyName,
-        active: true,
-        assignedProjectIds: inv.assignedProjectIds || [],
-        createdAt: new Date().toISOString(),
-      };
-      this.state.users.push(finalUser);
-    }
-
-    if (inv.role === 'SUBCONTRACTOR_USER') {
-      const existingWorker = (this.state.workers || []).find(w => w.name.toLowerCase() === finalUser.name.toLowerCase() && w.companyId === inv.companyId);
-      if (!existingWorker) {
-        const newWorker: Worker = {
-          id: `wrk_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          code: generateWorkerCode((this.state.workers || []).length + 1),
-          name: finalUser.name,
-          category: 'Oficial de 1ª',
-          companyId: inv.companyId,
-          nationalId: 'DNI-' + Math.floor(10000000 + Math.random() * 90000000) + 'X',
-          active: true,
-          createdAt: new Date().toISOString()
-        };
-        this.state.workers.push(newWorker);
-        this.dispatchSync('worker', newWorker);
+    const invite = this.getInvitationByCodeOrEmail(codeOrId);
+    const res = companyModule.acceptInvitation(this.state, codeOrId, userData, this.logAuditAdapter, this.dispatchSync.bind(this));
+    if (res.success && invite) {
+      if (invite.invitedBy) {
+        this.generateNotification({
+          userId: invite.invitedBy,
+          title: 'Invitación Aceptada',
+          message: `${userData.name} (${invite.email}) ha aceptado tu invitación para unirse a ${invite.companyName}.`,
+          type: 'SUCCESS'
+        });
+      }
+      const admins = this.state.users.filter(u => u.companyId === invite.companyId && u.role === 'MAIN_CONTRACTOR_ADMIN');
+      for (const admin of admins) {
+        if (admin.id !== invite.invitedBy) {
+          this.generateNotification({
+            userId: admin.id,
+            title: 'Nuevo Miembro en la Empresa',
+            message: `${userData.name} se ha unido a ${invite.companyName} como ${invite.role}.`,
+            type: 'INFO'
+          });
+        }
       }
     }
-
-    inv.status = 'Accepted';
-    inv.acceptedAt = new Date().toISOString();
-
-    this.dispatchSync('invitation', inv);
-    this.dispatchSync('user', finalUser);
-
-    this.state.currentUser = finalUser;
-
-    this.logAuditEvent({
-      affectedEntity: 'Company',
-      recordId: finalUser.id,
-      recordCode: inv.code,
-      operation: 'MEMBER_JOINED',
-      details: `${finalUser.name} (${finalUser.email}) se ha unido a ${companyName} con rol ${inv.role === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Operario'}.`,
-    });
-
     this.notify();
-    return { success: true, user: finalUser };
+    return res;
   }
 
   public sendChatMessage(channelId: string, text: string): { success: boolean } {
     if (!this.state.currentUser) return { success: false };
 
-    const newMessage = {
+    const newMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
       senderId: this.state.currentUser.id,
       senderName: this.state.currentUser.name,
@@ -889,11 +798,11 @@ class ObraStore {
 
         const sender = potentialSenders[0] || { id: 'usr_site_manager', name: 'Javier Ortiz', role: 'SITE_MANAGER', company: 'Construcciones Norte S.L.' };
 
-        const replyMessage = {
+        const replyMessage: ChatMessage = {
           id: `msg_${Date.now() + 1}`,
           senderId: sender.id,
           senderName: sender.name,
-          senderRole: sender.role as any,
+          senderRole: sender.role as UserRole,
           senderCompanyName: sender.company,
           channelId,
           text: randomReply,
@@ -913,11 +822,11 @@ class ObraStore {
     text: string,
     senderOverride: { id: string; name: string; role: string; company: string }
   ): { success: boolean } {
-    const newMessage = {
+    const newMessage: ChatMessage = {
       id: `msg_${Date.now()}`,
       senderId: senderOverride.id,
       senderName: senderOverride.name,
-      senderRole: senderOverride.role as any,
+      senderRole: senderOverride.role as UserRole,
       senderCompanyName: senderOverride.company,
       channelId,
       text,
@@ -932,137 +841,78 @@ class ObraStore {
     return { success: true };
   }
 
-  // --- Projects & Workers ---
+  // --- Projects & Machinery ---
 
   public createProject(data: Omit<Project, 'id' | 'code' | 'companyId'>): { success: boolean; project?: Project; error?: string } {
-    if (!this.state.currentUser || (this.state.currentUser.role !== 'MAIN_CONTRACTOR_ADMIN' && this.state.currentUser.role !== 'SITE_MANAGER')) {
-      return { success: false, error: 'Solo el contratista principal o el jefe de obra pueden crear proyectos.' };
-    }
-
-    const code = generateProjectCode(this.state.projects.length);
-    const newProject: Project = {
-      ...data,
-      id: `prj_${Date.now()}`,
-      code,
-      companyId: this.state.currentUser.companyId,
-    };
-
-    this.state.projects.push(newProject);
-    this.dispatchSync('project', newProject);
-
-    this.logAuditEvent({
-      affectedEntity: 'Project',
-      recordId: newProject.id,
-      recordCode: code,
-      operation: 'PROJECT_CREATED',
-      details: `Proyecto "${newProject.name}" creado con radio de validación de ${newProject.validationRadiusMeters}m.`,
-    });
-
+    const res = projectModule.createProject(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true, project: newProject };
+    return res;
   }
 
   public updateProjectStatus(projectId: string, status: Project['status']): { success: boolean; error?: string } {
-    const project = this.state.projects.find(p => p.id === projectId);
-    if (!project) {
-      return { success: false, error: 'Proyecto no encontrado' };
-    }
-    project.status = status;
-    this.dispatchSync('project', project);
+    const res = projectModule.updateProjectStatus(this.state, projectId, status, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true };
+    return res;
   }
 
   public updateProject(projectId: string, data: Partial<Project>): boolean {
-    const idx = this.state.projects.findIndex(p => p.id === projectId);
-    if (idx === -1) return false;
-    this.state.projects[idx] = { ...this.state.projects[idx], ...data };
-    this.dispatchSync('project', this.state.projects[idx]);
-    this.logAuditEvent({
-      affectedEntity: 'Project',
-      recordId: projectId,
-      operation: 'PROJECT_UPDATED',
-      details: `Datos del proyecto "${this.state.projects[idx].name}" actualizados de forma autorizada.`,
-    });
+    const res = projectModule.updateProject(this.state, projectId, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return true;
+    return res;
   }
 
   public deleteProject(projectId: string): boolean {
-    const idx = this.state.projects.findIndex(p => p.id === projectId);
-    if (idx === -1) return false;
-    const project = this.state.projects[idx];
-    this.state.projects.splice(idx, 1);
-    this.logAuditEvent({
-      affectedEntity: 'Project',
-      recordId: projectId,
-      operation: 'PROJECT_DELETED',
-      details: `Proyecto "${project.name}" eliminado del sistema de manera definitiva.`,
-    });
+    const res = projectModule.deleteProject(this.state, projectId, this.logAuditAdapter);
     this.notify();
-    return true;
+    return res;
   }
 
   public updateProjectAssignments(projectId: string, subcontractorIds: string[]): boolean {
-    const project = this.state.projects.find(p => p.id === projectId);
-    if (!project) return false;
-    project.assignedSubcontractorIds = subcontractorIds;
-    this.dispatchSync('project', project);
-    this.logAuditEvent({
-      affectedEntity: 'Project',
-      recordId: projectId,
-      operation: 'PROJECT_ASSIGNMENT_CHANGED',
-      details: `Asignación de subcontratas actualizada para el proyecto "${project.name}".`,
-    });
+    const res = projectModule.updateProjectAssignments(this.state, projectId, subcontractorIds, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return true;
+    return res;
   }
+
+  public createMachinery(data: Omit<Machinery, 'id' | 'code' | 'createdAt'>): { success: boolean; machinery?: Machinery; error?: string } {
+    const res = projectModule.createMachinery(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
+    this.notify();
+    return res;
+  }
+
+  public updateMachinery(machineryId: string, data: Partial<Machinery>): boolean {
+    const res = projectModule.updateMachinery(this.state, machineryId, data, this.logAuditAdapter, this.dispatchSync.bind(this));
+    this.notify();
+    return res;
+  }
+
+  public toggleMachineryStatus(machineryId: string): boolean {
+    const res = projectModule.toggleMachineryStatus(this.state, machineryId, this.dispatchSync.bind(this));
+    this.notify();
+    return res;
+  }
+
+  public deleteMachinery(machineryId: string): boolean {
+    const res = projectModule.deleteMachinery(this.state, machineryId, this.logAuditAdapter);
+    this.notify();
+    return res;
+  }
+
+  // --- Workers ---
 
   public addWorker(data: Omit<Worker, 'id' | 'code' | 'createdAt'>): { success: boolean; worker?: Worker; error?: string } {
     return this.createWorker(data);
   }
 
   public createWorker(data: Omit<Worker, 'id' | 'code' | 'createdAt'>): { success: boolean; worker?: Worker; error?: string } {
-    const code = generateWorkerCode(this.state.workers.length);
-    const newWorker: Worker = {
-      ...data,
-      id: `wrk_${Date.now()}`,
-      code,
-      createdAt: new Date().toISOString(),
-    };
-
-    this.state.workers.push(newWorker);
-    this.dispatchSync('worker', newWorker);
-
-    this.logAuditEvent({
-      affectedEntity: 'Worker',
-      recordId: newWorker.id,
-      recordCode: code,
-      operation: 'WORKER_CREATED',
-      details: `Trabajador "${newWorker.name}" (${newWorker.category}) registrado para la empresa.`,
-    });
-
+    const res = workerModule.createWorker(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true, worker: newWorker };
+    return res;
   }
 
   public toggleWorkerStatus(workerId: string): boolean {
-    const worker = this.state.workers.find(w => w.id === workerId);
-    if (!worker) return false;
-
-    worker.active = !worker.active;
-    this.dispatchSync('worker', worker);
-
-    this.logAuditEvent({
-      affectedEntity: 'Worker',
-      recordId: worker.id,
-      recordCode: worker.code,
-      operation: 'WORKER_STATUS_CHANGED',
-      details: `Estado del trabajador cambiado a ${worker.active ? 'Activo' : 'Inactivo'}. Historial de partes preservado.`,
-    });
-
+    const res = workerModule.toggleWorkerStatus(this.state, workerId, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return true;
+    return res;
   }
 
   public toggleWorkerActive(workerId: string): boolean {
@@ -1070,168 +920,23 @@ class ObraStore {
   }
 
   public updateWorker(workerId: string, data: Partial<Worker>): boolean {
-    const idx = this.state.workers.findIndex(w => w.id === workerId);
-    if (idx === -1) return false;
-    this.state.workers[idx] = { ...this.state.workers[idx], ...data };
-    this.dispatchSync('worker', this.state.workers[idx]);
-    this.logAuditEvent({
-      affectedEntity: 'Worker',
-      recordId: workerId,
-      operation: 'WORKER_UPDATED',
-      details: `Datos del trabajador "${this.state.workers[idx].name}" actualizados.`,
-    });
+    const res = workerModule.updateWorker(this.state, workerId, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return true;
+    return res;
   }
 
   public deleteWorker(workerId: string): boolean {
-    const idx = this.state.workers.findIndex(w => w.id === workerId);
-    if (idx === -1) return false;
-    const worker = this.state.workers[idx];
-    this.state.workers.splice(idx, 1);
-    this.logAuditEvent({
-      affectedEntity: 'Worker',
-      recordId: workerId,
-      operation: 'WORKER_DELETED',
-      details: `Trabajador "${worker.name}" eliminado del sistema.`,
-    });
+    const res = workerModule.deleteWorker(this.state, workerId, this.logAuditAdapter);
     this.notify();
-    return true;
-  }
-
-  public createMachinery(data: Omit<Machinery, 'id' | 'code' | 'createdAt'>): { success: boolean; machinery?: Machinery; error?: string } {
-    const code = generateMachineryCode(this.state.machinery.length);
-    const newMachinery: Machinery = {
-      ...data,
-      id: `mac_${Date.now()}`,
-      code,
-      createdAt: new Date().toISOString(),
-    };
-    this.state.machinery.push(newMachinery);
-    this.dispatchSync('machinery', newMachinery);
-    this.logAuditEvent({
-      affectedEntity: 'Machinery',
-      recordId: newMachinery.id,
-      recordCode: code,
-      operation: 'MACHINERY_CREATED',
-      details: `Maquinaria "${newMachinery.name}" (${newMachinery.type}) registrada para la empresa.`,
-    });
-    this.notify();
-    return { success: true, machinery: newMachinery };
-  }
-
-  public updateMachinery(machineryId: string, data: Partial<Machinery>): boolean {
-    const idx = this.state.machinery.findIndex(m => m.id === machineryId);
-    if (idx === -1) return false;
-    this.state.machinery[idx] = { ...this.state.machinery[idx], ...data };
-    this.dispatchSync('machinery', this.state.machinery[idx]);
-    this.logAuditEvent({
-      affectedEntity: 'Machinery',
-      recordId: machineryId,
-      operation: 'MACHINERY_UPDATED',
-      details: `Datos de maquinaria "${this.state.machinery[idx].name}" actualizados.`,
-    });
-    this.notify();
-    return true;
-  }
-
-  public toggleMachineryStatus(machineryId: string): boolean {
-    const mac = this.state.machinery.find(m => m.id === machineryId);
-    if (!mac) return false;
-    mac.active = !mac.active;
-    this.dispatchSync('machinery', mac);
-    this.notify();
-    return true;
-  }
-
-  public deleteMachinery(machineryId: string): boolean {
-    const idx = this.state.machinery.findIndex(m => m.id === machineryId);
-    if (idx === -1) return false;
-    const mac = this.state.machinery[idx];
-    this.state.machinery.splice(idx, 1);
-    this.logAuditEvent({
-      affectedEntity: 'Machinery',
-      recordId: machineryId,
-      operation: 'MACHINERY_DELETED',
-      details: `Maquinaria "${mac.name}" eliminada del sistema.`,
-    });
-    this.notify();
-    return true;
+    return res;
   }
 
   // --- Daily Report Operations ---
 
   public saveReportDraft(data: Partial<DailyReport>): DailyReport {
-    const now = new Date().toISOString();
-    let report: DailyReport;
-
-    if (data.id) {
-      const idx = this.state.reports.findIndex(r => r.id === data.id);
-      const targetProject = this.state.projects.find(p => p.id === (data.projectId || this.state.reports[idx]?.projectId));
-      const companyId = data.companyId || this.state.reports[idx]?.companyId || targetProject?.companyId || this.state.currentUser?.companyId || 'comp_main';
-      if (idx !== -1) {
-        this.state.reports[idx] = {
-          ...this.state.reports[idx],
-          ...data,
-          companyId,
-          updatedAt: now,
-        } as DailyReport;
-        report = this.state.reports[idx];
-      } else {
-        report = { ...data, companyId } as DailyReport;
-        this.state.reports.push(report);
-      }
-    } else {
-      const code = generateDailyReportCode(data.date || now.split('T')[0], this.state.reports.length);
-      const targetProject = this.state.projects.find(p => p.id === data.projectId);
-      const companyId = data.companyId || targetProject?.companyId || this.state.currentUser?.companyId || 'comp_main';
-      const normalHrs = data.totalNormalHours !== undefined 
-        ? data.totalNormalHours 
-        : (data.workEntries ? data.workEntries.reduce((a, b) => a + (b.normalHours || 0), 0) : 0);
-      const extraHrs = data.totalExtraHours !== undefined 
-        ? data.totalExtraHours 
-        : (data.workEntries ? data.workEntries.reduce((a, b) => a + (b.extraHours || 0), 0) : 0);
-      const totalHrs = data.totalHours !== undefined ? data.totalHours : (normalHrs + extraHrs);
-
-      report = {
-        id: `dr_${Date.now()}`,
-        code,
-        companyId,
-        projectId: data.projectId || '',
-        projectNameSnapshot: data.projectNameSnapshot || targetProject?.name || '',
-        date: data.date || now.split('T')[0],
-        creatorId: this.state.currentUser?.id || 'usr_unknown',
-        creatorNameSnapshot: this.state.currentUser?.name || 'Jefe de Obra',
-        status: 'Draft',
-        workEntries: data.workEntries || [],
-        machineryEntries: data.machineryEntries || [],
-        materialEntries: data.materialEntries || [],
-        totalNormalHours: normalHrs,
-        totalExtraHours: extraHrs,
-        totalHours: totalHrs,
-        comments: data.comments || '',
-        siteConditions: data.siteConditions || '',
-        evidenceUrls: data.evidenceUrls || [],
-        evidenceAttachments: data.evidenceAttachments || [],
-        version: 1,
-        createdAt: now,
-        updatedAt: now,
-      };
-      this.state.reports.push(report);
-
-      this.logAuditEvent({
-        affectedEntity: 'DailyReport',
-        recordId: report.id,
-        recordCode: report.code,
-        dailyReportId: report.id,
-        operation: 'REPORT_CREATED',
-        details: `Borrador de parte diario iniciado para la fecha ${report.date}.`,
-      });
-    }
-
-    this.dispatchSync('dailyReport', report);
+    const res = reportModule.saveReportDraft(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return report;
+    return res;
   }
 
   public submitDailyReport(
@@ -1239,73 +944,30 @@ class ObraStore {
     userCoords?: { lat: number; lng: number; accuracy?: number },
     warningAcknowledged?: boolean
   ): { success: boolean; error?: string; deliveryNotesCreated?: number } {
-    const report = this.state.reports.find(r => r.id === reportId);
-    if (!report) {
-      return { success: false, error: 'No se encontró el parte diario solicitado.' };
-    }
-
-    if (report.status === 'Submitted') {
-      return { success: true, error: 'Este parte ya ha sido enviado. Se ha recuperado el resultado existente.' };
-    }
-
-    // 1. Invariant validation
-    const validation = validateWorkEntries(report.workEntries);
-    if (!validation.valid) {
-      return { success: false, error: validation.errors.join(' ') };
-    }
-
-    // 2. Project location validation
-    const project = this.state.projects.find(p => p.id === report.projectId);
-    if (project) {
-      const locSnapshot = validateProjectLocation(project, userCoords);
-      if (locSnapshot.status === 'Warning' && !warningAcknowledged) {
-        return { 
-          success: false, 
-          error: `Ubicación fuera del radio configurado (${locSnapshot.distanceFromProjectMeters}m). Debes confirmar el motivo para enviar el parte.` 
-        };
+    const res = reportModule.submitDailyReport(this.state, reportId, userCoords, warningAcknowledged, this.logAuditAdapter, this.dispatchSync.bind(this));
+    if (res.success) {
+      const report = this.state.reports.find(r => r.id === reportId);
+      if (report) {
+        const project = this.state.projects.find(p => p.id === report.projectId);
+        const projectName = project ? project.name : 'Obra';
+        const adminsAndManagers = this.state.users.filter(u => 
+          (u.role === 'MAIN_CONTRACTOR_ADMIN' || u.role === 'SITE_MANAGER') && 
+          u.companyId === report.companyId
+        );
+        for (const adminOrManager of adminsAndManagers) {
+          this.generateNotification({
+            userId: adminOrManager.id,
+            title: `Nuevo Parte Diario - ${projectName}`,
+            message: `Se ha enviado el parte diario del ${report.date} para el proyecto ${projectName}.`,
+            type: 'SUCCESS',
+            targetEntity: 'DailyReport',
+            targetId: report.id
+          });
+        }
       }
-      locSnapshot.warningAcknowledged = warningAcknowledged;
-      report.locationSnapshot = locSnapshot;
     }
-
-    // 3. Update report status
-    report.status = 'Submitted';
-    report.submittedAt = new Date().toISOString();
-    report.updatedAt = new Date().toISOString();
-
-    // 4. Generate Delivery Notes (idempotent, excludes internal workers, groups by subcontractor)
-    const { createdNotes } = generateDeliveryNotesFromReport(
-      report, 
-      this.state.deliveryNotes, 
-      this.state.companies
-    );
-
-    for (const note of createdNotes) {
-      this.state.deliveryNotes.push(note);
-      this.dispatchSync('deliveryNote', note);
-      this.logAuditEvent({
-        affectedEntity: 'DeliveryNote',
-        recordId: note.id,
-        recordCode: note.code,
-        dailyReportId: report.id,
-        deliveryNoteId: note.id,
-        operation: 'DELIVERY_NOTE_GENERATED',
-        details: `Albarán ${note.code} generado automáticamente para "${note.subcontractorCompanyName}" con ${note.totalHours} horas.`,
-      });
-    }
-
-    this.logAuditEvent({
-      affectedEntity: 'DailyReport',
-      recordId: report.id,
-      recordCode: report.code,
-      dailyReportId: report.id,
-      operation: 'REPORT_SUBMITTED',
-      details: `Parte diario enviado con ${report.workEntries.length} trabajadores y ${report.totalHours}h totales.`,
-    });
-
-    this.dispatchSync('dailyReport', report);
     this.notify();
-    return { success: true, deliveryNotesCreated: createdNotes.length };
+    return res;
   }
 
   public correctDailyReport(
@@ -1313,144 +975,39 @@ class ObraStore {
     updatedEntries: WorkEntry[], 
     reason: string
   ): { success: boolean; error?: string } {
-    if (!this.state.currentUser || this.state.currentUser.role !== 'MAIN_CONTRACTOR_ADMIN') {
-      return { success: false, error: 'Solo el administrador puede realizar correcciones oficiales sobre partes enviados.' };
-    }
-
-    const cleanReason = reason.trim();
-    if (!cleanReason) {
-      return { success: false, error: 'Es obligatorio indicar el motivo de la corrección del parte.' };
-    }
-
-    const report = this.state.reports.find(r => r.id === reportId);
-    if (!report) {
-      return { success: false, error: 'Parte diario no encontrado.' };
-    }
-
-    const previousHours = report.totalHours;
-
-    // Calculate new totals
-    const totalNormal = updatedEntries.reduce((acc, e) => acc + e.normalHours, 0);
-    const totalExtra = updatedEntries.reduce((acc, e) => acc + e.extraHours, 0);
-
-    report.workEntries = updatedEntries;
-    report.totalNormalHours = totalNormal;
-    report.totalExtraHours = totalExtra;
-    report.totalHours = totalNormal + totalExtra;
-    report.status = 'Corrected';
-    report.correctionReason = cleanReason;
-    report.version += 1;
-    report.updatedAt = new Date().toISOString();
-
-    // Flag dependent delivery notes with a visible correction notice
-    const affectedNotes = this.state.deliveryNotes.filter(dn => dn.sourceDailyReportId === report.id);
-    for (const note of affectedNotes) {
-      note.correctionNotice = `Parte corregido el ${new Date().toLocaleDateString('es-ES')}: ${cleanReason}`;
-      note.updatedAt = new Date().toISOString();
-    }
-
-    this.logAuditEvent({
-      affectedEntity: 'DailyReport',
-      recordId: report.id,
-      recordCode: report.code,
-      dailyReportId: report.id,
-      operation: 'REPORT_CORRECTED',
-      previousValue: `${previousHours} horas`,
-      newValue: `${report.totalHours} horas`,
-      details: `Corrección oficial aplicada (v${report.version}). Motivo: ${cleanReason}.`,
-    });
-
-    this.dispatchSync('dailyReport', report);
-    affectedNotes.forEach(n => this.dispatchSync('deliveryNote', n));
+    const res = reportModule.correctDailyReport(this.state, reportId, updatedEntries, reason, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true };
+    return res;
   }
 
   // --- Delivery Note Operations ---
 
   public confirmDeliveryNote(noteId: string): { success: boolean; error?: string } {
-    if (!this.state.currentUser) {
-      return { success: false, error: 'Acceso no autorizado para esta operación.' };
+    const res = reportModule.confirmDeliveryNote(this.state, noteId, this.logAuditAdapter, this.dispatchSync.bind(this));
+    if (res.success) {
+      const note = this.state.deliveryNotes.find(n => n.id === noteId);
+      if (note) {
+        const subcontractorUsers = this.state.users.filter(u => u.companyId === note.subcontractorCompanyId);
+        for (const subUser of subcontractorUsers) {
+          this.generateNotification({
+            userId: subUser.id,
+            title: `Albarán Confirmado - ${note.code}`,
+            message: `El contratista principal ha confirmado el albarán ${note.code} de la fecha ${note.date}.`,
+            type: 'SUCCESS',
+            targetEntity: 'DeliveryNote',
+            targetId: note.id
+          });
+        }
+      }
     }
-
-    const note = this.state.deliveryNotes.find(n => n.id === noteId);
-    if (!note) {
-      return { success: false, error: 'Albarán no encontrado.' };
-    }
-
-    const check = canUserConfirmDeliveryNote(this.state.currentUser, note);
-    if (!check.allowed) {
-      return { success: false, error: check.reason };
-    }
-
-    note.status = 'Confirmed';
-    note.confirmationDetails = {
-      confirmedByUserId: this.state.currentUser.id,
-      confirmedByUserName: this.state.currentUser.name,
-      confirmedAt: new Date().toISOString(),
-      subcontractorCompanyName: note.subcontractorCompanyName,
-    };
-    note.confirmedBy = note.confirmationDetails;
-    note.updatedAt = new Date().toISOString();
-
-    this.logAuditEvent({
-      affectedEntity: 'DeliveryNote',
-      recordId: note.id,
-      recordCode: note.code,
-      deliveryNoteId: note.id,
-      dailyReportId: note.sourceDailyReportId,
-      operation: 'DELIVERY_NOTE_CONFIRMED',
-      details: `Albarán ${note.code} confirmado formalmente por ${this.state.currentUser.name} (${note.subcontractorCompanyName}).`,
-    });
-
-    this.dispatchSync('deliveryNote', note);
     this.notify();
-    return { success: true };
+    return res;
   }
 
   public confirmAllPendingDeliveryNotes(): { success: boolean; count: number; error?: string } {
-    if (!this.state.currentUser) {
-      return { success: false, count: 0, error: 'Acceso no autorizado para esta operación.' };
-    }
-
-    const isSub = this.state.currentUser.role === 'SUBCONTRACTOR_USER';
-    const pending = this.state.deliveryNotes.filter(n => {
-      if (n.status !== 'Pending') return false;
-      if (isSub) return n.subcontractorCompanyId === this.state.currentUser?.companyId;
-      return true;
-    });
-
-    if (pending.length === 0) {
-      return { success: false, count: 0, error: 'No hay albaranes pendientes de confirmación.' };
-    }
-
-    let count = 0;
-    for (const note of pending) {
-      note.status = 'Confirmed';
-      note.confirmationDetails = {
-        confirmedByUserId: this.state.currentUser.id,
-        confirmedByUserName: this.state.currentUser.name,
-        confirmedAt: new Date().toISOString(),
-        subcontractorCompanyName: note.subcontractorCompanyName,
-      };
-      note.confirmedBy = note.confirmationDetails;
-      note.updatedAt = new Date().toISOString();
-
-      this.logAuditEvent({
-        affectedEntity: 'DeliveryNote',
-        recordId: note.id,
-        recordCode: note.code,
-        deliveryNoteId: note.id,
-        dailyReportId: note.sourceDailyReportId,
-        operation: 'DELIVERY_NOTE_CONFIRMED',
-        details: `Albarán ${note.code} confirmado en lote por ${this.state.currentUser.name} (${note.subcontractorCompanyName}).`,
-      });
-      this.dispatchSync('deliveryNote', note);
-      count++;
-    }
-
+    const res = reportModule.confirmAllPendingDeliveryNotes(this.state, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true, count };
+    return res;
   }
 
   public disputeDeliveryNote(
@@ -1463,53 +1020,25 @@ class ObraStore {
       evidenceUrls?: string[];
     }
   ): { success: boolean; error?: string } {
-    if (!this.state.currentUser) {
-      return { success: false, error: 'Acceso no autorizado para esta operación.' };
+    const res = reportModule.disputeDeliveryNote(this.state, noteId, data, this.logAuditAdapter, this.dispatchSync.bind(this));
+    if (res.success) {
+      const note = this.state.deliveryNotes.find(n => n.id === noteId);
+      if (note) {
+        const subcontractorUsers = this.state.users.filter(u => u.companyId === note.subcontractorCompanyId);
+        for (const subUser of subcontractorUsers) {
+          this.generateNotification({
+            userId: subUser.id,
+            title: `Albarán Disputado - ${note.code}`,
+            message: `Se ha abierto una disputa sobre el albarán ${note.code} de la fecha ${note.date}. Motivo: ${data.reason}`,
+            type: 'WARNING',
+            targetEntity: 'DeliveryNote',
+            targetId: note.id
+          });
+        }
+      }
     }
-
-    const note = this.state.deliveryNotes.find(n => n.id === noteId);
-    if (!note) {
-      return { success: false, error: 'Albarán no encontrado.' };
-    }
-
-    const check = canUserDisputeDeliveryNote(this.state.currentUser, note);
-    if (!check.allowed) {
-      return { success: false, error: check.reason };
-    }
-
-    if (!data.reason.trim()) {
-      return { success: false, error: 'Es obligatorio indicar el motivo por escrito para abrir la disputa.' };
-    }
-
-    note.status = 'Disputed';
-    note.disputeRecord = {
-      id: `disp_${Date.now()}`,
-      category: data.category,
-      reason: data.reason.trim(),
-      proposedNormalHours: data.proposedNormalHours,
-      proposedExtraHours: data.proposedExtraHours,
-      evidenceUrls: data.evidenceUrls || [],
-      actorId: this.state.currentUser.id,
-      actorName: this.state.currentUser.name,
-      actorCompany: this.state.currentUser.companyName || note.subcontractorCompanyName,
-      createdAt: new Date().toISOString(),
-    };
-    note.dispute = note.disputeRecord;
-    note.updatedAt = new Date().toISOString();
-
-    this.logAuditEvent({
-      affectedEntity: 'DeliveryNote',
-      recordId: note.id,
-      recordCode: note.code,
-      deliveryNoteId: note.id,
-      dailyReportId: note.sourceDailyReportId,
-      operation: 'DELIVERY_NOTE_DISPUTED',
-      details: `Albarán ${note.code} disputado. Categoría: ${data.category}. Motivo: "${data.reason.trim()}".`,
-    });
-
-    this.dispatchSync('deliveryNote', note);
     this.notify();
-    return { success: true };
+    return res;
   }
 
   public resolveDispute(
@@ -1521,50 +1050,9 @@ class ObraStore {
       adjustedExtraHours?: number;
     }
   ): { success: boolean; error?: string } {
-    if (!this.state.currentUser || this.state.currentUser.role !== 'MAIN_CONTRACTOR_ADMIN') {
-      return { success: false, error: 'Solo el administrador de la empresa principal puede resolver disputas.' };
-    }
-
-    const note = this.state.deliveryNotes.find(n => n.id === noteId);
-    if (!note || !note.disputeRecord) {
-      return { success: false, error: 'No se encontró una disputa activa para este albarán.' };
-    }
-
-    if (!data.resolutionNote.trim()) {
-      return { success: false, error: 'Es obligatorio incluir una nota o justificación de resolución.' };
-    }
-
-    note.disputeRecord.resolution = {
-      action: data.action,
-      resolvedByUserId: this.state.currentUser.id,
-      resolvedByUserName: this.state.currentUser.name,
-      resolutionNote: data.resolutionNote.trim(),
-      resolvedAt: new Date().toISOString(),
-    };
-
-    if (data.action === 'ACEPTADA_CON_AJUSTE') {
-      if (data.adjustedNormalHours !== undefined) note.normalHours = data.adjustedNormalHours;
-      if (data.adjustedExtraHours !== undefined) note.extraHours = data.adjustedExtraHours;
-      note.totalHours = note.normalHours + note.extraHours;
-    }
-
-    note.status = 'Confirmed';
-    note.dispute = note.disputeRecord;
-    note.updatedAt = new Date().toISOString();
-
-    this.logAuditEvent({
-      affectedEntity: 'DeliveryNote',
-      recordId: note.id,
-      recordCode: note.code,
-      deliveryNoteId: note.id,
-      dailyReportId: note.sourceDailyReportId,
-      operation: 'DISPUTE_RESOLVED',
-      details: `Disputa resuelta (${data.action}): ${data.resolutionNote.trim()}.`,
-    });
-
-    this.dispatchSync('deliveryNote', note);
+    const res = reportModule.resolveDispute(this.state, noteId, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true };
+    return res;
   }
 
   public uploadDeliveryNote(data: {
@@ -1572,54 +1060,12 @@ class ObraStore {
     projectNameSnapshot: string;
     normalHours: number;
     extraHours: number;
-    correctionNotice?: string; // used for comments / code
+    correctionNotice?: string;
     evidenceUrls?: string[];
   }): { success: boolean; note?: DeliveryNote; error?: string } {
-    if (!this.state.currentUser) {
-      return { success: false, error: 'Acceso no autorizado.' };
-    }
-
-    const now = new Date().toISOString();
-    const code = `DN-${now.split('T')[0].replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const targetProject = this.state.projects.find(p => p.id === data.projectId);
-    const mainContractorId = targetProject?.companyId || 'comp_main';
-
-    const note: DeliveryNote = {
-      id: `dn_${Date.now()}`,
-      code,
-      companyId: mainContractorId,
-      mainContractorCompanyId: mainContractorId,
-      sourceDailyReportId: 'dr_direct_upload',
-      sourceDailyReportCode: 'CARGA_DIRECTA',
-      dailyReportCodeSnapshot: 'CARGA_DIRECTA',
-      projectId: data.projectId,
-      projectNameSnapshot: data.projectNameSnapshot,
-      date: now.split('T')[0],
-      subcontractorCompanyId: this.state.currentUser.companyId || 'comp_sub_default',
-      subcontractorCompanyName: this.state.currentUser.companyName || 'Empresa Subcontratada',
-      workEntries: [],
-      normalHours: data.normalHours,
-      extraHours: data.extraHours,
-      totalHours: data.normalHours + data.extraHours,
-      status: 'Pending',
-      correctionNotice: data.correctionNotice || '',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.state.deliveryNotes.push(note);
-    this.logAuditEvent({
-      affectedEntity: 'DeliveryNote',
-      recordId: note.id,
-      recordCode: note.code,
-      deliveryNoteId: note.id,
-      operation: 'REPORT_CREATED',
-      details: `Albarán ${note.code} subido y registrado directamente desde dispositivo móvil.`,
-    });
-
-    this.dispatchSync('deliveryNote', note);
+    const res = reportModule.uploadDeliveryNote(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
-    return { success: true, note };
+    return res;
   }
 
   // --- Audit Logging ---
@@ -1667,13 +1113,13 @@ class ObraStore {
 
   // --- Firebase Cloud Sync Adapter & Remote Listeners ---
 
-  private syncAdapter?: (entity: string, item: any) => void;
+  private syncAdapter?: (entity: string, item: unknown) => void;
 
-  public setSyncAdapter(adapter: (entity: string, item: any) => void) {
+  public setSyncAdapter(adapter: (entity: string, item: unknown) => void) {
     this.syncAdapter = adapter;
   }
 
-  private dispatchSync(entity: string, item: any) {
+  private dispatchSync(entity: string, item: unknown) {
     if (!this.state.isDemoMode && this.syncAdapter) {
       try {
         this.syncAdapter(entity, item);
@@ -1685,11 +1131,6 @@ class ObraStore {
 
   public setAuthenticatedFirebaseUser(user: User) {
     if (this.state.isDemoMode) {
-      // If we are in demo mode, we stay in demo mode UNLESS the user explicitly exits.
-      // But for Firebase sync, we need to know who the real user is.
-      // We'll update the currentUser but stay in Demo Mode if that's where we are.
-      // Actually, standard behavior should be: if you login with Firebase, you enter Production.
-      // But we'll preserve the local state if it's production state.
       this.state.currentUser = user;
     } else {
       this.state.currentUser = user;
@@ -1758,7 +1199,7 @@ class ObraStore {
     this.notify();
   }
 
-  public addTimeLog(log: any) {
+  public addTimeLog(log: TimeLog) {
     if (!this.state.timeLogs) {
       this.state.timeLogs = [];
     }
@@ -1776,16 +1217,135 @@ class ObraStore {
     this.notify();
   }
 
-  public syncRemoteTimeLogs(logs: any[]) {
+  public syncRemoteTimeLogs(logs: TimeLog[]) {
     if (this.state.isDemoMode) return;
     this.state.timeLogs = logs;
     this.notify();
   }
 
-  public syncRemoteInvitations(invitations: any[]) {
+  public syncRemoteInvitations(invitations: Invitation[]) {
     if (this.state.isDemoMode) return;
     this.state.invitations = invitations;
     this.notify();
+  }
+
+  public syncRemoteNotifications(notifications: NotificationItem[]) {
+    if (this.state.isDemoMode) return;
+    this.state.notifications = notifications;
+    this.notify();
+  }
+
+  public generateNotification(params: {
+    userId: string;
+    title: string;
+    message: string;
+    type: 'INFO' | 'WARNING' | 'ACTION_REQUIRED' | 'SUCCESS';
+    targetEntity?: 'DailyReport' | 'DeliveryNote' | 'Project';
+    targetId?: string;
+  }) {
+    const item: NotificationItem = {
+      id: `not_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      userId: params.userId,
+      title: params.title,
+      message: params.message,
+      type: params.type,
+      targetEntity: params.targetEntity,
+      targetId: params.targetId,
+      read: false,
+      createdAt: new Date().toISOString(),
+    };
+    
+    if (!this.state.notifications) {
+      this.state.notifications = [];
+    }
+    this.state.notifications.unshift(item);
+    this.dispatchSync('notification', item);
+    this.notify();
+
+    // Send real email if outside isDemoMode and warning type (critical alert)
+    if (!this.state.isDemoMode && params.type === 'WARNING') {
+      const targetUser = this.state.users.find(u => u.id === params.userId);
+      if (targetUser && targetUser.email) {
+        import('./gmail').then(({ sendGmailEmail }) => {
+          sendGmailEmail(
+            targetUser.email,
+            `[ObraService Alerta] ${params.title}`,
+            `<div style="font-family: sans-serif; padding: 25px; color: #1e293b; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
+              <h2 style="color: #ea580c; font-size: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">Alerta Crítica de Obra</h2>
+              <p>Hola <strong>${targetUser.name}</strong>,</p>
+              <p style="font-size: 14px; line-height: 1.6;">${params.message}</p>
+              <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; margin: 15px 0; border-radius: 4px; font-size: 13px; color: #991b1b;">
+                <strong>Estado:</strong> Acción Requerida Inmediata.
+              </div>
+              <p style="font-size: 12px; color: #64748b; margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">Este es un correo oficial automatizado de ObraService.</p>
+            </div>`
+          ).catch(e => console.error('Error sending critical notification email:', e));
+        });
+      }
+    }
+  }
+
+  public markNotificationAsRead(id: string) {
+    if (!this.state.notifications) return;
+    const item = this.state.notifications.find(n => n.id === id);
+    if (item) {
+      item.read = true;
+      this.dispatchSync('notification', item);
+      this.notify();
+    }
+  }
+
+  public markAllNotificationsAsRead(userId: string) {
+    if (!this.state.notifications) return;
+    let mutated = false;
+    this.state.notifications.forEach(n => {
+      if (n.userId === userId && !n.read) {
+        n.read = true;
+        this.dispatchSync('notification', n);
+        mutated = true;
+      }
+    });
+    if (mutated) {
+      this.notify();
+    }
+  }
+
+  public checkComplianceDocumentExpirations() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const documents = this.state.complianceDocuments || [];
+    for (const doc of documents) {
+      if (!doc.expiryDate) continue;
+      
+      const expiry = new Date(doc.expiryDate);
+      expiry.setHours(0, 0, 0, 0);
+      
+      const diffTime = expiry.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 15 || diffDays === 5) {
+        const titleKey = `Cumplimiento por Caducar - ${diffDays} días`;
+        const hasNotification = (this.state.notifications || []).some(n => 
+          n.title === titleKey &&
+          n.targetId === doc.id
+        );
+        
+        if (!hasNotification) {
+          const companyUsers = this.state.users.filter(u => u.companyId === doc.companyId && (u.role === 'MAIN_CONTRACTOR_ADMIN' || u.role === 'SITE_MANAGER'));
+          for (const targetUser of companyUsers) {
+            this.generateNotification({
+              userId: targetUser.id,
+              title: titleKey,
+              message: `El documento "${doc.title}" (${doc.docType}) de tu empresa caducará en ${diffDays} días (${doc.expiryDate}). Por favor, sube uno nuevo para evitar la suspensión.`,
+              type: 'WARNING',
+              targetEntity: 'Project',
+              targetId: doc.id
+            });
+          }
+        }
+      }
+    }
   }
 }
 

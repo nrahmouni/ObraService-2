@@ -1,0 +1,87 @@
+import React from 'react';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { StatusPill } from '../components/ui/StatusPill';
+import { Table } from '../components/ui/Table';
+import { Euro, ArrowUpRight, Receipt, CreditCard, Building2 } from 'lucide-react';
+import { AppState } from '../types';
+
+interface BillingViewProps {
+  state: AppState;
+}
+
+export const BillingView: React.FC<BillingViewProps> = ({ state }) => {
+  const activeCompany = state.companies.find(c => c.id === state.currentUser?.companyId);
+
+  // Mock billing events
+  const invoices = [
+    { id: 'INV-2026-001', date: '2026-09-15', amount: '12,450.00 €', status: 'Confirmed', concept: 'Certificación de Obra - Estación Gran Vía' },
+    { id: 'INV-2026-002', date: '2026-09-01', amount: '4,850.00 €', status: 'Confirmed', concept: 'Suministro de Maquinaria y Operario' },
+    { id: 'INV-2026-003', date: '2026-08-15', amount: '8,900.00 €', status: 'Pending', concept: 'Servicio de Encofrado y Ferrallado' }
+  ];
+
+  return (
+    <div className="space-y-6 font-sans">
+      <div>
+        <span className="text-[10px] font-black uppercase tracking-widest text-brand-accent">ADMINISTRACIÓN</span>
+        <h1 className="text-2xl font-black text-slate-100 font-display">Facturación y Certificaciones</h1>
+        <p className="text-xs text-slate-400 mt-1">Consulta el estado de cobros, certificaciones de obra y remisiones de albaranes de subcontratas.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <Card>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Certificado este mes</span>
+              <div className="text-xl font-black text-slate-100 mt-1">26,200.00 €</div>
+            </div>
+            <div className="p-3 bg-brand-accent/10 rounded-xl text-brand-accent">
+              <Euro className="w-5 h-5" />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pendiente de Cobro</span>
+              <div className="text-xl font-black text-slate-100 mt-1">8,900.00 €</div>
+            </div>
+            <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500">
+              <Receipt className="w-5 h-5" />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Método de Pago</span>
+              <div className="text-xs font-bold text-slate-200 mt-1">Transferencia SEPA (ES31 *** 1234)</div>
+            </div>
+            <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
+              <CreditCard className="w-5 h-5" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-sm font-black text-slate-300 uppercase tracking-wider">Historial de Facturas Emitidas</h2>
+        <Table headers={['Factura', 'Concepto', 'Fecha Emisión', 'Importe', 'Estado']}>
+          {invoices.map((inv) => (
+            <tr key={inv.id} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/20 transition-colors">
+              <td className="px-6 py-4.5 text-xs font-black text-slate-200">{inv.id}</td>
+              <td className="px-6 py-4.5 text-xs text-slate-300">{inv.concept}</td>
+              <td className="px-6 py-4.5 text-xs text-slate-400 font-mono">{inv.date}</td>
+              <td className="px-6 py-4.5 text-xs font-bold text-slate-200">{inv.amount}</td>
+              <td className="px-6 py-4.5">
+                <StatusPill status={inv.status} />
+              </td>
+            </tr>
+          ))}
+        </Table>
+      </div>
+    </div>
+  );
+};

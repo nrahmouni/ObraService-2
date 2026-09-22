@@ -51,6 +51,11 @@ export const MasterDashboardView: React.FC = () => {
   const [newCompanyType, setNewCompanyType] = useState<'MAIN_CONTRACTOR' | 'SUBCONTRACTOR'>('MAIN_CONTRACTOR');
   const [newCompanyAddr, setNewCompanyAddr] = useState('');
 
+  // States for toggle/suspension reason modal
+  const [toggleCompanyId, setToggleCompanyId] = useState<string | null>(null);
+  const [toggleReason, setToggleReason] = useState('');
+  const [showToggleModal, setShowToggleModal] = useState(false);
+
   const handleAddCompany = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCompanyName.trim() || !newCompanyTax.trim()) {
@@ -75,9 +80,32 @@ export const MasterDashboardView: React.FC = () => {
     }
   };
 
-  const handleToggleCompany = (companyId: string) => {
-    const active = obraStore.toggleCompanyActive(companyId);
-    toast.success(`Empresa ${active ? 'activada' : 'suspendida'} correctamente`);
+  const handleToggleCompanyClick = (companyId: string) => {
+    setToggleCompanyId(companyId);
+    setToggleReason('');
+    setShowToggleModal(true);
+  };
+
+  const handleConfirmToggleCompany = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!toggleCompanyId) return;
+    if (!toggleReason.trim()) {
+      toast.error('El motivo de la acción es obligatorio');
+      return;
+    }
+
+    const company = companies.find(c => c.id === toggleCompanyId);
+    if (!company) return;
+
+    const success = obraStore.toggleCompanyActive(toggleCompanyId, toggleReason.trim());
+    if (success) {
+      toast.success(`Estado de la empresa "${company.name}" modificado correctamente`);
+      setShowToggleModal(false);
+      setToggleCompanyId(null);
+      setToggleReason('');
+    } else {
+      toast.error('No se pudo modificar el estado de la empresa');
+    }
   };
 
   // --- TAB 2: Database Inspector ---
@@ -426,6 +454,7 @@ export const MasterDashboardView: React.FC = () => {
                         <th className="py-3 px-2">CIF/NIF</th>
                         <th className="py-3 px-2">Tipo</th>
                         <th className="py-3 px-2">Código Invitación</th>
+                        <th className="py-3 px-2">Suscripción</th>
                         <th className="py-3 px-2">Estado</th>
                         <th className="py-3 px-2 text-right">Acción</th>
                       </tr>
@@ -447,6 +476,15 @@ export const MasterDashboardView: React.FC = () => {
                           </td>
                           <td className="py-3 px-2 font-mono text-[11px] font-bold text-blue-400">{comp.inviteCode || 'N/A'}</td>
                           <td className="py-3 px-2">
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                              comp.subscriptionStatus === 'Suspended' ? 'bg-rose-950/60 text-rose-400' :
+                              comp.subscriptionStatus === 'Expired' ? 'bg-yellow-950/60 text-yellow-400' :
+                              'bg-emerald-950/60 text-emerald-400'
+                            }`}>
+                              {comp.subscriptionStatus || 'Active'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2">
                             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
                               comp.active ? 'bg-emerald-950/60 text-emerald-400' : 'bg-rose-950/60 text-rose-400'
                             }`}>
@@ -456,8 +494,8 @@ export const MasterDashboardView: React.FC = () => {
                           </td>
                           <td className="py-3 px-2 text-right">
                             <button
-                              onClick={() => handleToggleCompany(comp.id)}
-                              className={`p-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider ${
+                              onClick={() => handleToggleCompanyClick(comp.id)}
+                              className={`p-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider cursor-pointer ${
                                 comp.active 
                                   ? 'bg-rose-950/20 text-rose-400 border-rose-900/30 hover:bg-rose-900/20' 
                                   : 'bg-emerald-950/20 text-emerald-400 border-emerald-900/30 hover:bg-emerald-900/20'
@@ -797,6 +835,55 @@ export const MasterDashboardView: React.FC = () => {
 
         </div>
       </div>
+
+      {/* Toggle / Suspension Mandate Modal */}
+      {showToggleModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-900 border border-slate-850 rounded-3xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <h3 className="text-base font-black uppercase tracking-widest text-orange-500 font-display">
+              Confirmar cambio de estado comercial
+            </h3>
+            <p className="text-xs text-slate-400 mt-2">
+              De acuerdo con las políticas del sistema, es obligatorio registrar un motivo de auditoría al suspender o reactivar empresas del ecosistema.
+            </p>
+
+            <form onSubmit={handleConfirmToggleCompany} className="mt-4 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Motivo obligatorio de la acción
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={toggleReason}
+                  onChange={(e) => setToggleReason(e.target.value)}
+                  placeholder="Ej: Incumplimiento de póliza REA / Puesta al día de cuotas de suscripción contratadas..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-orange-500 font-sans"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowToggleModal(false);
+                    setToggleCompanyId(null);
+                  }}
+                  className="px-4 py-2 bg-slate-950 border border-slate-800 text-slate-400 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Registrar Cambio
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

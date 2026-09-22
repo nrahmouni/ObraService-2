@@ -12,12 +12,14 @@ import {
   updateDoc, 
   Unsubscribe,
   query,
-  where
+  where,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { onAuthStateChanged, User as FirebaseUser, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection } from './firebase';
 import { obraStore } from './store';
-import { AuditEvent, Company, DailyReport, DeliveryNote, Project, User, Worker } from '../types';
+import { AuditEvent, Company, DailyReport, DeliveryNote, Project, User, Worker, TimeLog, Invitation, NotificationItem } from '../types';
 import { enqueueOfflineItem, sanitizeForFirestore, flushOfflineQueue } from '../utils/offlineQueue';
 
 let activeUnsubscribers: Unsubscribe[] = [];
@@ -48,31 +50,34 @@ export function initializeFirebaseSync() {
   obraStore.setSyncAdapter((entity, item) => {
     switch (entity) {
       case 'company':
-        persistCompanyToFirestore(item);
+        persistCompanyToFirestore(item as Company);
         break;
       case 'project':
-        persistProjectToFirestore(item);
+        persistProjectToFirestore(item as Project);
         break;
       case 'worker':
-        persistWorkerToFirestore(item);
+        persistWorkerToFirestore(item as Worker);
         break;
       case 'dailyReport':
-        persistDailyReportToFirestore(item);
+        persistDailyReportToFirestore(item as DailyReport);
         break;
       case 'deliveryNote':
-        persistDeliveryNoteToFirestore(item);
+        persistDeliveryNoteToFirestore(item as DeliveryNote);
         break;
       case 'auditEvent':
-        persistAuditEventToFirestore(item);
+        persistAuditEventToFirestore(item as AuditEvent);
         break;
       case 'user':
-        persistUserToFirestore(item);
+        persistUserToFirestore(item as User);
         break;
       case 'timeLog':
-        persistTimeLogToFirestore(item);
+        persistTimeLogToFirestore(item as TimeLog);
         break;
       case 'invitation':
-        persistInvitationToFirestore(item);
+        persistInvitationToFirestore(item as Invitation);
+        break;
+      case 'notification':
+        persistNotificationToFirestore(item as NotificationItem);
         break;
     }
   });
@@ -209,11 +214,11 @@ function attachCollectionListeners(user?: User | null) {
   });
   activeUnsubscribers.push(unsubWorkers);
 
-  // 4. Daily Reports Listener (Tenant isolated to owning company)
+  // 4. Daily Reports Listener (Tenant isolated to owning company - ordered & paginated)
   const reportsPath = 'dailyReports';
   const reportsQuery = (companyId && !isSubcontractor)
-    ? query(collection(db, reportsPath), where('companyId', '==', companyId))
-    : collection(db, reportsPath);
+    ? query(collection(db, reportsPath), where('companyId', '==', companyId), orderBy('date', 'desc'), limit(100))
+    : query(collection(db, reportsPath), orderBy('date', 'desc'), limit(100));
 
   const unsubReports = onSnapshot(reportsQuery, (snapshot) => {
     const list: DailyReport[] = [];
@@ -228,11 +233,11 @@ function attachCollectionListeners(user?: User | null) {
   });
   activeUnsubscribers.push(unsubReports);
 
-  // 5. Delivery Notes Listener (Tenant isolated for both Subcontractor and Main Contractor)
+  // 5. Delivery Notes Listener (Tenant isolated for both Subcontractor and Main Contractor - ordered & paginated)
   const deliveryNotesPath = 'deliveryNotes';
   const deliveryNotesQuery = isSubcontractor
-    ? (companyId ? query(collection(db, deliveryNotesPath), where('subcontractorCompanyId', '==', companyId)) : collection(db, deliveryNotesPath))
-    : (companyId ? query(collection(db, deliveryNotesPath), where('companyId', '==', companyId)) : collection(db, deliveryNotesPath));
+    ? (companyId ? query(collection(db, deliveryNotesPath), where('subcontractorCompanyId', '==', companyId), orderBy('date', 'desc'), limit(100)) : query(collection(db, deliveryNotesPath), orderBy('date', 'desc'), limit(100)))
+    : (companyId ? query(collection(db, deliveryNotesPath), where('companyId', '==', companyId), orderBy('date', 'desc'), limit(100)) : query(collection(db, deliveryNotesPath), orderBy('date', 'desc'), limit(100)));
 
   const unsubDeliveryNotes = onSnapshot(deliveryNotesQuery, (snapshot) => {
     const list: DeliveryNote[] = [];
@@ -247,9 +252,10 @@ function attachCollectionListeners(user?: User | null) {
   });
   activeUnsubscribers.push(unsubDeliveryNotes);
 
-  // 6. Audit Events Listener
+  // 6. Audit Events Listener (Limited for scaling performance)
   const auditEventsPath = 'auditEvents';
-  const unsubAudit = onSnapshot(collection(db, auditEventsPath), (snapshot) => {
+  const auditEventsQuery = query(collection(db, auditEventsPath), orderBy('timestamp', 'desc'), limit(150));
+  const unsubAudit = onSnapshot(auditEventsQuery, (snapshot) => {
     const list: AuditEvent[] = [];
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as AuditEvent);
@@ -305,6 +311,23 @@ function attachCollectionListeners(user?: User | null) {
     console.error(`[FirebaseSync] Error syncing ${invitationsPath}:`, error);
   });
   activeUnsubscribers.push(unsubInvitations);
+
+  // 10. Notifications Listener
+  const notificationsPath = 'notifications';
+  const notificationsQuery = companyId
+    ? query(collection(db, notificationsPath), where('userId', '==', currentUser?.id || ''))
+    : collection(db, notificationsPath);
+
+  const unsubNotifications = onSnapshot(notificationsQuery, (snapshot) => {
+    const list: NotificationItem[] = [];
+    snapshot.forEach(docSnap => {
+      list.push(docSnap.data() as NotificationItem);
+    });
+    obraStore.syncRemoteNotifications(list);
+  }, (error) => {
+    console.error(`[FirebaseSync] Error syncing ${notificationsPath}:`, error);
+  });
+  activeUnsubscribers.push(unsubNotifications);
 }
 
 // --- Outgoing Firestore Mutations ---
@@ -417,7 +440,7 @@ export async function persistUserToFirestore(user: User) {
   }
 }
 
-export async function persistTimeLogToFirestore(log: any) {
+export async function persistTimeLogToFirestore(log: TimeLog) {
   const sanitized = sanitizeForFirestore(log);
   if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
     await enqueueOfflineItem('timeLog', sanitized);
@@ -432,7 +455,7 @@ export async function persistTimeLogToFirestore(log: any) {
   }
 }
 
-export async function persistInvitationToFirestore(invitation: any) {
+export async function persistInvitationToFirestore(invitation: Invitation) {
   const sanitized = sanitizeForFirestore(invitation);
   if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
     await enqueueOfflineItem('invitation', sanitized);
@@ -443,6 +466,21 @@ export async function persistInvitationToFirestore(invitation: any) {
     await setDoc(doc(db, 'invitations', sanitized.id), sanitized, { merge: true });
   } catch (error) {
     await enqueueOfflineItem('invitation', sanitized);
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function persistNotificationToFirestore(notification: NotificationItem) {
+  const sanitized = sanitizeForFirestore(notification);
+  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    await enqueueOfflineItem('notification', sanitized);
+    return;
+  }
+  const path = `notifications/${sanitized.id}`;
+  try {
+    await setDoc(doc(db, 'notifications', sanitized.id), sanitized, { merge: true });
+  } catch (error) {
+    await enqueueOfflineItem('notification', sanitized);
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }

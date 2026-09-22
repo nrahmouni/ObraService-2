@@ -178,7 +178,7 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm ${
             isClockedIn
               ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              : 'bg-[#FF6600] hover:bg-[#e05a00] text-white'
+              : 'bg-[#ea580c] hover:bg-[#d94e06] text-white'
           }`}
         >
           {loading ? (
@@ -199,7 +199,7 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
       {availableProjects.length > 1 && !initialProject && (
         <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700">
           <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-            <Compass className="w-3 h-3 text-[#FF6600]" />
+            <Compass className="w-3 h-3 text-[#ea580c]" />
             <span>Seleccionar Obra de Destino</span>
           </label>
           <select
@@ -208,7 +208,7 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
               setSelectedProjectId(e.target.value);
               setDistanceError(null);
             }}
-            className="w-full text-xs font-bold p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#FF6600]"
+            className="w-full text-xs font-bold p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-[#ea580c]"
           >
             {availableProjects.map((p) => (
               <option key={p.id} value={p.id}>
@@ -226,7 +226,7 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
         className={`w-full py-4 px-6 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-between transition-all transform active:scale-98 shadow-lg cursor-pointer ${
           isClockedIn
             ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/20'
-            : 'bg-gradient-to-r from-[#FF6600] to-orange-500 text-white shadow-orange-500/25'
+            : 'bg-gradient-to-r from-[#ea580c] to-orange-500 text-white shadow-orange-500/25'
         } ${loading ? 'opacity-80 cursor-wait' : ''}`}
       >
         <div className="flex items-center gap-3">

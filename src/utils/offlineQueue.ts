@@ -11,7 +11,7 @@ const syncQueueStore = localforage.createInstance({
 
 export interface QueueItem {
   id: string; // Entity ID (e.g., dr_12345)
-  entity: 'dailyReport' | 'deliveryNote' | 'timeLog' | 'project' | 'worker' | 'machinery' | 'auditEvent' | 'user' | 'company' | 'invitation';
+  entity: 'dailyReport' | 'deliveryNote' | 'timeLog' | 'project' | 'worker' | 'machinery' | 'auditEvent' | 'user' | 'company' | 'invitation' | 'notification';
   data: any;
   timestamp: number;
   retryCount?: number;
@@ -130,6 +130,9 @@ export async function flushOfflineQueue(): Promise<void> {
           break;
         case 'invitation':
           collectionName = 'invitations';
+          break;
+        case 'notification':
+          collectionName = 'notifications';
           break;
         default:
           collectionName = 'unknown';

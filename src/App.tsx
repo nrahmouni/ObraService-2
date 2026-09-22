@@ -44,7 +44,25 @@ export default function App() {
   return (
     <AppDataProvider companyId={currentUser?.companyId}>
       <ScrollToTop />
-      <Toaster position="top-right" />
+      <Toaster 
+        position="top-right" 
+        toastOptions={{
+          style: {
+            background: '#0f172a',
+            color: '#f8fafc',
+            border: '1px solid #1e293b',
+            borderRadius: '12px',
+            fontFamily: 'Plus Jakarta Sans, sans-serif',
+            fontSize: '13px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#ea580c',
+              secondary: '#ffffff',
+            },
+          },
+        }} 
+      />
       <Routes>
         {/* Public Login */}
         <Route path="/login" element={
@@ -82,15 +100,9 @@ export default function App() {
         } />
 
         {/* Mobile Field / Worker Experience */}
-        <Route path="/mobile/dashboard" element={
+        <Route path="/mobile/*" element={
           <ProtectedRoute currentUser={currentUser}>
             <MobileShell state={appState} />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/mobile/nuevo-parte" element={
-          <ProtectedRoute currentUser={currentUser}>
-            <DailyReportWizard state={appState} />
           </ProtectedRoute>
         } />
 

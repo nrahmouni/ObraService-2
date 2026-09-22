@@ -4,11 +4,13 @@
  */
 
 export type UserRole = 
+  | 'SUPER_ADMIN'           // Super Administrador del Sistema (Multi-tenant Master)
   | 'MAIN_CONTRACTOR_ADMIN' // Administrador de Contratista Principal
   | 'SITE_MANAGER'          // Jefe de Obra
   | 'SUBCONTRACTOR_USER';   // Usuario Subcontrata
 
 export enum Role {
+  SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'MAIN_CONTRACTOR_ADMIN',
   MANAGER = 'SITE_MANAGER',
   WORKER = 'SUBCONTRACTOR_USER',
@@ -32,6 +34,7 @@ export interface Company {
   address: string;
   inviteCode: string;
   active: boolean;
+  subscriptionStatus?: 'Active' | 'Trial' | 'Expired' | 'Suspended';
   createdAt: string;
 }
 
@@ -55,7 +58,10 @@ export interface User {
   active: boolean;
   assignedProjectIds: string[];
   createdAt: string;
+  isSuperAdmin?: boolean;
+  customClaims?: Record<string, any>;
 }
+
 
 export type ProjectStatus = 
   | 'Planned' 

@@ -4,6 +4,7 @@ import { User, UserRole, Role } from '../types';
 import { ShieldAlert } from 'lucide-react';
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  'SUPER_ADMIN': 4,
   'MAIN_CONTRACTOR_ADMIN': 3,
   'SITE_MANAGER': 2,
   'SUBCONTRACTOR_USER': 1,
@@ -28,16 +29,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" replace />;
   }
 
-  // King Master has universal bypass permissions
-  const isKingMaster = currentUser.email && (
-    currentUser.email.toLowerCase() === 'nmriffan31' ||
-    currentUser.email.toLowerCase().startsWith('nmriffan31@') ||
-    currentUser.email.toLowerCase() === 'naimrahmouni1998@gmail.com'
-  );
-
-  if (isKingMaster) {
+  // Super Admin custom claim holders have universal administrative access
+  const isSuperAdmin = currentUser.isSuperAdmin === true || currentUser.role === 'SUPER_ADMIN';
+  if (isSuperAdmin) {
     return <>{children}</>;
   }
+
 
   if (allowedRoles) {
     const isAllowed = allowedRoles.some((role) => currentUser.role === role);

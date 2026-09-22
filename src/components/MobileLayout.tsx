@@ -21,6 +21,7 @@ import { obraStore } from '../services/store';
 import { AppState, User, Project } from '../types';
 import { ClockInButton } from './ClockInButton';
 import toast from 'react-hot-toast';
+import { NotificationBell } from './NotificationBell';
 
 export type TabKey = 
   | 'dashboard' 
@@ -141,21 +142,21 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-[#FF6600] selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-brand-accent selection:text-white">
       {/* Mobile-First Header */}
-      <header className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 flex items-center justify-between sticky top-0 z-40">
+      <header className="h-14 border-b border-slate-800 bg-[#0F172A]/90 backdrop-blur-md px-4 flex items-center justify-between sticky top-0 z-40">
         <div 
           onClick={() => onSelectTab('dashboard')}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#FF6600] to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-xl bg-brand-accent text-white flex items-center justify-center shadow-md shadow-brand-accent/20 group-hover:scale-105 transition-transform">
             <HardHat className="w-4.5 h-4.5" />
           </div>
           <div>
-            <div className="text-xs font-black uppercase tracking-tight text-slate-950 dark:text-white group-hover:text-[#FF6600] transition-colors">
+            <div className="text-xs font-black uppercase tracking-tight text-white group-hover:text-brand-accent transition-colors">
               ObraService
             </div>
-            <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate max-w-[130px]">
+            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate max-w-[130px]">
               {activeCompany?.name || 'Constructora'}
             </div>
           </div>
@@ -166,8 +167,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           <div
             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
               isOnline
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
-                : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse'
+                ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-800'
+                : 'bg-amber-950/60 text-amber-300 border border-amber-700 animate-pulse'
             }`}
           >
             {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
@@ -177,15 +178,17 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           {/* Quick Header Fichar Button */}
           <button
             onClick={() => setClockInModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#FF6600] hover:bg-[#e05a00] text-white text-[10px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-brand-accent hover:bg-brand-accent/90 text-white text-[10px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer"
           >
             <Clock className="w-3.5 h-3.5" />
             <span>Fichar</span>
           </button>
 
+          <NotificationBell currentUser={currentUser} />
+
           <button
             onClick={handleLogout}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
             title="Cerrar Sesión"
           >
             <LogOut className="w-4 h-4" />
@@ -209,14 +212,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       </main>
 
       {/* Persistent Bottom Navigation Bar with Thumb-Friendly Geometry */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 h-16 flex items-center justify-around px-2 z-40 shadow-xl pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#0F172A]/95 backdrop-blur-md border-t border-slate-800 h-16 flex items-center justify-around px-2 z-40 shadow-xl pb-safe">
         {/* Tab 1: Obras */}
         <button
           onClick={() => onSelectTab('projects')}
           className={`flex-1 flex flex-col items-center justify-center h-full transition-all cursor-pointer ${
             currentTab === 'projects' || currentTab === 'dashboard'
-              ? 'text-[#FF6600] font-black'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-700'
+              ? 'text-brand-accent font-black'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <Building2 className="w-5 h-5 mb-0.5" />
@@ -228,8 +231,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           onClick={() => onSelectTab('reports')}
           className={`flex-1 flex flex-col items-center justify-center h-full mr-6 transition-all cursor-pointer ${
             currentTab === 'reports'
-              ? 'text-[#FF6600] font-black'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-700'
+              ? 'text-brand-accent font-black'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <FileSpreadsheet className="w-5 h-5 mb-0.5" />
@@ -240,7 +243,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
         <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-50">
           <button
             onClick={() => setBottomSheetOpen(!bottomSheetOpen)}
-            className={`w-14 h-14 rounded-full bg-gradient-to-tr from-[#FF6600] to-orange-500 text-white flex items-center justify-center shadow-xl shadow-orange-500/40 hover:scale-105 active:scale-95 transition-all focus:outline-none border-4 border-white dark:border-slate-900 cursor-pointer ${
+            className={`w-14 h-14 rounded-full bg-brand-accent text-white flex items-center justify-center shadow-xl shadow-brand-accent/30 hover:scale-105 active:scale-95 transition-all focus:outline-none border-4 border-[#0F172A] cursor-pointer ${
               bottomSheetOpen ? 'rotate-45' : ''
             }`}
             aria-label="Acciones Rápidas"
@@ -254,8 +257,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           onClick={() => onSelectTab('delivery_notes')}
           className={`flex-1 flex flex-col items-center justify-center h-full ml-6 transition-all cursor-pointer ${
             currentTab === 'delivery_notes'
-              ? 'text-[#FF6600] font-black'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-700'
+              ? 'text-brand-accent font-black'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <FileText className="w-5 h-5 mb-0.5" />
@@ -267,8 +270,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           onClick={() => onSelectTab('chat')}
           className={`flex-1 flex flex-col items-center justify-center h-full transition-all cursor-pointer ${
             currentTab === 'chat'
-              ? 'text-[#FF6600] font-black'
-              : 'text-slate-400 dark:text-slate-500 hover:text-slate-700'
+              ? 'text-brand-accent font-black'
+              : 'text-slate-400 hover:text-slate-200'
           }`}
         >
           <MessageSquare className="w-5 h-5 mb-0.5" />

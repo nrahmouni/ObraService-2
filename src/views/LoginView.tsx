@@ -19,7 +19,7 @@ export const LoginView: React.FC = () => {
     { name: 'Carlos Mendoza', role: 'Admin Constructora', email: 'carlos.mendoza@construccionesnorte.es' },
     { name: 'Javier Ortiz', role: 'Jefe de Obra', email: 'javier.ortiz@construccionesnorte.es' },
     { name: 'Elena Ramos', role: 'Subcontratista', email: 'elena.ramos@estructuraslevante.es' },
-    { name: 'King Master', role: 'Super Admin', email: 'nmriffan31@obraservice.es' },
+    { name: 'Super Admin', role: 'Super Admin', email: 'superadmin@obraservice.com' },
   ];
 
   useEffect(() => {
@@ -34,13 +34,9 @@ export const LoginView: React.FC = () => {
 
   const redirectUserByRole = () => {
     const state = obraStore.getState();
-    const isKingMasterUser = state.currentUser?.email && (
-      state.currentUser.email.toLowerCase() === 'nmriffan31' ||
-      state.currentUser.email.toLowerCase().startsWith('nmriffan31@') ||
-      state.currentUser.email.toLowerCase() === 'naimrahmouni1998@gmail.com'
-    );
+    const isSuperAdminUser = state.currentUser?.isSuperAdmin === true || state.currentUser?.role === 'SUPER_ADMIN';
 
-    if (isKingMasterUser) {
+    if (isSuperAdminUser) {
       navigate('/admin/master');
     } else if (state.currentUser?.role === Role.WORKER) {
       navigate('/mobile/dashboard');

@@ -16,6 +16,36 @@ service cloud.firestore {
       return isSignedIn();
     }
 
+    // Auth tokens never contain trusted role/company data in Standard SDKs. We look up on DB:
+    function userCompanyId() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isSameCompany(companyId) {
+      return isSignedIn() && (
+        (request.auth.token.company_id == companyId) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && userCompanyId() == companyId)
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.role == 'SUPER_ADMIN') ||
+        (request.auth.token.role == 'MAIN_CONTRACTOR_ADMIN') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          userRole() == 'SUPER_ADMIN' || userRole() == 'MAIN_CONTRACTOR_ADMIN'
+        ))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
     function incoming() {
       return request.resource.data;
     }
@@ -26,31 +56,6 @@ service cloud.firestore {
 
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    // Dynamic Company Tenant Isolation Helper
-    function userCompanyId() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId;
-    }
-
-    function isSameCompany(companyId) {
-      return isSignedIn() && (
-        (request.auth.token.company_id == companyId) || 
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         userCompanyId() == companyId)
-      );
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (
-        (request.auth.token.role == 'MAIN_CONTRACTOR_ADMIN') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'MAIN_CONTRACTOR_ADMIN')
-      );
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
     }
 
     // --- Entity Validation Helpers ---
@@ -70,7 +75,7 @@ service cloud.firestore {
         data.id is string && data.id.size() <= 128 &&
         data.name is string && data.name.size() >= 2 && data.name.size() <= 150 &&
         data.email is string && data.email.size() <= 120 &&
-        (data.role == 'MAIN_CONTRACTOR_ADMIN' || data.role == 'SITE_MANAGER' || data.role == 'SUBCONTRACTOR_USER') &&
+        (data.role == 'SUPER_ADMIN' || data.role == 'MAIN_CONTRACTOR_ADMIN' || data.role == 'SITE_MANAGER' || data.role == 'SUBCONTRACTOR_USER') &&
         data.active is bool &&
         (data.get('companyId', '') is string) &&
         (data.get('companyName', '') is string) &&
@@ -137,83 +142,94 @@ service cloud.firestore {
 
     // --- Collections ---
 
-    // 1. Companies
+    // 1. Companies (Isolated by companyId)
     match /companies/{companyId} {
       allow get: if isUserVerified() && isValidId(companyId) && (isAdmin() || isSameCompany(companyId));
-      allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(companyId) && isValidCompany(incoming());
+      allow list: if isUserVerified() && (resource.data.id == userCompanyId() || request.auth.token.company_id == resource.data.id || isAdmin());
+      allow create: if isUserVerified() && isValidId(companyId) && isValidCompany(incoming()) && isAdmin();
       allow update: if isUserVerified() && isValidId(companyId) && isValidCompany(incoming()) && (
         isAdmin() ||
-        (isSameCompany(companyId) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'address', 'inviteCode', 'active']))
+        (isSameCompany(companyId) && incoming().id == existing().id && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'address', 'inviteCode', 'active']))
       );
       allow delete: if isAdmin() && isValidId(companyId);
     }
 
-    // 2. Users
+    // 2. Users (Role escalations, Company tampering, self-privilege locked)
     match /users/{userId} {
       allow get: if isUserVerified() && isValidId(userId) && (isAdmin() || isOwner(userId) || isSameCompany(existing().companyId));
-      allow list: if isUserVerified();
+      allow list: if isUserVerified() && (resource.data.companyId == userCompanyId() || resource.data.id == request.auth.uid || isAdmin());
       allow create: if isUserVerified() && isValidId(userId) && isValidUser(incoming()) && (
-        isAdmin() || isOwner(userId)
+        isAdmin() || (isOwner(userId) && incoming().role == 'SUBCONTRACTOR_USER' && incoming().isSuperAdmin != true)
       );
       allow update: if isUserVerified() && isValidId(userId) && isValidUser(incoming()) && (
         isAdmin() || (
           isOwner(userId) &&
+          incoming().id == existing().id &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().email == existing().email &&
+          incoming().role == existing().role &&
+          incoming().companyId == existing().companyId &&
+          incoming().get('isSuperAdmin', false) == existing().get('isSuperAdmin', false) &&
           incoming().diff(existing()).affectedKeys().hasOnly(['name'])
         )
       );
       allow delete: if isAdmin() && isValidId(userId);
     }
 
-    // 3. Projects
+    // 3. Projects (Multi-tenant isolated by companyId)
     match /projects/{projectId} {
       allow get: if isUserVerified() && isValidId(projectId) && (isAdmin() || isSameCompany(existing().companyId));
-      allow list: if isUserVerified();
+      allow list: if isUserVerified() && (resource.data.companyId == userCompanyId() || isAdmin());
       allow create: if isUserVerified() && isValidId(projectId) && isValidProject(incoming()) && (
         isAdmin() || isSameCompany(incoming().companyId)
       );
       allow update: if isUserVerified() && isValidId(projectId) && isValidProject(incoming()) && (
         isAdmin() || (
-          isSameCompany(existing().companyId) && isSameCompany(incoming().companyId) &&
+          isSameCompany(existing().companyId) && 
+          incoming().companyId == existing().companyId && 
+          incoming().id == existing().id &&
           incoming().diff(existing()).affectedKeys().hasOnly(['name', 'status', 'location', 'validationRadiusMeters', 'plannedHours', 'startDate', 'endDate', 'assignedUserIds', 'address', 'latitude', 'longitude', 'client', 'initialBudget', 'spentBudget', 'coverImage', 'projectType', 'description', 'updatedAt'])
         )
       );
       allow delete: if isAdmin() && isValidId(projectId);
     }
 
-    // 4. Workers
+    // 4. Workers (Isolated by companyId)
     match /workers/{workerId} {
       allow get: if isUserVerified() && isValidId(workerId) && (isAdmin() || isSameCompany(existing().companyId));
-      allow list: if isUserVerified();
+      allow list: if isUserVerified() && (resource.data.companyId == userCompanyId() || isAdmin());
       allow create: if isUserVerified() && isValidId(workerId) && isValidWorker(incoming()) && (
         isAdmin() || isSameCompany(incoming().companyId)
       );
       allow update: if isUserVerified() && isValidId(workerId) && isValidWorker(incoming()) && (
         isAdmin() || (
-          isSameCompany(existing().companyId) && isSameCompany(incoming().companyId) &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'companyId', 'nationalId', 'active'])
+          isSameCompany(existing().companyId) && 
+          incoming().companyId == existing().companyId && 
+          incoming().id == existing().id &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'active', 'nationalId'])
         )
       );
       allow delete: if isAdmin() && isValidId(workerId);
     }
 
-    // 5. Daily Reports
+    // 5. Daily Reports (Isolated by companyId, creatorId is immutable)
     match /dailyReports/{reportId} {
       allow get: if isUserVerified() && isValidId(reportId) && (
-        isAdmin() ||
-        isSameCompany(existing().companyId)
+        isAdmin() || isSameCompany(existing().companyId)
       );
-      allow list: if isUserVerified();
+      allow list: if isUserVerified() && (resource.data.companyId == userCompanyId() || isAdmin());
       allow create: if isUserVerified() && isValidId(reportId) && isValidDailyReport(incoming()) && (
         isAdmin() || (
           isSameCompany(incoming().companyId) &&
-          (incoming().creatorId == request.auth.uid)
+          incoming().creatorId == request.auth.uid
         )
       );
       allow update: if isUserVerified() && isValidId(reportId) && isValidDailyReport(incoming()) && (
         isAdmin() || (
           isSameCompany(existing().companyId) &&
-          isSameCompany(incoming().companyId) &&
+          incoming().companyId == existing().companyId &&
+          incoming().id == existing().id &&
+          incoming().creatorId == existing().creatorId &&
           (existing().status == 'Draft' || existing().status == 'Submitted') &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'status', 'workEntries', 'totalNormalHours', 'totalExtraHours', 'totalHours', 
@@ -225,28 +241,30 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(reportId);
     }
 
-    // 6. Delivery Notes
+    // 6. Delivery Notes (Isolated for both Subcontractor and Main Contractor)
     match /deliveryNotes/{deliveryNoteId} {
       allow get: if isUserVerified() && isValidId(deliveryNoteId) && (
         isAdmin() ||
         isSameCompany(existing().companyId) ||
         isSameCompany(existing().subcontractorCompanyId)
       );
-      allow list: if isUserVerified();
+      allow list: if isUserVerified() && (resource.data.companyId == userCompanyId() || resource.data.subcontractorCompanyId == userCompanyId() || isAdmin());
       allow create: if isUserVerified() && isValidId(deliveryNoteId) && isValidDeliveryNote(incoming()) && (
-        isAdmin() ||
-        isSameCompany(incoming().companyId)
+        isAdmin() || isSameCompany(incoming().companyId)
       );
       allow update: if isUserVerified() && isValidId(deliveryNoteId) && isValidDeliveryNote(incoming()) && (
         isAdmin() ||
         (isSameCompany(existing().companyId) &&
-          isSameCompany(incoming().companyId) &&
+          incoming().companyId == existing().companyId &&
+          incoming().id == existing().id &&
           existing().status == 'Pending' &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'status', 'confirmationDetails', 'confirmedBy', 'disputeRecord', 'dispute', 'correctionNotice', 'updatedAt'
           ])
         ) ||
         (isSameCompany(existing().subcontractorCompanyId) &&
+          incoming().subcontractorCompanyId == existing().subcontractorCompanyId &&
+          incoming().id == existing().id &&
           existing().status == 'Pending' &&
           (incoming().status == 'Confirmed' || incoming().status == 'Disputed') &&
           incoming().diff(existing()).affectedKeys().hasOnly([
@@ -257,38 +275,51 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(deliveryNoteId);
     }
 
-    // 7. Audit Events (Append-Only Log)
+    // 7. Audit Events (Append-Only Log, Actor ID is immutable)
     match /auditEvents/{auditEventId} {
       allow get: if isUserVerified() && isValidId(auditEventId) && (
         isAdmin() || existing().actorId == request.auth.uid
       );
-      allow list: if isUserVerified();
+      allow list: if isUserVerified() && (resource.data.actorId == request.auth.uid || isAdmin());
       allow create: if isUserVerified() && isValidId(auditEventId) && isValidAuditEvent(incoming()) && (
-        isAdmin() || incoming().actorId == request.auth.uid || isUserVerified()
+        isAdmin() || incoming().actorId == request.auth.uid
       );
-      // Append-only: updates and deletes are strictly forbidden to all
+      // Append-only constraint: updates and deletes are strictly denied
       allow update, delete: if false;
     }
 
-    // 8. Time Logs (Field Check-ins)
+    // 8. Time Logs (Field Check-ins, isolated by userId/companyId)
     match /time_logs/{timeLogId} {
-      allow get: if isUserVerified() && isValidId(timeLogId);
-      allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(timeLogId) && (isAdmin() || incoming().userId == request.auth.uid);
-      allow update: if isUserVerified() && isValidId(timeLogId) && (isAdmin() || incoming().userId == request.auth.uid);
+      allow get: if isUserVerified() && isValidId(timeLogId) && (isAdmin() || existing().userId == request.auth.uid || isSameCompany(existing().companyId));
+      allow list: if isUserVerified() && (resource.data.userId == request.auth.uid || resource.data.companyId == userCompanyId() || isAdmin());
+      allow create: if isUserVerified() && isValidId(timeLogId) && (
+        isAdmin() || (incoming().userId == request.auth.uid && incoming().companyId == userCompanyId())
+      );
+      allow update: if isUserVerified() && isValidId(timeLogId) && (
+        isAdmin() || (incoming().userId == request.auth.uid && incoming().companyId == userCompanyId() && incoming().id == existing().id)
+      );
       allow delete: if isAdmin() && isValidId(timeLogId);
     }
 
-    // 9. Invitations (Guest access & Team Onboarding)
+    // 9. Invitations (Isolated by companyId)
     match /invitations/{invitationId} {
-      allow get: if isUserVerified() && isValidId(invitationId);
-      allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(invitationId) && isAdmin();
-      allow update: if isUserVerified() && isValidId(invitationId);
+      allow get: if isUserVerified() && isValidId(invitationId) && (isAdmin() || isSameCompany(existing().companyId));
+      allow list: if isUserVerified() && (resource.data.companyId == userCompanyId() || isAdmin());
+      allow create: if isUserVerified() && isValidId(invitationId) && (isAdmin() || isSameCompany(incoming().companyId));
+      allow update: if isUserVerified() && isValidId(invitationId) && (isAdmin() || isSameCompany(incoming().companyId));
       allow delete: if isAdmin() && isValidId(invitationId);
     }
 
-    // 10. Connection Test Probe
+    // 10. Compliance Documents (Isolated by companyId)
+    match /complianceDocuments/{documentId} {
+      allow get: if isUserVerified() && isValidId(documentId) && (isAdmin() || isSameCompany(existing().companyId));
+      allow list: if isUserVerified() && (resource.data.companyId == userCompanyId() || isAdmin());
+      allow create: if isUserVerified() && isValidId(documentId) && (isAdmin() || isSameCompany(incoming().companyId));
+      allow update: if isUserVerified() && isValidId(documentId) && (isAdmin() || (isSameCompany(existing().companyId) && incoming().companyId == existing().companyId && incoming().id == existing().id));
+      allow delete: if isAdmin() && isValidId(documentId);
+    }
+
+    // 11. Connection Test Probe
     match /test/connection {
       allow get: if isSignedIn();
     }

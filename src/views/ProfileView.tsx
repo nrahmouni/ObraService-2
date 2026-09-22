@@ -28,7 +28,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
+  // Notification Preferences State (Persisted in LocalStorage)
+  const [prefReports, setPrefReports] = useState(() => {
+    const saved = currentUser ? localStorage.getItem(`pref_reports_${currentUser.id}`) : null;
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [prefDisputes, setPrefDisputes] = useState(() => {
+    const saved = currentUser ? localStorage.getItem(`pref_disputes_${currentUser.id}`) : null;
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [prefCompliance, setPrefCompliance] = useState(() => {
+    const saved = currentUser ? localStorage.getItem(`pref_compliance_${currentUser.id}`) : null;
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [prefInvites, setPrefInvites] = useState(() => {
+    const saved = currentUser ? localStorage.getItem(`pref_invites_${currentUser.id}`) : null;
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
   if (!currentUser) return null;
+
+  const handleSavePreferences = () => {
+    localStorage.setItem(`pref_reports_${currentUser.id}`, JSON.stringify(prefReports));
+    localStorage.setItem(`pref_disputes_${currentUser.id}`, JSON.stringify(prefDisputes));
+    localStorage.setItem(`pref_compliance_${currentUser.id}`, JSON.stringify(prefCompliance));
+    localStorage.setItem(`pref_invites_${currentUser.id}`, JSON.stringify(prefInvites));
+    toast.success('Preferencias de notificación guardadas correctamente.');
+  };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +192,82 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state }) => {
               {isUpdatingPassword ? 'Actualizando...' : 'Guardar Nueva Contraseña'}
             </button>
           </form>
+        </div>
+      </div>
+
+      {/* Preferences Section */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-amber-600" />
+            <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight font-display">Canales de Notificación y Alertas</h2>
+          </div>
+          <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-black uppercase font-mono">
+            Personalizable
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-500/30 transition-all cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={prefReports}
+              onChange={(e) => setPrefReports(e.target.checked)}
+              className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4 w-4" 
+            />
+            <div>
+              <span className="font-bold text-slate-900 block">Nuevos Partes Diarios</span>
+              <span className="text-slate-500 text-[10px]">Alertar al enviar y corregir partes de obras asignadas.</span>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-500/30 transition-all cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={prefDisputes}
+              onChange={(e) => setPrefDisputes(e.target.checked)}
+              className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4 w-4" 
+            />
+            <div>
+              <span className="font-bold text-slate-900 block">Disputas de Albaranes</span>
+              <span className="text-slate-500 text-[10px]">Avisar de disputas abiertas o corregidas por subcontratas.</span>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-500/30 transition-all cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={prefCompliance}
+              onChange={(e) => setPrefCompliance(e.target.checked)}
+              className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4 w-4" 
+            />
+            <div>
+              <span className="font-bold text-slate-900 block">Compliance de Documentos</span>
+              <span className="text-slate-500 text-[10px]">Alertas automáticas de expiraciones a 15 y 5 días.</span>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-500/30 transition-all cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={prefInvites}
+              onChange={(e) => setPrefInvites(e.target.checked)}
+              className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4 w-4" 
+            />
+            <div>
+              <span className="font-bold text-slate-900 block">Invitaciones de Equipo</span>
+              <span className="text-slate-500 text-[10px]">Avisar cuando se acepten invitaciones corporativas.</span>
+            </div>
+          </label>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSavePreferences}
+            className="px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white font-black rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer"
+          >
+            Guardar Preferencias
+          </button>
         </div>
       </div>
     </div>
