@@ -167,30 +167,66 @@ export const InviteAcceptanceView: React.FC<InviteAcceptanceViewProps> = ({
           {!invitation ? (
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Código de Invitación o Correo Electrónico
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                  Código de Invitación o Código de Empresa
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="Ej: INV-92834 o tu correo corporativo"
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-xs font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500"
+                    placeholder="Ej: NORTE2026 o LEVANTE2026"
+                    className="flex-1 bg-[#121214] border border-[#27272A] rounded-xl px-4 py-3 text-xs font-bold text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#EA580C]"
                   />
                   <button
                     type="button"
                     onClick={() => handleLookup(code)}
-                    className="h-12 px-6 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer border border-amber-500/30"
+                    className="h-11 px-5 bg-[#EA580C] hover:bg-[#c2410c] text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
                   >
                     Validar
                   </button>
                 </div>
               </div>
 
+              {/* Direct Access Quick Chips */}
+              <div className="space-y-2 pt-1 border-t border-[#27272A]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Códigos directos de prueba:</span>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCode('NORTE2026');
+                      handleLookup('NORTE2026');
+                    }}
+                    className="w-full text-left bg-[#18181B] hover:bg-[#202024] border border-[#27272A] p-3 rounded-xl flex items-center justify-between cursor-pointer transition-colors"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-white">NORTE2026 — Constructora Principal</div>
+                      <div className="text-[11px] text-zinc-400">Construcciones Norte S.L. (Jefe de Obra)</div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#EA580C]/20 text-[#EA580C] border border-[#EA580C]/30">Usar</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCode('LEVANTE2026');
+                      handleLookup('LEVANTE2026');
+                    }}
+                    className="w-full text-left bg-[#18181B] hover:bg-[#202024] border border-[#27272A] p-3 rounded-xl flex items-center justify-between cursor-pointer transition-colors"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-white">LEVANTE2026 — Subcontrata</div>
+                      <div className="text-[11px] text-zinc-400">Estructuras Levante S.L. (Operario)</div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/60">Usar</span>
+                  </button>
+                </div>
+              </div>
+
               {searchError && (
-                <div className="p-4 bg-red-950/60 border border-red-800/60 rounded-2xl flex items-start gap-3 text-xs text-red-300">
-                  <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                <div className="p-3 bg-rose-950/40 border border-rose-800 rounded-xl flex items-start gap-2.5 text-xs text-rose-300">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                   <div>{searchError}</div>
                 </div>
               )}
@@ -247,7 +283,7 @@ export const InviteAcceptanceView: React.FC<InviteAcceptanceViewProps> = ({
               </div>
 
               {/* Input: Password */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                     Crear Contraseña *

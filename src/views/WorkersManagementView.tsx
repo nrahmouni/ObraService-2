@@ -187,8 +187,8 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
         </div>
       </div>
 
-      {/* Workers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Workers Linear List */}
+      <div className="flex flex-col space-y-3">
         {filteredWorkers.map(w => {
           const comp = companies.find(c => c.id === w.companyId);
           const assignedProjects = projects.filter(p => w.assignedProjectIds?.includes(p.id));
@@ -304,7 +304,7 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col space-y-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">DNI / NIE</label>
                   <input
@@ -327,13 +327,13 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col space-y-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Categoría Profesional</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as WorkerCategory)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2.5 bg-[#18181B] border border-[#27272A] text-white rounded-xl text-xs font-bold focus:outline-none focus:border-[#EA580C] [&>option]:bg-[#18181B] [&>option]:text-white"
                   >
                     <option value="Encargado General">Encargado General</option>
                     <option value="Jefe de Equipo">Jefe de Equipo</option>
@@ -350,7 +350,7 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
                   <select
                     value={companyId}
                     onChange={(e) => setCompanyId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500"
+                    className="w-full px-3.5 py-2.5 bg-[#18181B] border border-[#27272A] text-white rounded-xl text-xs font-bold focus:outline-none focus:border-[#EA580C] [&>option]:bg-[#18181B] [&>option]:text-white"
                   >
                     {companies.map(c => (
                       <option key={c.id} value={c.id}>{c.name}</option>

@@ -60,9 +60,9 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ state }) => 
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Integración con el Ecosistema de Construcción</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="flex flex-col space-y-8">
         {/* Left Col: API & Webhooks */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="w-full space-y-8">
           {/* API Keys Card */}
           <div className="bg-[#1F2329] border border-white/5 rounded-[2.5rem] p-8 shadow-2xl">
             <div className="flex items-center justify-between mb-8">

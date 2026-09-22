@@ -71,6 +71,12 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
       return;
     }
 
+    // Domain rule: Contratas and subcontratas do not clock in, only Site Managers / Admins do
+    if (currentUser.role === 'SUBCONTRACTOR_USER' || (currentUser.role as string) === 'WORKER') {
+      toast.error('Las contratas y subcontratas no fichan. El fichaje y control de presencia en obra lo realiza el Jefe de Obra.');
+      return;
+    }
+
     if (!activeProject) {
       toast.error('No hay ninguna obra activa asignada para fichar');
       return;

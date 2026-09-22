@@ -82,8 +82,8 @@ export const CompaniesSubTab: React.FC<CompaniesSubTabProps> = ({ state, searchQ
         )}
       </div>
 
-      {/* Companies Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Companies Linear List */}
+      <div className="flex flex-col space-y-3">
         {list.map(c => (
           <div key={c.id} className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 shadow-xl hover:border-brand-accent/30 transition-all group">
             <div className="flex items-center justify-between mb-4">

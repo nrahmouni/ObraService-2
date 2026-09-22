@@ -114,8 +114,8 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
           </div>
         </div>
 
-        {/* Info Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-slate-950 p-4 rounded-lg border border-slate-800/60">
+        {/* Info Linear Stack */}
+        <div className="flex flex-col space-y-2 bg-[#18181B] p-4 rounded-xl border border-[#27272A]">
           <div>
             <span className="text-[9px] font-black text-slate-500 uppercase block">Subcontrata</span>
             <span className="text-xs font-black text-slate-200 uppercase block mt-1">{note.subcontractorCompanyName}</span>
@@ -137,18 +137,23 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
         {/* Worker Hours Breakdown */}
         <div className="space-y-3">
           <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Detalle de Cuadrilla Imputada</h3>
-          <div className="border border-slate-800 rounded-lg overflow-hidden">
-            <Table headers={['Operario', 'Categoría', 'Horas Normales', 'Horas Extras', 'Total']}>
-              {note.workEntries?.map((entry, idx) => (
-                <tr key={idx} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/20">
-                  <td className="px-5 py-3 text-xs font-black text-slate-200 uppercase">{entry.workerNameSnapshot}</td>
-                  <td className="px-5 py-3 text-xs text-slate-400 uppercase font-medium">{entry.workerCategorySnapshot}</td>
-                  <td className="px-5 py-3 text-xs text-slate-300 font-mono font-bold">{entry.normalHours} H</td>
-                  <td className="px-5 py-3 text-xs text-slate-300 font-mono font-bold">{entry.extraHours} H</td>
-                  <td className="px-5 py-3 text-xs text-brand-accent font-mono font-black">{entry.totalHours} H</td>
-                </tr>
-              ))}
-            </Table>
+          <div className="flex flex-col space-y-2">
+            {note.workEntries?.map((entry, idx) => (
+              <div key={idx} className="border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col space-y-2 text-xs">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
+                  <span className="font-black text-slate-100 uppercase">{entry.workerNameSnapshot}</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase">{entry.workerCategorySnapshot}</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] pt-1">
+                  <div className="text-slate-400 font-medium">
+                    Horas: <span className="font-bold text-slate-200">{entry.normalHours}h norm</span> + <span className="font-bold text-slate-200">{entry.extraHours}h ext</span>
+                  </div>
+                  <div className="font-black text-brand-accent font-mono text-xs">
+                    Total: {entry.totalHours} H
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -110,7 +110,7 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="flex flex-col space-y-3">
         {list.map(mac => {
           const company = state.companies.find(c => c.id === mac.companyId);
           return (

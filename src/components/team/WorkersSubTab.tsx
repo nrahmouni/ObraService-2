@@ -118,7 +118,7 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
 
   return (
     <div className="space-y-4 font-sans text-slate-300">
-      {/* Search Header Grid */}
+      {/* Search Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
           Registros Oficiales de Cuadrilla y Personal ({filteredWorkers.length})
@@ -135,76 +135,63 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
         )}
       </div>
 
-      {/* Workers Table */}
-      <div className="bg-[#0F172A] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <Table headers={['Operario', 'Categoría Profesional', 'Empresa / Subcontrata', 'DNI / NIF', 'Estado', '']}>
-          {filteredWorkers.map(w => {
-            const comp = state.companies.find(c => c.id === w.companyId);
-            return (
-              <tr key={w.id} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/40 transition-colors">
-                <td className="px-6 py-4.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-brand-accent shadow-sm shrink-0">
-                      <HardHat className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-black text-slate-200 uppercase">{w.name}</div>
-                      <div className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">ID: {w.id.substring(0, 8)}</div>
-                    </div>
+      {/* Workers List */}
+      <div className="flex flex-col space-y-3 w-full">
+        {filteredWorkers.map(w => {
+          const comp = state.companies.find(c => c.id === w.companyId);
+          return (
+            <div key={w.id} className="bg-[#0F172A] border border-slate-800 rounded-2xl p-4 flex flex-col space-y-3 shadow-lg">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-brand-accent shadow-sm shrink-0">
+                    <HardHat className="w-5 h-5" />
                   </div>
-                </td>
+                  <div>
+                    <div className="text-xs font-black text-slate-100 uppercase">{w.name}</div>
+                    <div className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">DNI/NIF: {w.nationalId || 'No Registrado'}</div>
+                  </div>
+                </div>
+                <StatusPill status="Active" />
+              </div>
 
-                <td className="px-6 py-4.5">
-                  <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-950 border border-slate-800 text-slate-300">
-                    {w.category}
-                  </span>
-                </td>
+              <div className="flex flex-col space-y-1.5 text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Categoría Profesional</span>
+                  <span className="font-bold text-slate-200 uppercase">{w.category}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Empresa / Subcontrata</span>
+                  <span className="font-medium text-slate-300 uppercase">{comp ? comp.name : 'Empresa Externa'}</span>
+                </div>
+              </div>
 
-                <td className="px-6 py-4.5">
-                  <span className="text-xs font-bold text-slate-300 uppercase">
-                    {comp ? comp.name : 'Empresa Externa'}
-                  </span>
-                </td>
+              {isAdmin && (
+                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => handleOpenEdit(w)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-brand-accent hover:border-brand-accent/20 transition-all text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Editar</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(w.id, w.name)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900/40 transition-all text-[11px] font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Baja</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
-                <td className="px-6 py-4.5">
-                  <span className="font-mono text-xs font-bold text-slate-400">{w.nationalId || 'No Registrado'}</span>
-                </td>
-
-                <td className="px-6 py-4.5">
-                  <StatusPill status="Active" />
-                </td>
-
-                <td className="px-6 py-4.5 text-right">
-                  {isAdmin && (
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => handleOpenEdit(w)}
-                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-brand-accent hover:border-brand-accent/20 transition-all cursor-pointer"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(w.id, w.name)}
-                        className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900/40 transition-all cursor-pointer"
-                        title="Baja"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-          {filteredWorkers.length === 0 && (
-            <tr>
-              <td colSpan={6} className="px-6 py-10 text-center text-xs text-slate-500 uppercase font-black tracking-widest">
-                No hay operarios dados de alta en esta cuadrilla.
-              </td>
-            </tr>
-          )}
-        </Table>
+        {filteredWorkers.length === 0 && (
+          <div className="p-8 text-center bg-[#0F172A] border border-slate-800 rounded-2xl text-slate-500 text-xs font-bold uppercase tracking-wider">
+            No hay operarios dados de alta en esta cuadrilla.
+          </div>
+        )}
       </div>
 
       {/* Create / Edit Modal */}
@@ -232,7 +219,7 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col space-y-3">
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Categoría Profesional</label>
               <select

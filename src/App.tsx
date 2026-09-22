@@ -77,12 +77,9 @@ export default function App() {
         <Route path="/invitation" element={<InviteAcceptanceView />} />
         <Route path="/invite" element={<InviteAcceptanceView />} />
 
-        {/* Onboarding */}
-        <Route path="/onboarding" element={
-          <ProtectedRoute currentUser={currentUser}>
-            <OnboardingView onComplete={() => navigate('/admin/dashboard')} />
-          </ProtectedRoute>
-        } />
+        {/* Onboarding & Company Registration */}
+        <Route path="/onboarding" element={<OnboardingView onComplete={() => navigate('/admin/dashboard')} />} />
+        <Route path="/register" element={<OnboardingView onComplete={() => navigate('/admin/dashboard')} />} />
 
         {/* King Master Admin Panel */}
         <Route path="/admin/master" element={
@@ -115,9 +112,7 @@ export default function App() {
           ) : (
             <PublicEntryView 
               onOpenLogin={() => navigate('/login')}
-              onOpenRegister={() => {
-                toast.error('El registro público libre está desactivado. Todo alta de empresa u obra debe realizarse de forma oficial, u obtener invitación corporativa.');
-              }}
+              onOpenRegister={() => navigate('/onboarding')}
               onOpenJoinCode={() => navigate('/invitation')}
               onDemoAccess={() => {
                 obraStore.enterDemoMode();

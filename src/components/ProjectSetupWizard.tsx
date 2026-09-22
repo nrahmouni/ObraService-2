@@ -225,9 +225,9 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
           {/* STEP 1: BASIC DATA */}
           {step === 1 && (
             <form onSubmit={handleNextStep1} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="flex flex-col space-y-4">
                 {/* Project Name */}
-                <div className="sm:col-span-2">
+                <div className="w-full">
                   <label className="block text-[11px] font-black text-slate-600 mb-1.5 uppercase tracking-wider">
                     Nombre del Proyecto / Obra <span className="text-[#FF6600]">*</span>
                   </label>
@@ -294,7 +294,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
                   <select
                     value={projectType}
                     onChange={(e) => setProjectType(e.target.value)}
-                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-slate-50 text-xs font-bold text-slate-900 focus:outline-none focus:border-[#FF6600] focus:bg-white transition-all shadow-sm cursor-pointer"
+                    className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-[#18181B] text-xs font-bold text-white focus:outline-none focus:border-[#EA580C] transition-all shadow-sm cursor-pointer [&>option]:bg-[#18181B] [&>option]:text-white"
                   >
                     <option value="Edificación Residencial">Edificación Residencial</option>
                     <option value="Comercial y Oficinas">Comercial y Oficinas</option>
@@ -327,7 +327,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
                 <label className="block text-[11px] font-black text-slate-600 mb-2 uppercase tracking-wider">
                   Foto de Portada del Proyecto
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="flex flex-col space-y-3">
                   {COVER_PRESETS.map((preset) => (
                     <div
                       key={preset.id}
@@ -479,7 +479,7 @@ export const ProjectSetupWizard: React.FC<ProjectSetupWizardProps> = ({
               </div>
 
               {/* Summary Checklist */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="flex flex-col space-y-3 text-xs">
                 <div className="p-3.5 rounded-2xl border border-slate-200 bg-white flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                     <Check className="w-4 h-4 stroke-[3]" />

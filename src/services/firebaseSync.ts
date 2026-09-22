@@ -17,7 +17,7 @@ import {
   limit
 } from 'firebase/firestore';
 import { onAuthStateChanged, User as FirebaseUser, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection } from './firebase';
+import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection, isFirebaseConfigured } from './firebase';
 import { obraStore } from './store';
 import { AuditEvent, Company, DailyReport, DeliveryNote, Project, User, Worker, TimeLog, Invitation, NotificationItem } from '../types';
 import { enqueueOfflineItem, sanitizeForFirestore, flushOfflineQueue } from '../utils/offlineQueue';
@@ -156,6 +156,11 @@ export function stopFirebaseSync() {
 function attachCollectionListeners(user?: User | null) {
   // Always unsubscribe previous listeners before attaching new ones
   stopFirebaseSync();
+
+  if (!isFirebaseConfigured) {
+    // When no active remote Firebase project is connected, ObraStore handles all data reactivity locally
+    return;
+  }
 
   const currentUser = user || obraStore.getState().currentUser;
   const companyId = currentUser?.companyId;
@@ -334,8 +339,8 @@ function attachCollectionListeners(user?: User | null) {
 
 export async function persistCompanyToFirestore(company: Company) {
   const sanitized = sanitizeForFirestore(company);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('company', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('company', sanitized);
     return;
   }
   const path = `companies/${sanitized.id}`;
@@ -349,8 +354,8 @@ export async function persistCompanyToFirestore(company: Company) {
 
 export async function persistProjectToFirestore(project: Project) {
   const sanitized = sanitizeForFirestore(project);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('project', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('project', sanitized);
     return;
   }
   const path = `projects/${sanitized.id}`;
@@ -364,8 +369,8 @@ export async function persistProjectToFirestore(project: Project) {
 
 export async function persistWorkerToFirestore(worker: Worker) {
   const sanitized = sanitizeForFirestore(worker);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('worker', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('worker', sanitized);
     return;
   }
   const path = `workers/${sanitized.id}`;
@@ -379,8 +384,8 @@ export async function persistWorkerToFirestore(worker: Worker) {
 
 export async function persistDailyReportToFirestore(report: DailyReport) {
   const sanitized = sanitizeForFirestore(report);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('dailyReport', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('dailyReport', sanitized);
     return;
   }
   const path = `dailyReports/${sanitized.id}`;
@@ -394,8 +399,8 @@ export async function persistDailyReportToFirestore(report: DailyReport) {
 
 export async function persistDeliveryNoteToFirestore(note: DeliveryNote) {
   const sanitized = sanitizeForFirestore(note);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('deliveryNote', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('deliveryNote', sanitized);
     return;
   }
   const path = `deliveryNotes/${sanitized.id}`;
@@ -409,13 +414,13 @@ export async function persistDeliveryNoteToFirestore(note: DeliveryNote) {
 
 export async function persistAuditEventToFirestore(event: AuditEvent) {
   const sanitized = sanitizeForFirestore(event);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('auditEvent', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('auditEvent', sanitized);
     return;
   }
   const path = `auditEvents/${sanitized.id}`;
   try {
-    if (auth.currentUser?.uid && (!sanitized.actorId || sanitized.actorId.startsWith('usr_'))) {
+    if (auth?.currentUser?.uid && (!sanitized.actorId || sanitized.actorId.startsWith('usr_'))) {
       sanitized.actorId = auth.currentUser.uid;
     }
     await setDoc(doc(db, 'auditEvents', sanitized.id), sanitized);
@@ -427,8 +432,8 @@ export async function persistAuditEventToFirestore(event: AuditEvent) {
 
 export async function persistUserToFirestore(user: User) {
   const sanitized = sanitizeForFirestore(user);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('user', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('user', sanitized);
     return;
   }
   const path = `users/${sanitized.id}`;
@@ -442,8 +447,8 @@ export async function persistUserToFirestore(user: User) {
 
 export async function persistTimeLogToFirestore(log: TimeLog) {
   const sanitized = sanitizeForFirestore(log);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('timeLog', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('timeLog', sanitized);
     return;
   }
   const path = `time_logs/${sanitized.id}`;
@@ -457,8 +462,8 @@ export async function persistTimeLogToFirestore(log: TimeLog) {
 
 export async function persistInvitationToFirestore(invitation: Invitation) {
   const sanitized = sanitizeForFirestore(invitation);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('invitation', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('invitation', sanitized);
     return;
   }
   const path = `invitations/${sanitized.id}`;
@@ -472,8 +477,8 @@ export async function persistInvitationToFirestore(invitation: Invitation) {
 
 export async function persistNotificationToFirestore(notification: NotificationItem) {
   const sanitized = sanitizeForFirestore(notification);
-  if (!auth.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
-    await enqueueOfflineItem('notification', sanitized);
+  if (!isFirebaseConfigured || !auth?.currentUser || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+    if (isFirebaseConfigured) await enqueueOfflineItem('notification', sanitized);
     return;
   }
   const path = `notifications/${sanitized.id}`;

@@ -18,9 +18,11 @@ import {
   MoreVertical,
   FileDown,
   ArrowRight,
-  LayoutGrid,
-  Users
+  Users,
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { jsPDF } from 'jspdf';
 import { obraStore } from '../services/store';
 import { DailyReport, WorkEntry, AppState } from '../types';
@@ -242,133 +244,100 @@ export const DailyReportsView: React.FC<DailyReportsViewProps> = ({ state, onOpe
     exportToCSV(dataToExport, `Partes_ObraService_${new Date().toISOString().split('T')[0]}`);
   };
 
-  const canCreateReport = user.role === 'MAIN_CONTRACTOR_ADMIN' || user.role === 'SITE_MANAGER';
+  const canCreateReport = user.role === 'SUBCONTRACTOR_USER' || (user.role as string) === 'WORKER' || user.role === 'SITE_MANAGER';
+
+  const handleValidateBySiteManager = (report: DailyReport) => {
+    report.status = 'Corrected';
+    report.updatedAt = new Date().toISOString();
+    toast.success(`Parte ${report.code} validado en tajo por el Jefe de Obra.`);
+    setSelectedReport({ ...report });
+  };
+
+  const handleCertifyByConstructora = (report: DailyReport) => {
+    report.status = 'Locked';
+    report.updatedAt = new Date().toISOString();
+    toast.success(`Parte ${report.code} aprobado y certificado oficialmente por la Constructora.`);
+    setSelectedReport({ ...report });
+  };
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#18181B] border border-[#27272A] p-4 sm:p-5 rounded-xl">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-black text-[#FF6600] uppercase tracking-widest">Documentación</span>
-            <div className="w-1 h-1 rounded-full bg-slate-300" />
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Histórico Inmutable</span>
-          </div>
-          <h1 className="text-xl font-black uppercase tracking-tight text-slate-900">Partes de Trabajo</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">Partes Diarios de Trabajo</h1>
+          <p className="text-xs text-zinc-400 mt-0.5">Histórico inmutable de partes y registros de tajo</p>
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="relative group hidden sm:block">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative group">
+            <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="BUSCAR..."
-              className="bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-900 focus:outline-none focus:border-[#FF6600]/30 w-48 transition-all"
+              placeholder="Buscar parte u obra..."
+              className="bg-[#27272A] border border-[#3F3F46] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-400 w-44 sm:w-56 transition-all"
             />
           </div>
           <button
             onClick={handleExportAll}
-            className="p-1.5 text-slate-400 hover:text-slate-900 transition-colors"
+            className="p-2 text-zinc-400 hover:text-white bg-[#27272A] hover:bg-[#3F3F46] rounded-lg border border-[#3F3F46] transition-colors cursor-pointer"
             title="Exportar CSV"
           >
-            <FileDown className="w-5 h-5" />
+            <FileDown className="w-4 h-4" />
           </button>
           {canCreateReport && (
             <button
               onClick={onOpenReportModal}
-              className="bg-[#FF6600] text-white px-3 py-1.5 rounded-lg font-bold uppercase tracking-widest text-[9px] hover:bg-[#e65c00] transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+              className="bg-[#EA580C] text-white px-3.5 py-1.5 rounded-lg font-bold text-xs hover:bg-[#c2410c] transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
-              <Zap className="w-3 h-3" />
-              Emitir
+              <Zap className="w-3.5 h-3.5" />
+              <span>Emitir Parte</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main List */}
-        <div className="lg:col-span-9">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">Documento</th>
-                    <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">Proyecto</th>
-                    <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">Personal</th>
-                    <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest text-right">Horas</th>
-                    <th className="px-4 py-2 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Estado</th>
-                    <th className="px-4 py-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filteredReports.map((report) => (
-                    <tr 
-                      key={report.id} 
-                      onClick={() => setSelectedReport(report)}
-                      className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="text-[10px] font-bold text-slate-900 uppercase">{report.date}</div>
-                        <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">ID: {report.code}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-[10px] font-bold text-slate-700 truncate max-w-[200px] uppercase">{report.projectNameSnapshot}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex -space-x-1.5">
-                          {report.workEntries.slice(0, 4).map((_, i) => (
-                            <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-600 uppercase shadow-sm">
-                              {report.workEntries[i].workerNameSnapshot[0]}
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="text-xs font-black text-slate-900 tracking-tight">{report.totalHours}H</div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge status={report.status} className="text-[8px] px-1.5 py-0" />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#FF6600] transition-colors" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      {/* Main Reports Cards List */}
+      <div className="flex flex-col space-y-3 w-full">
+        {filteredReports.length === 0 ? (
+          <div className="p-8 text-center bg-[#18181B] rounded-2xl border border-[#27272A] text-xs font-bold text-zinc-400">
+            No se encontraron partes de trabajo.
           </div>
-        </div>
-
-        {/* Sidebar Stats */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-4">Métricas de Control</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Borradores</span>
-                <span className="text-sm font-black text-slate-900">{(state.reports || []).filter(r => r.status === 'Draft').length}</span>
+        ) : (
+          filteredReports.map((report) => (
+            <div 
+              key={report.id} 
+              onClick={() => setSelectedReport(report)}
+              className="bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] rounded-2xl p-4 transition-all cursor-pointer flex flex-col space-y-3 group shadow-lg"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-[#27272A]">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-white">{report.date}</span>
+                  <span className="text-[11px] text-zinc-400 font-mono">• {report.code}</span>
+                </div>
+                <Badge status={report.status} className="text-[10px] px-2 py-0.5" />
               </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50 border border-emerald-100">
-                <span className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Consolidados</span>
-                <span className="text-sm font-black text-emerald-700">{(state.reports || []).filter(r => r.status === 'Submitted').length}</span>
+
+              <div className="flex flex-col space-y-1.5 text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Obra</span>
+                  <span className="font-bold text-zinc-200">{report.projectNameSnapshot}</span>
+                </div>
+                <div className="flex items-center justify-between text-zinc-400 text-[11px]">
+                  <span>Cuadrilla: <strong className="text-zinc-200">{report.workEntries?.length || 0} operarios</strong></span>
+                  <span className="font-black text-white font-mono text-xs">{report.totalHours} Horas</span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-[#27272A] flex items-center justify-end gap-1 text-[11px] font-bold text-zinc-400 group-hover:text-white transition-colors">
+                <span>Ver Detalle del Parte</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </div>
             </div>
-          </div>
-
-          <div className="bg-[#FF6600] rounded-xl p-4 text-white shadow-lg shadow-orange-950/10">
-            <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center mb-3">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
-            <h4 className="text-[11px] font-black uppercase tracking-tight mb-1">Sincronización Nodo</h4>
-            <p className="text-[9px] font-bold text-white/80 uppercase tracking-widest leading-relaxed">
-              Los partes consolidados son inmutables y se transmiten al ERP.
-            </p>
-          </div>
-        </div>
+          ))
+        )}
       </div>
 
       {/* Detail Modal */}
@@ -444,55 +413,45 @@ export const DailyReportsView: React.FC<DailyReportsViewProps> = ({ state, onOpe
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
               {/* Stats Overview */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="flex flex-col space-y-2">
                 {[
                   { label: 'Total Horas', value: `${selectedReport.totalHours}H`, icon: Clock },
-                  { label: 'Operarios', value: selectedReport.workEntries.length, icon: UserCheck },
-                  { label: 'Ubicación', value: 'Geocerca OK', icon: MapPin },
+                  { label: 'Operarios', value: `${selectedReport.workEntries.length} registrados`, icon: UserCheck },
+                  { label: 'Ubicación', value: 'GPS / Geocerca Verificada', icon: MapPin },
                   { label: 'Fecha', value: selectedReport.date, icon: Calendar },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-black/20 p-4 rounded-2xl border border-white/5">
-                    <stat.icon className="w-4 h-4 text-[#FF6600] mb-2" />
-                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</div>
-                    <div className="text-lg font-black text-white">{stat.value}</div>
+                  <div key={i} className="bg-[#18181B] p-3 rounded-xl border border-[#27272A] flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <stat.icon className="w-4 h-4 text-[#EA580C]" />
+                      <span className="text-xs font-bold text-zinc-300">{stat.label}</span>
+                    </div>
+                    <span className="text-xs font-black text-white">{stat.value}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Workers Table */}
-              <div className="space-y-4">
+              {/* Workers List in Modal */}
+              <div className="space-y-3">
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
                   <UserCheck className="w-3 h-3" />
                   Cuadrilla Reportada
                 </h4>
-                <div className="bg-black/20 rounded-3xl border border-white/5 overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-white/5 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                        <th className="px-6 py-4">Operario</th>
-                        <th className="px-6 py-4">Empresa</th>
-                        <th className="px-6 py-4">Normal</th>
-                        <th className="px-6 py-4">Extra</th>
-                        <th className="px-6 py-4 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {selectedReport.workEntries.map((entry, idx) => (
-                        <tr key={idx} className="text-[11px] font-bold text-white hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col">
-                              <span>{entry.workerNameSnapshot}</span>
-                              <span className="text-[8px] text-slate-500 uppercase">{entry.workerCategorySnapshot}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-slate-400">{entry.companyNameSnapshot}</td>
-                          <td className="px-6 py-4">{entry.normalHours}H</td>
-                          <td className="px-6 py-4 text-[#FF6600]">{entry.extraHours}H</td>
-                          <td className="px-6 py-4 text-right font-black">{entry.totalHours}H</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="flex flex-col space-y-2">
+                  {selectedReport.workEntries.map((entry, idx) => (
+                    <div key={idx} className="bg-black/30 border border-white/10 rounded-2xl p-3.5 flex flex-col space-y-2 text-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                        <div>
+                          <span className="font-bold text-white block">{entry.workerNameSnapshot}</span>
+                          <span className="text-[9px] text-slate-400 uppercase font-semibold">{entry.workerCategorySnapshot} • {entry.companyNameSnapshot}</span>
+                        </div>
+                        <span className="font-black text-[#FF6600] font-mono text-xs">{entry.totalHours}H</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Horas Normales: <strong className="text-slate-200">{entry.normalHours}H</strong></span>
+                        <span>Horas Extras: <strong className="text-[#FF6600]">{entry.extraHours}H</strong></span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -509,13 +468,37 @@ export const DailyReportsView: React.FC<DailyReportsViewProps> = ({ state, onOpe
                 </div>
               )}
 
-              {/* Bottom Close Button for Usability */}
-              <div className="pt-4 border-t border-white/5 flex justify-end shrink-0">
+              {/* Bottom Actions and Validation Toolbar */}
+              <div className="pt-4 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  {/* Validation Action for Site Manager (Jefe de Obra) */}
+                  {user.role === 'SITE_MANAGER' && selectedReport.status !== 'Locked' && (
+                    <button
+                      onClick={() => handleValidateBySiteManager(selectedReport)}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Validar Parte (Jefe de Obra)</span>
+                    </button>
+                  )}
+
+                  {/* Certification Action for Constructora Admin */}
+                  {user.role === 'MAIN_CONTRACTOR_ADMIN' && selectedReport.status !== 'Locked' && (
+                    <button
+                      onClick={() => handleCertifyByConstructora(selectedReport)}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-[#EA580C] hover:bg-[#c2410c] text-white font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>Aprobar y Certificar (Constructora)</span>
+                    </button>
+                  )}
+                </div>
+
                 <button
                   onClick={() => setSelectedReport(null)}
-                  className="w-full sm:w-auto px-5 py-3 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer text-center active:scale-95 border border-white/5"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all cursor-pointer text-center border border-white/5"
                 >
-                  Volver a la Lista (Cerrar)
+                  Cerrar
                 </button>
               </div>
             </div>
@@ -533,7 +516,7 @@ export const DailyReportsView: React.FC<DailyReportsViewProps> = ({ state, onOpe
                 </div>
               </div>
               <div className="space-y-8">
-                <div className="grid grid-cols-2 gap-8 border-b border-gray-200 pb-8">
+                <div className="flex flex-col space-y-4 border-b border-gray-200 pb-8">
                   <div>
                     <h3 className="text-xs font-black uppercase text-gray-500 mb-2">Proyecto</h3>
                     <p className="text-lg font-black">{selectedReport.projectNameSnapshot}</p>

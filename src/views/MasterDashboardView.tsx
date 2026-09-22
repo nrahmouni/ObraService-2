@@ -312,7 +312,7 @@ export const MasterDashboardView: React.FC = () => {
 
       {/* Overview Stats Bar */}
       <section className="bg-slate-900/40 border-b border-slate-900 p-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="max-w-7xl mx-auto flex flex-col space-y-2">
           {[
             { label: 'Empresas Unidas', val: companies.length, color: 'text-blue-400' },
             { label: 'Usuarios Totales', val: users.length, color: 'text-amber-500' },
@@ -362,7 +362,7 @@ export const MasterDashboardView: React.FC = () => {
           
           {/* TAB 1: Companies */}
           {activeTab === 'companies' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col space-y-6">
               
               {/* Add Company Column */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 self-start">
@@ -435,7 +435,7 @@ export const MasterDashboardView: React.FC = () => {
               </div>
 
               {/* Companies List Column */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+              <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-6">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
                   <h3 className="text-sm font-black uppercase tracking-tight text-white flex items-center gap-2">
                     <Building2 className="w-4.5 h-4.5 text-amber-500" />
@@ -516,7 +516,7 @@ export const MasterDashboardView: React.FC = () => {
 
           {/* TAB 2: Database Inspector */}
           {activeTab === 'database' && (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="flex flex-col space-y-6">
               
               {/* Collections Selector Sidebar */}
               <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-1.5">
@@ -552,7 +552,7 @@ export const MasterDashboardView: React.FC = () => {
               </div>
 
               {/* Data Inspector Display Console */}
-              <div className="lg:col-span-3 bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col min-h-[500px]">
+              <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col min-h-[500px]">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
                   <div>
                     <h3 className="text-sm font-black uppercase tracking-tight text-white font-mono flex items-center gap-2">
@@ -602,7 +602,7 @@ export const MasterDashboardView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col space-y-3">
                 {filteredUsers.map((u) => {
                   // Don't let King Master impersonate themselves
                   if (u.id === appState.currentUser?.id) return null;
@@ -646,7 +646,7 @@ export const MasterDashboardView: React.FC = () => {
 
           {/* TAB 4: Offline Queue Control */}
           {activeTab === 'offline' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="flex flex-col space-y-6">
               
               {/* Queue Control Column */}
               <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 self-start">
@@ -698,7 +698,7 @@ export const MasterDashboardView: React.FC = () => {
               </div>
 
               {/* Pending Queue Items */}
-              <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6">
+              <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-6">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
                   <h3 className="text-sm font-black uppercase tracking-tight text-white flex items-center gap-2">
                     <Radio className="w-4.5 h-4.5 text-amber-500 animate-pulse" />

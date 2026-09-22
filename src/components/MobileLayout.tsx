@@ -142,21 +142,21 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans antialiased selection:bg-brand-accent selection:text-white">
+    <div className="min-h-screen bg-[#121214] text-zinc-100 flex flex-col font-sans antialiased selection:bg-[#EA580C] selection:text-white">
       {/* Mobile-First Header */}
-      <header className="h-14 border-b border-slate-800 bg-[#0F172A]/90 backdrop-blur-md px-4 flex items-center justify-between sticky top-0 z-40">
+      <header className="h-14 border-b border-[#27272A] bg-[#18181B] px-4 flex items-center justify-between sticky top-0 z-40">
         <div 
           onClick={() => onSelectTab('dashboard')}
-          className="flex items-center gap-2.5 cursor-pointer group"
+          className="flex items-center gap-2.5 cursor-pointer"
         >
-          <div className="w-8 h-8 rounded-xl bg-brand-accent text-white flex items-center justify-center shadow-md shadow-brand-accent/20 group-hover:scale-105 transition-transform">
-            <HardHat className="w-4.5 h-4.5" />
+          <div className="w-8 h-8 rounded-lg bg-[#27272A] text-white flex items-center justify-center">
+            <HardHat className="w-4 h-4 text-[#EA580C]" />
           </div>
           <div>
-            <div className="text-xs font-black uppercase tracking-tight text-white group-hover:text-brand-accent transition-colors">
+            <div className="text-xs font-bold uppercase tracking-tight text-white">
               ObraService
             </div>
-            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate max-w-[130px]">
+            <div className="text-[10px] text-zinc-400 truncate max-w-[130px]">
               {activeCompany?.name || 'Constructora'}
             </div>
           </div>
@@ -165,30 +165,21 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
         <div className="flex items-center gap-2">
           {/* Online/Offline connectivity indicator */}
           <div
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+            className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
               isOnline
-                ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-800'
-                : 'bg-amber-950/60 text-amber-300 border border-amber-700 animate-pulse'
+                ? 'bg-zinc-800 text-zinc-300 border border-zinc-700'
+                : 'bg-amber-950/60 text-amber-300 border border-amber-800'
             }`}
           >
             {isOnline ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-            <span>{isOnline ? '4G Obra' : 'Offline'}</span>
+            <span>{isOnline ? 'Online' : 'Offline'}</span>
           </div>
-
-          {/* Quick Header Fichar Button */}
-          <button
-            onClick={() => setClockInModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-brand-accent hover:bg-brand-accent/90 text-white text-[10px] font-black uppercase tracking-wider shadow-sm transition-all cursor-pointer"
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Fichar</span>
-          </button>
 
           <NotificationBell currentUser={currentUser} />
 
           <button
             onClick={handleLogout}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white transition-colors"
             title="Cerrar Sesión"
           >
             <LogOut className="w-4 h-4" />
@@ -198,84 +189,71 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
 
       {/* Offline Alert Strip */}
       {!isOnline && (
-        <div className="bg-amber-500 text-slate-950 px-4 py-1.5 text-[11px] font-black uppercase tracking-wider flex items-center justify-between z-30 sticky top-14">
+        <div className="bg-amber-500 text-black px-4 py-1.5 text-xs font-bold flex items-center justify-between z-30 sticky top-14">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
-            <span>Sin Cobertura — Datos guardados en cola offline local</span>
+            <span className="w-2 h-2 rounded-full bg-black animate-ping" />
+            <span>Sin Cobertura — Datos guardados en cola local</span>
           </div>
         </div>
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-5xl mx-auto p-3 sm:p-4 pb-28">
+      <main className="flex-1 w-full max-w-4xl mx-auto p-3 sm:p-4 pb-24">
         {children}
       </main>
 
-      {/* Persistent Bottom Navigation Bar with Thumb-Friendly Geometry */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#0F172A]/95 backdrop-blur-md border-t border-slate-800 h-16 flex items-center justify-around px-2 z-40 shadow-xl pb-safe">
-        {/* Tab 1: Obras */}
+      {/* Persistent Clean Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-[#18181B] border-t border-[#27272A] h-14 flex items-center justify-around px-2 z-40">
+        {/* Tab 1: Inicio / Obras */}
         <button
-          onClick={() => onSelectTab('projects')}
-          className={`flex-1 flex flex-col items-center justify-center h-full transition-all cursor-pointer ${
-            currentTab === 'projects' || currentTab === 'dashboard'
-              ? 'text-brand-accent font-black'
-              : 'text-slate-400 hover:text-slate-200'
+          onClick={() => onSelectTab('dashboard')}
+          className={`flex-1 flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
+            currentTab === 'dashboard'
+              ? 'text-[#EA580C] font-bold'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <Building2 className="w-5 h-5 mb-0.5" />
-          <span className="text-[9px] uppercase tracking-tight font-black">Obras</span>
+          <Building2 className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] font-medium">Inicio</span>
         </button>
 
         {/* Tab 2: Partes */}
         <button
           onClick={() => onSelectTab('reports')}
-          className={`flex-1 flex flex-col items-center justify-center h-full mr-6 transition-all cursor-pointer ${
+          className={`flex-1 flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
             currentTab === 'reports'
-              ? 'text-brand-accent font-black'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-[#EA580C] font-bold'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <FileSpreadsheet className="w-5 h-5 mb-0.5" />
-          <span className="text-[9px] uppercase tracking-tight font-black">Partes</span>
+          <FileSpreadsheet className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] font-medium">Partes</span>
         </button>
-
-        {/* Central Raised Floating Action Button (FAB) */}
-        <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-50">
-          <button
-            onClick={() => setBottomSheetOpen(!bottomSheetOpen)}
-            className={`w-14 h-14 rounded-full bg-brand-accent text-white flex items-center justify-center shadow-xl shadow-brand-accent/30 hover:scale-105 active:scale-95 transition-all focus:outline-none border-4 border-[#0F172A] cursor-pointer ${
-              bottomSheetOpen ? 'rotate-45' : ''
-            }`}
-            aria-label="Acciones Rápidas"
-          >
-            <Plus className="w-7 h-7 stroke-[3]" />
-          </button>
-        </div>
 
         {/* Tab 3: Albaranes */}
         <button
           onClick={() => onSelectTab('delivery_notes')}
-          className={`flex-1 flex flex-col items-center justify-center h-full ml-6 transition-all cursor-pointer ${
+          className={`flex-1 flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
             currentTab === 'delivery_notes'
-              ? 'text-brand-accent font-black'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-[#EA580C] font-bold'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <FileText className="w-5 h-5 mb-0.5" />
-          <span className="text-[9px] uppercase tracking-tight font-black">Albaranes</span>
+          <FileText className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] font-medium">Albaranes</span>
         </button>
 
-        {/* Tab 4: Chat / Coordinación */}
+        {/* Tab 4: Chat */}
         <button
           onClick={() => onSelectTab('chat')}
-          className={`flex-1 flex flex-col items-center justify-center h-full transition-all cursor-pointer ${
+          className={`flex-1 flex flex-col items-center justify-center h-full transition-colors cursor-pointer ${
             currentTab === 'chat'
-              ? 'text-brand-accent font-black'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'text-[#EA580C] font-bold'
+              : 'text-zinc-400 hover:text-zinc-200'
           }`}
         >
-          <MessageSquare className="w-5 h-5 mb-0.5" />
-          <span className="text-[9px] uppercase tracking-tight font-black">Chat</span>
+          <MessageSquare className="w-4 h-4 mb-0.5" />
+          <span className="text-[10px] font-medium">Chat</span>
         </button>
       </nav>
 
@@ -310,28 +288,30 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
               </button>
             </div>
 
-            {/* The 3 Core Actions */}
-            <div className="grid grid-cols-1 gap-3">
-              {/* Action 1: Fichar */}
-              <button
-                onClick={() => {
-                  setBottomSheetOpen(false);
-                  setClockInModalOpen(true);
-                }}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-orange-50 hover:bg-orange-100/80 dark:bg-orange-950/30 dark:hover:bg-orange-950/50 border border-orange-200 dark:border-orange-800 text-left transition-all group cursor-pointer"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#FF6600] to-orange-500 text-white flex items-center justify-center shadow-md shadow-orange-500/20 shrink-0">
-                  <Clock className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="text-sm font-black uppercase text-slate-950 dark:text-white group-hover:text-[#FF6600] transition-colors">
-                    Fichar (Control de Presencia GPS)
+            {/* The Core Actions */}
+            <div className="flex flex-col space-y-3">
+              {/* Action 1: Fichar (Only for Site Managers / Admins) */}
+              {currentUser?.role !== 'SUBCONTRACTOR_USER' && (currentUser?.role as string) !== 'WORKER' && (
+                <button
+                  onClick={() => {
+                    setBottomSheetOpen(false);
+                    setClockInModalOpen(true);
+                  }}
+                  className="flex items-center gap-4 p-4 rounded-xl bg-[#18181B] hover:bg-[#202024] border border-[#27272A] text-left transition-colors group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-[#EA580C] text-white flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5" />
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
-                    Comprueba tu distancia a la obra y registra entrada o salida.
+                  <div>
+                    <div className="text-sm font-bold text-white group-hover:text-[#EA580C] transition-colors">
+                      Fichar (Jefe de Obra / Dirección)
+                    </div>
+                    <div className="text-xs text-zinc-400">
+                      Registro de presencia de dirección de obra vía GPS.
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
+              )}
 
               {/* Action 2: Subir Albarán */}
               <button
@@ -339,16 +319,16 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                   setBottomSheetOpen(false);
                   setUploadNoteModalOpen(true);
                 }}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left transition-all group cursor-pointer"
+                className="flex items-center gap-4 p-4 rounded-xl bg-[#18181B] hover:bg-[#202024] border border-[#27272A] text-left transition-colors group cursor-pointer"
               >
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
-                  <Upload className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                  <Upload className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-sm font-black uppercase text-slate-950 dark:text-white group-hover:text-emerald-500 transition-colors">
-                    Subir Albarán
+                  <div className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors">
+                    Subir Albarán de Materiales
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                  <div className="text-xs text-zinc-400">
                     Captura o introduce un albarán de entrega o remisión de material.
                   </div>
                 </div>
@@ -364,17 +344,17 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                     onSelectTab('reports');
                   }
                 }}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left transition-all group cursor-pointer"
+                className="flex items-center gap-4 p-4 rounded-xl bg-[#18181B] hover:bg-[#202024] border border-[#27272A] text-left transition-colors group cursor-pointer"
               >
-                <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0">
-                  <FileSpreadsheet className="w-6 h-6" />
+                <div className="w-10 h-10 rounded-lg bg-[#EA580C] text-white flex items-center justify-center shrink-0">
+                  <FileSpreadsheet className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-sm font-black uppercase text-slate-950 dark:text-white group-hover:text-blue-500 transition-colors">
-                    Nuevo Parte Diario (Wizard)
+                  <div className="text-sm font-bold text-white group-hover:text-[#EA580C] transition-colors">
+                    Nuevo Parte Diario de Trabajo
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-400">
-                    Inicia el asistente táctico paso a paso para el tajo de hoy.
+                  <div className="text-xs text-zinc-400">
+                    Asistente paso a paso para reportar tajo, operarios y horas.
                   </div>
                 </div>
               </button>
@@ -445,7 +425,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                 <select
                   value={noteProjectId}
                   onChange={(e) => setNoteProjectId(e.target.value)}
-                  className="w-full text-xs font-bold p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full text-xs font-bold p-3 rounded-2xl bg-[#18181B] border border-[#27272A] text-white outline-none focus:ring-2 focus:ring-[#EA580C] [&>option]:bg-[#18181B] [&>option]:text-white"
                 >
                   {activeProjects.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -455,7 +435,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col space-y-3">
                 <div>
                   <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                     Horas Ordinarias

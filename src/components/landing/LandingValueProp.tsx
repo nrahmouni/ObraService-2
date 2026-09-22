@@ -1,83 +1,89 @@
 import React from 'react';
-import { MapPin, WifiOff, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { MapPin, WifiOff, ShieldAlert, CheckCircle2, FileSpreadsheet, Lock, Radio } from 'lucide-react';
 
 export const LandingValueProp: React.FC = () => {
-  const blocks = [
+  const pillars = [
     {
-      num: '01',
       icon: MapPin,
-      title: 'Fichaje por Geolocalización en Obra',
-      subtitle: 'Validación automática por radio de coordenadas GPS',
-      description: 'El sistema valida de forma automática que el operario o jefe de equipo se encuentre dentro del radio perimetral autorizado de la obra (ej. 200m). Cero fichajes fuera de tajo.',
-      accent: 'text-amber-500',
-      badge: 'Precisión GPS Real'
+      tag: 'Geocerca Perimetral',
+      title: 'Geolocalización Real en Tajo',
+      description: 'Cálculo de distancia Haversine en metros para verificar con precisión milimétrica la presencia de capataces y operarios dentro del radio perimetral autorizado de la obra.',
+      stat: 'Cero fichajes fraudulentos',
+      badgeColor: 'bg-[#FF6600]/10 text-[#FF6600] border-[#FF6600]/20'
     },
     {
-      num: '02',
       icon: WifiOff,
-      title: 'Partes Diarios con Modo Offline',
-      subtitle: 'Cero pérdida de datos en sótanos y zonas sin cobertura',
-      description: 'Diseñado específicamente para entornos de construcción difíciles. Los operarios pueden registrar horas, cuadrillas e incidencias sin conexión; se sincronizan automáticamente al recuperar señal.',
-      accent: 'text-blue-400',
-      badge: 'Resiliencia Total'
+      tag: 'Offline-First Engine',
+      title: 'Continuidad en Sótanos y Zanjas',
+      description: 'Emisión fluida de partes de jornada sin cobertura. Toda la cuadrilla, horas y firmas se encolan de forma segura y se sincronizan instantáneamente al recuperar conectividad.',
+      stat: 'Persistencia garantizada',
+      badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20'
     },
     {
-      num: '03',
       icon: ShieldAlert,
-      title: 'Control Automático de PRL',
-      subtitle: 'Bloqueo preventivo de subcontratas con documentación caducada',
-      description: 'Verificación en tiempo real de TC1/TC2, seguros de responsabilidad civil y cursos de prevención de riesgos. El operario no puede acceder al tajo si falta documentación homologada.',
-      accent: 'text-emerald-400',
-      badge: 'Cumplimiento Ley 32/2006'
+      tag: 'Bloqueo Preventivo PRL',
+      title: 'Auditoría Legal y Libro de Subcontratación',
+      description: 'Control estricto de REA, seguros de RC, reconocimientos médicos y formación PRL. Bloqueo preventivo de subcontratas con documentación caducada según Ley 32/2006.',
+      stat: '100% Inmutable y Auditado',
+      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
     }
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 bg-slate-950 border-t border-slate-900">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <section className="py-20 px-4 sm:px-6 bg-[#070B14] border-t border-white/5">
+      <div className="max-w-5xl mx-auto space-y-12">
+        
         <div className="text-center space-y-3">
-          <h2 className="text-xs font-black uppercase tracking-widest text-amber-500 font-mono">Arquitectura Industrial</h2>
-          <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Pilares Técnicos para Operativa de Obra
-          </h3>
-          <p className="text-sm text-slate-400 max-w-lg mx-auto">
-            Sistemas robustos diseñados para capataces, jefes de obra y dirección facultativa.
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-[#FF6600]">
+            Arquitectura de Grado Industrial
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+            Diseñado para la Realidad del Sector Construcción
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
+            Desde el barro del tajo hasta la mesa de la dirección facultativa y el departamento de compras.
           </p>
         </div>
 
-        {/* 3 Clean Stacked Blocks (No complex grids) */}
-        <div className="space-y-4">
-          {blocks.map((block, idx) => (
-            <div 
-              key={idx}
-              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:border-slate-700 transition-all"
-            >
-              <div className="flex items-start gap-5">
-                <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0">
-                  <block.icon className={`w-7 h-7 ${block.accent}`} />
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-slate-500">{block.num}</span>
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                      {block.badge}
+        {/* 3 Industrial Cards */}
+        <div className="flex flex-col space-y-6">
+          {pillars.map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <div 
+                key={idx}
+                className="bg-[#0B101D] border border-white/10 hover:border-white/20 p-6 sm:p-7 rounded-3xl space-y-4 flex flex-col justify-between transition-all group"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-[#070B14] border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Icon className="w-6 h-6 text-[#FF6600]" />
+                    </div>
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${item.badgeColor}`}>
+                      {item.tag}
                     </span>
                   </div>
-                  <h4 className="text-xl font-bold text-white tracking-tight">{block.title}</h4>
-                  <p className="text-xs font-medium text-amber-500/90">{block.subtitle}</p>
-                  <p className="text-xs text-slate-400 leading-relaxed pt-1 max-w-xl">
-                    {block.description}
+
+                  <h3 className="text-lg font-black text-white tracking-tight leading-snug">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    {item.description}
                   </p>
                 </div>
-              </div>
 
-              <div className="shrink-0 flex items-center gap-2 self-end md:self-center text-xs font-bold text-slate-400">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Activo</span>
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-bold text-slate-300">
+                  <span className="text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {item.stat}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
       </div>
     </section>
   );

@@ -188,76 +188,70 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="bg-[#0F172A] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <Table headers={['Colaborador / Email', 'Rol de Acceso', 'Proyectos con Acceso', 'Estado', 'Link de Acceso']}>
-          {combined.map(row => {
-            const assignedProjects = state.projects.filter(p => row.projectIds.includes(p.id));
-            return (
-              <tr key={row.id} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/40 transition-colors">
-                <td className="px-6 py-4.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-xs font-black text-slate-300 uppercase">
-                      {row.name[0]}
-                    </div>
-                    <div>
-                      <div className="text-xs font-black text-slate-200 uppercase">{row.name}</div>
-                      <div className="text-[10px] font-bold text-slate-500">{row.email}</div>
-                    </div>
+      {/* Users Cards List */}
+      <div className="flex flex-col space-y-3 w-full">
+        {combined.map(row => {
+          const assignedProjects = state.projects.filter(p => row.projectIds.includes(p.id));
+          return (
+            <div key={row.id} className="bg-[#0F172A] border border-slate-800 rounded-2xl p-4 flex flex-col space-y-3 shadow-lg">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-xs font-black text-slate-300 uppercase">
+                    {row.name[0]}
                   </div>
-                </td>
+                  <div>
+                    <div className="text-xs font-black text-slate-100 uppercase">{row.name}</div>
+                    <div className="text-[10px] font-bold text-slate-500">{row.email}</div>
+                  </div>
+                </div>
+                {row.isPending ? (
+                  <span className="inline-flex items-center gap-1 text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-950/20 px-2 py-0.5 rounded border border-amber-900">
+                    Invitado
+                  </span>
+                ) : (
+                  <StatusPill status={row.active ? 'Active' : 'Paused'} />
+                )}
+              </div>
 
-                <td className="px-6 py-4.5">
-                  <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-slate-950 border border-slate-800 text-slate-300">
+              <div className="flex flex-col space-y-2 text-xs">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Rol de Acceso</span>
+                  <span className="font-bold text-slate-200 uppercase">
                     {row.role === 'MAIN_CONTRACTOR_ADMIN' ? 'Administrador' : row.role === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Subcontrata'}
                   </span>
-                </td>
-
-                <td className="px-6 py-4.5">
-                  <div className="flex flex-wrap gap-1 max-w-xs">
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Proyectos con Acceso</span>
+                  <div className="flex flex-wrap gap-1">
                     {assignedProjects.length > 0 ? (
                       assignedProjects.map(p => (
-                        <span key={p.id} className="text-[9px] bg-slate-950 border border-slate-800 text-slate-300 font-bold px-1.5 py-0.5 rounded">
+                        <span key={p.id} className="text-[9px] bg-slate-950 border border-slate-800 text-slate-300 font-bold px-2 py-0.5 rounded-md">
                           {p.name}
                         </span>
                       ))
                     ) : (
-                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-wider">Todas las obras</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Todas las obras</span>
                     )}
                   </div>
-                </td>
+                </div>
+              </div>
 
-                <td className="px-6 py-4.5 text-center">
-                  {row.isPending ? (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-950/20 px-2 py-0.5 rounded border border-amber-900">
-                      Invitado
-                    </span>
-                  ) : (
-                    <StatusPill status={row.active ? 'Active' : 'Paused'} />
-                  )}
-                </td>
-
-                <td className="px-6 py-4.5 text-right">
-                  {row.isPending ? (
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/?invite=${row.code}`);
-                          toast.success('¡Magic link copiado!');
-                        }}
-                        className="px-2 py-1 bg-slate-950 border border-slate-800 text-[9px] font-black uppercase tracking-widest text-slate-300 rounded cursor-pointer hover:bg-slate-900"
-                      >
-                        Copiar Link
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Activo</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </Table>
+              {row.isPending && (
+                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-end">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/?invite=${row.code}`);
+                      toast.success('¡Magic link copiado!');
+                    }}
+                    className="px-3 py-1.5 bg-slate-950 border border-slate-800 text-[10px] font-black uppercase tracking-widest text-brand-accent hover:bg-slate-900 rounded-lg cursor-pointer transition-all flex items-center gap-1.5"
+                  >
+                    <span>Copiar Link de Invitación</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Invite Modal Form */}
@@ -305,7 +299,7 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as any)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200"
+                className="w-full bg-[#18181B] border border-[#27272A] rounded-lg px-3 py-2 text-xs font-bold text-white [&>option]:bg-[#18181B] [&>option]:text-white"
               >
                 <option value="SITE_MANAGER">Jefe de Obra (SITE MANAGER)</option>
                 <option value="SUBCONTRACTOR_USER">Usuario Subcontrata</option>

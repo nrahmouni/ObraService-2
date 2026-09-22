@@ -115,8 +115,8 @@ export const LandingPricing: React.FC<LandingPricingProps> = ({ onOpenRegister }
           </div>
         </div>
 
-        {/* Pricing Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        {/* Pricing Cards */}
+        <div className="flex flex-col space-y-8 items-stretch">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}

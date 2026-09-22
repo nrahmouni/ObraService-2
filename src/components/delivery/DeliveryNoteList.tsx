@@ -63,45 +63,48 @@ export const DeliveryNoteList: React.FC<DeliveryNoteListProps> = ({
         )}
       </div>
 
-      {/* Main Albaranes Grid/Table */}
-      <div className="bg-[#0F172A] border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <Table headers={['Código / Referencia', 'Empresa Subcontratista', 'Obra / Proyecto', 'Total Horas', 'Estado', '']}>
-          {notes.map(note => (
-            <tr 
-              key={note.id} 
-              className="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/40 transition-colors cursor-pointer group"
-              onClick={() => onSelect(note)}
-            >
-              <td className="px-6 py-4">
-                <div className="text-xs font-black text-slate-200 uppercase tracking-wider font-mono">{note.code}</div>
-                <div className="text-[10px] text-slate-500 font-bold mt-0.5">{note.date}</div>
-              </td>
+      {/* Main Albaranes List */}
+      <div className="flex flex-col space-y-3 w-full">
+        {notes.map(note => (
+          <div 
+            key={note.id} 
+            className="bg-[#0F172A] border border-slate-800 hover:border-slate-700 rounded-2xl p-4 transition-all cursor-pointer flex flex-col space-y-3 group shadow-lg"
+            onClick={() => onSelect(note)}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-slate-100 uppercase font-mono tracking-wider">{note.code}</span>
+                <span className="text-[10px] text-slate-400 font-bold">• {note.date}</span>
+              </div>
+              <StatusPill status={note.status} />
+            </div>
 
-              <td className="px-6 py-4 text-xs font-bold text-slate-300 uppercase">
-                {note.subcontractorCompanyName}
-              </td>
+            <div className="flex flex-col space-y-1.5 text-xs">
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Empresa Subcontratista</span>
+                <span className="font-bold text-slate-200 uppercase">{note.subcontractorCompanyName}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Obra / Proyecto</span>
+                <span className="font-medium text-slate-300 uppercase">{note.projectNameSnapshot}</span>
+              </div>
+            </div>
 
-              <td className="px-6 py-4 text-xs font-bold text-slate-300 uppercase">
-                {note.projectNameSnapshot}
-              </td>
-
-              <td className="px-6 py-4 text-xs font-black text-brand-accent font-mono">
-                {note.totalHours} H
-              </td>
-
-              <td className="px-6 py-4">
-                <StatusPill status={note.status} />
-              </td>
-
-              <td className="px-6 py-4 text-right">
-                <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-brand-accent group-hover:translate-x-0.5 transition-all inline" />
-              </td>
-            </tr>
-          ))}
-        </Table>
+            <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Total:</span>
+                <span className="font-black text-brand-accent font-mono">{note.totalHours} Horas</span>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 group-hover:text-brand-accent transition-colors">
+                <span>Ver Albarán</span>
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </div>
+          </div>
+        ))}
 
         {notes.length === 0 && (
-          <div className="p-8 text-center text-slate-500 text-xs font-bold uppercase tracking-wider">
+          <div className="p-8 text-center bg-[#0F172A] border border-slate-800 rounded-2xl text-slate-500 text-xs font-bold uppercase tracking-wider">
             No se han encontrado albaranes de jornada registrados
           </div>
         )}

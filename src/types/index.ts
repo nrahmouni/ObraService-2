@@ -471,7 +471,7 @@ export interface ComplianceDocument {
 export interface AppState {
   isDemoMode: boolean;
   theme: 'light' | 'dark';
-  viewPreference: 'grid' | 'list';
+  viewPreference: 'cards' | 'list';
   currentUser: User | null;
   companies: Company[];
   users: User[];

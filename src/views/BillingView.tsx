@@ -28,7 +28,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ state }) => {
         <p className="text-xs text-slate-400 mt-1">Consulta el estado de cobros, certificaciones de obra y remisiones de albaranes de subcontratas.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="flex flex-col space-y-3">
         <Card>
           <div className="flex items-center justify-between">
             <div>
@@ -68,19 +68,23 @@ export const BillingView: React.FC<BillingViewProps> = ({ state }) => {
 
       <div className="space-y-3">
         <h2 className="text-sm font-black text-slate-300 uppercase tracking-wider">Historial de Facturas Emitidas</h2>
-        <Table headers={['Factura', 'Concepto', 'Fecha Emisión', 'Importe', 'Estado']}>
+        <div className="flex flex-col space-y-3 w-full">
           {invoices.map((inv) => (
-            <tr key={inv.id} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/20 transition-colors">
-              <td className="px-6 py-4.5 text-xs font-black text-slate-200">{inv.id}</td>
-              <td className="px-6 py-4.5 text-xs text-slate-300">{inv.concept}</td>
-              <td className="px-6 py-4.5 text-xs text-slate-400 font-mono">{inv.date}</td>
-              <td className="px-6 py-4.5 text-xs font-bold text-slate-200">{inv.amount}</td>
-              <td className="px-6 py-4.5">
+            <div key={inv.id} className="bg-[#0F172A] border border-slate-800 rounded-2xl p-4 flex flex-col space-y-3 shadow-lg">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                <span className="text-xs font-black text-slate-100 font-mono uppercase">{inv.id}</span>
                 <StatusPill status={inv.status} />
-              </td>
-            </tr>
+              </div>
+              <div className="flex flex-col space-y-1 text-xs">
+                <span className="text-slate-200 font-medium">{inv.concept}</span>
+                <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
+                  <span>Emisión: <strong className="text-slate-300 font-mono">{inv.date}</strong></span>
+                  <span className="font-black text-brand-accent font-mono text-xs">{inv.amount}</span>
+                </div>
+              </div>
+            </div>
           ))}
-        </Table>
+        </div>
       </div>
     </div>
   );

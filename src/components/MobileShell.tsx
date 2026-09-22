@@ -10,8 +10,7 @@ import { DailyReportWizard } from '../views/DailyReportWizard';
 import { NotFoundView } from '../views/NotFoundView';
 import { AppState } from '../types';
 import { obraStore } from '../services/store';
-import { ClockInButton } from './ClockInButton';
-import { Plus, ShieldCheck, Building2 } from 'lucide-react';
+import { Plus, ShieldCheck, Building2, FileSpreadsheet, FileText, MessageSquare, ChevronRight } from 'lucide-react';
 
 interface MobileShellProps {
   state: AppState;
@@ -36,6 +35,8 @@ export const MobileShell: React.FC<MobileShellProps> = ({ state }) => {
   };
 
   const currentUser = state.currentUser;
+  const activeCompany = state.companies.find(c => c.id === currentUser.companyId);
+  const activeProject = state.projects.find(p => currentUser.assignedProjectIds?.includes(p.id)) || state.projects[0];
 
   return (
     <MobileLayout
@@ -49,58 +50,101 @@ export const MobileShell: React.FC<MobileShellProps> = ({ state }) => {
       <Routes>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
         <Route path="/dashboard" element={
-          <div className="p-4 space-y-6">
-            {/* Greeting & Status Card */}
-            <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#FF6600]">Panel Operario</span>
-                  <h2 className="text-lg font-black">{currentUser.name}</h2>
+          <div className="flex flex-col space-y-4 w-full text-zinc-200">
+            {/* 1. Header Section: Contrata / Subcontrata & Obra */}
+            <div className="w-full bg-[#18181B] border border-[#27272A] p-4 rounded-xl flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                  {activeCompany?.name || 'Subcontrata / Contrata'}
                 </div>
-                <div className="w-10 h-10 bg-slate-800 rounded-2xl flex items-center justify-center text-[#FF6600]">
-                  <Building2 className="w-5 h-5" />
+                <h1 className="text-base font-bold text-white mt-0.5">{currentUser.name}</h1>
+                <div className="text-xs text-zinc-400 mt-0.5 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-[#EA580C]" />
+                  <span>Obra: {activeProject?.name || 'Obra Asignada'}</span>
                 </div>
               </div>
-
-              <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-medium">Estado PRL:</span>
-                <span className="bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Aprobado
-                </span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-800 text-emerald-400 text-xs font-semibold shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                <span>PRL Aprobado</span>
               </div>
             </div>
 
-            {/* Giant Clock-In / Clock-Out Button */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center space-y-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Fichaje de Jornada en Tajo</h3>
-              <div className="flex justify-center">
-                <ClockInButton state={state} />
-              </div>
-            </div>
-
-            {/* Quick Action: Report Tajo */}
+            {/* 2. Direct Task Action: Emitir Parte Diario */}
             <button
               onClick={() => navigate('/mobile/nuevo-parte')}
-              className="w-full bg-[#FF6600] hover:bg-[#e05a00] text-white p-4 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#FF6600]/25 transition-all cursor-pointer"
+              className="w-full bg-[#EA580C] hover:bg-[#c2410c] text-white p-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
             >
-              <Plus className="w-5 h-5 stroke-[3]" /> Reportar Nuevo Parte de Tajo
+              <Plus className="w-4 h-4" />
+              <span>Emitir Parte Diario de Trabajo</span>
             </button>
 
-            {/* Recent Reports */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Mis Partes Recientes</h4>
-              {(state.reports || []).slice(0, 3).map(rep => {
-                const totalHrs = rep.totalHours || (rep.workEntries || []).reduce((acc, we) => acc + (we.totalHours || 0), 0);
-                return (
-                  <div key={rep.id} className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-black text-slate-900">{rep.code} - {rep.projectNameSnapshot}</div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">{rep.date} • {totalHrs} hrs</div>
+            {/* 3. Direct Task Action: Albaranes */}
+            <div
+              onClick={() => navigate('/mobile/delivery_notes')}
+              className="w-full bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] hover:bg-[#1C1C20] p-4 rounded-xl flex items-center justify-between cursor-pointer transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#27272A] text-zinc-200 flex items-center justify-center shrink-0">
+                  <FileText className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Albaranes de Materiales y Tajo</h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">Subir foto o firmar albaranes de entrega</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-white shrink-0" />
+            </div>
+
+            {/* 4. Direct Task Action: Chat con Jefe de Obra */}
+            <div
+              onClick={() => navigate('/mobile/chat')}
+              className="w-full bg-[#18181B] border border-[#27272A] hover:border-[#3F3F46] hover:bg-[#1C1C20] p-4 rounded-xl flex items-center justify-between cursor-pointer transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#27272A] text-zinc-200 flex items-center justify-center shrink-0">
+                  <MessageSquare className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Canal con Jefe de Obra</h3>
+                  <p className="text-xs text-zinc-400 mt-0.5">Consultas, tajos e incidencias directas</p>
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-zinc-500 group-hover:text-white shrink-0" />
+            </div>
+
+            {/* 5. Recent Reports Section */}
+            <div className="w-full bg-[#18181B] border border-[#27272A] p-4 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Partes Emitidos Recientes</h3>
+                <button
+                  onClick={() => navigate('/mobile/reports')}
+                  className="text-xs text-[#EA580C] hover:underline font-semibold"
+                >
+                  Ver todos
+                </button>
+              </div>
+              <div className="divide-y divide-[#27272A]">
+                {(state.reports || []).slice(0, 3).map(rep => {
+                  const totalHrs = rep.totalHours || (rep.workEntries || []).reduce((acc, we) => acc + (we.totalHours || 0), 0);
+                  return (
+                    <div key={rep.id} className="py-2.5 flex items-center justify-between first:pt-0 last:pb-0">
+                      <div>
+                        <div className="text-xs font-bold text-white">{rep.projectNameSnapshot}</div>
+                        <div className="text-[11px] text-zinc-400 font-mono mt-0.5">{rep.date} • {rep.code}</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-white">{totalHrs}h</span>
+                        <span className="block text-[10px] text-zinc-400">{rep.status}</span>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700">Enviado</span>
+                  );
+                })}
+                {(state.reports || []).length === 0 && (
+                  <div className="text-xs text-zinc-500 py-3 text-center">
+                    No hay partes registrados aún.
                   </div>
-                );
-              })}
+                )}
+              </div>
             </div>
           </div>
         } />

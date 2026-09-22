@@ -79,25 +79,27 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({ state }) =
         />
       ) : (
         <div className="space-y-6">
-          {/* Subtabs Navigation */}
-          <div className="flex gap-6 border-b border-slate-800">
-            <button
-              onClick={() => { setActiveSubTab('albaranes'); setSearchQuery(''); }}
-              className={`pb-3 text-[10px] font-black uppercase tracking-widest border-b-2 cursor-pointer transition-all ${
-                activeSubTab === 'albaranes' ? 'border-brand-accent text-brand-accent' : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Albaranes de Certificación
-            </button>
-            <button
-              onClick={() => { setActiveSubTab('fichajes'); setSearchQuery(''); }}
-              className={`pb-3 text-[10px] font-black uppercase tracking-widest border-b-2 cursor-pointer transition-all ${
-                activeSubTab === 'fichajes' ? 'border-brand-accent text-brand-accent' : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Fichajes Geovallados
-            </button>
-          </div>
+          {/* Subtabs Navigation (Fichajes only visible for Site Managers and Admins) */}
+          {!isSubcontractor && (
+            <div className="flex gap-6 border-b border-slate-800">
+              <button
+                onClick={() => { setActiveSubTab('albaranes'); setSearchQuery(''); }}
+                className={`pb-3 text-[10px] font-black uppercase tracking-widest border-b-2 cursor-pointer transition-all ${
+                  activeSubTab === 'albaranes' ? 'border-brand-accent text-brand-accent' : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Albaranes de Certificación
+              </button>
+              <button
+                onClick={() => { setActiveSubTab('fichajes'); setSearchQuery(''); }}
+                className={`pb-3 text-[10px] font-black uppercase tracking-widest border-b-2 cursor-pointer transition-all ${
+                  activeSubTab === 'fichajes' ? 'border-brand-accent text-brand-accent' : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Presencia y Fichajes de Dirección
+              </button>
+            </div>
+          )}
 
           {activeSubTab === 'albaranes' ? (
             <div className="space-y-4">
@@ -141,44 +143,33 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({ state }) =
                   </h3>
                 </div>
 
-                <div className="border border-slate-800 rounded-lg overflow-hidden">
-                  <Table headers={['Operario', 'Proyecto Destino', 'Tipo Registro', 'Coordenadas / Distancia', 'Fecha / Hora']}>
-                    {personalLogs.map(log => (
-                      <tr key={log.id} className="border-b border-slate-800/40 last:border-0 hover:bg-slate-900/20">
-                        <td className="px-5 py-3">
-                          <span className="text-xs font-black text-slate-200 block uppercase">{log.userNameSnapshot}</span>
-                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">{log.userRoleSnapshot === 'SUBCONTRACTOR_USER' ? 'Operario' : 'Jefe de Obra'}</span>
-                        </td>
-                        <td className="px-5 py-3 text-xs font-bold text-slate-300 uppercase">
-                          {log.projectNameSnapshot}
-                        </td>
-                        <td className="px-5 py-3 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
-                            log.status === 'In' 
-                              ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' 
-                              : 'bg-slate-950 border-slate-800 text-slate-400'
-                          }`}>
-                            {log.status === 'In' ? 'ENTRADA' : 'SALIDA'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3">
-                          <span className="font-mono text-xs text-slate-300">{log.lat.toFixed(5)}, {log.lng.toFixed(5)}</span>
-                          <span className="ml-2 text-[9px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-950/20 px-1 py-0.2 rounded border border-emerald-900">a {log.distanceMeters.toFixed(1)}m</span>
-                        </td>
-                        <td className="px-5 py-3 text-right">
-                          <span className="text-xs font-mono font-bold text-slate-300 block">
-                            {new Date(log.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">
-                            {new Date(log.timestamp).toLocaleDateString('es-ES')}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </Table>
+                <div className="flex flex-col space-y-2.5">
+                  {personalLogs.map(log => (
+                    <div key={log.id} className="border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col space-y-2 text-xs">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
+                        <div>
+                          <span className="text-xs font-black text-slate-100 uppercase block">{log.userNameSnapshot}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">{log.userRoleSnapshot === 'SUBCONTRACTOR_USER' ? 'Operario' : 'Jefe de Obra'} • {log.projectNameSnapshot}</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                          log.status === 'In' 
+                            ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' 
+                            : 'bg-slate-950 border-slate-800 text-slate-400'
+                        }`}>
+                          {log.status === 'In' ? 'ENTRADA' : 'SALIDA'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-slate-400">
+                        <span className="font-mono text-slate-300">{log.lat.toFixed(5)}, {log.lng.toFixed(5)} ({log.distanceMeters.toFixed(1)}m)</span>
+                        <span className="font-mono font-bold text-slate-200">
+                          {new Date(log.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ({new Date(log.timestamp).toLocaleDateString('es-ES')})
+                        </span>
+                      </div>
+                    </div>
+                  ))}
 
                   {personalLogs.length === 0 && (
-                    <div className="p-8 text-center text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    <div className="p-8 text-center bg-[#0F172A] border border-slate-800 rounded-xl text-slate-500 text-xs font-bold uppercase tracking-wider">
                       No hay registros de presencia recientes
                     </div>
                   )}

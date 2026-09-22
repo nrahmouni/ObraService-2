@@ -270,7 +270,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+              <div className="flex flex-col space-y-2.5 pt-2">
                 {checklist.map((item, idx) => (
                   <div 
                     key={idx} 
@@ -310,7 +310,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
               </div>
 
               {activeCompany ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="flex flex-col space-y-3 text-xs">
                   <div>
                     <span className="text-slate-700 block text-[10px] uppercase font-bold mb-0.5">Razón Social</span>
                     <strong className="text-[#0F172A] text-sm">{activeCompany.name}</strong>
@@ -321,7 +321,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
                     <strong className="text-[#0F172A] text-sm font-mono">{activeCompany.taxId}</strong>
                   </div>
 
-                  <div className="sm:col-span-2">
+                  <div className="w-full">
                     <span className="text-slate-700 block text-[10px] uppercase font-bold mb-0.5">Domicilio Social</span>
                     <span className="text-[#0F172A] font-medium">{activeCompany.address}</span>
                   </div>
@@ -380,7 +380,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
               <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Configuración legal de pagos corporativos</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex flex-col space-y-3">
               {[
                 { id: 'free', label: 'Plan Gratuito', price: '0€ / mes', limit: 'Hasta 1 proyecto' },
                 { id: 'growth', label: 'Plan Growth (Pymes)', price: '89€ / mes', limit: 'Proyectos ilimitados, 20 operarios' },
@@ -485,7 +485,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
               <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Administración de cookies, política RGPD y posicionamiento web</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col space-y-4">
               <div className="p-4 border border-slate-100 rounded-2xl space-y-3.5">
                 <h3 className="text-xs font-black uppercase text-slate-900">Cumplimiento Legal</h3>
                 
@@ -547,7 +547,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
               <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Estado del backend, reglas de protección y test de latencia en vivo</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col space-y-4">
               <div className="p-4 border border-slate-100 rounded-2xl space-y-3 bg-slate-50/50">
                 <h3 className="text-xs font-black uppercase text-slate-900">Protección del Sistema</h3>
                 

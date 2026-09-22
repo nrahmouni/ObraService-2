@@ -113,7 +113,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state }) => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="flex flex-col space-y-6">
         {/* User Account Info */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
           <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
@@ -207,7 +207,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state }) => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+        <div className="flex flex-col space-y-3 text-xs">
           <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-500/30 transition-all cursor-pointer">
             <input 
               type="checkbox" 

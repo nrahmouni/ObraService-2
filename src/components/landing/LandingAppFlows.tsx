@@ -44,7 +44,7 @@ export const LandingAppFlows: React.FC = () => {
           {/* Connector line (Desktop) */}
           <div className="absolute top-1/2 left-0 w-full h-0.5 bg-white/5 -translate-y-1/2 hidden lg:block" />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative">
+          <div className="flex flex-col space-y-12 relative">
             {steps.map((step, idx) => (
               <motion.div
                 key={idx}

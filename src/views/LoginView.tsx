@@ -151,7 +151,7 @@ export const LoginView: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nombre@constructora.es"
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-xs font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-base sm:text-xs font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition-colors"
             />
           </div>
 
@@ -165,7 +165,7 @@ export const LoginView: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-xs font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition-colors"
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3.5 text-base sm:text-xs font-bold text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition-colors"
             />
           </div>
 
@@ -184,15 +184,24 @@ export const LoginView: React.FC = () => {
             )}
           </button>
 
-          {/* Invitation Direct Link */}
-          <div className="pt-2 text-center">
+          {/* Register Company / Onboarding Direct Link */}
+          <div className="pt-2 flex flex-col gap-2 text-center">
+            <button
+              type="button"
+              onClick={() => navigate('/onboarding')}
+              className="w-full py-3 px-4 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-amber-400 hover:text-amber-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Building2 className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>¿Nueva Empresa? Registrar y Crear Espacio</span>
+            </button>
+
             <button
               type="button"
               onClick={() => navigate('/invitation')}
-              className="text-xs font-bold text-slate-400 hover:text-amber-400 transition-colors inline-flex items-center gap-1.5"
+              className="text-xs font-bold text-slate-400 hover:text-amber-400 transition-colors inline-flex items-center justify-center gap-1.5 py-1"
             >
-              <FileCheck className="w-3.5 h-3.5 text-blue-400" />
-              <span>¿Tienes código de invitación? Activa tu cuenta aquí</span>
+              <FileCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span>¿Tienes código de invitación de obra? Activa tu cuenta</span>
             </button>
           </div>
 
@@ -202,16 +211,16 @@ export const LoginView: React.FC = () => {
             <div className="flex-grow border-t border-slate-800"></div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="flex flex-col space-y-2">
             {DEMO_ACCOUNTS.map((acc, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => handleQuickDemo(acc.email)}
-                className="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left transition-all group cursor-pointer"
+                className="p-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left transition-all group cursor-pointer"
               >
-                <div className="text-[10px] font-black text-slate-200 truncate group-hover:text-amber-400">{acc.name}</div>
-                <div className="text-[8px] font-bold text-slate-500 uppercase truncate">{acc.role}</div>
+                <div className="text-xs font-black text-slate-200 truncate group-hover:text-amber-400">{acc.name}</div>
+                <div className="text-[9px] font-bold text-slate-500 uppercase truncate mt-0.5">{acc.role}</div>
               </button>
             ))}
           </div>

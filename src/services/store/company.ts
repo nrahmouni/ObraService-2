@@ -1,4 +1,4 @@
-import { AppState, Company, User, Invitation, UserRole, Worker } from '../../types';
+import { AppState, Company, User, Invitation, UserRole, Worker, Project } from '../../types';
 import { validateSpanishTaxId, generateWorkerCode } from '../../domain/rules';
 
 export const createCompany = (
@@ -244,11 +244,30 @@ export const acceptInvitation = (
   if (!codeOrId) return { success: false, error: 'Identificador de invitación no válido' };
   const clean = codeOrId.trim().toUpperCase();
   const cleanEmail = codeOrId.trim().toLowerCase();
-  const inv = (state.invitations || []).find(
+  let inv = (state.invitations || []).find(
     (i: Invitation) => i.code?.toUpperCase() === clean || 
          i.id === codeOrId || 
          (i.status === 'Pending' && i.email?.toLowerCase() === cleanEmail)
   );
+
+  if (!inv) {
+    const matchingCompany = state.companies.find((c: Company) => c.inviteCode?.toUpperCase() === clean || c.id === codeOrId);
+    if (matchingCompany) {
+      inv = {
+        id: `inv_${Date.now()}`,
+        code: matchingCompany.inviteCode,
+        email: `${(userData.name || 'usuario').toLowerCase().replace(/\s+/g, '.')}@${matchingCompany.inviteCode.toLowerCase()}.es`,
+        role: matchingCompany.type === 'SUBCONTRACTOR' ? 'SUBCONTRACTOR_USER' : 'SITE_MANAGER',
+        companyId: matchingCompany.id,
+        companyName: matchingCompany.name,
+        status: 'Pending',
+        invitedBy: 'usr_admin',
+        createdAt: new Date().toISOString(),
+        assignedProjectIds: state.projects.filter((p: Project) => p.companyId === matchingCompany.id).map((p: Project) => p.id)
+      };
+      state.invitations.push(inv);
+    }
+  }
 
   if (!inv) {
     return { success: false, error: 'Código de invitación no encontrado o no válido.' };

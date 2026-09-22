@@ -40,7 +40,7 @@ export const ProjectDetailSubcontractors: React.FC<ProjectDetailSubcontractorsPr
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="flex flex-col space-y-2">
         {/* Main Contractor */}
         <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export const ProjectDetailSubcontractors: React.FC<ProjectDetailSubcontractorsPr
           ))}
 
         {currentAssignedIds.length === 0 && (
-          <div className="sm:col-span-2 p-3.5 rounded-xl border border-dashed border-slate-800 bg-slate-900/50 flex items-center justify-between text-xs text-slate-400">
+          <div className="w-full p-3.5 rounded-xl border border-dashed border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
             <span>No hay subcontratas asignadas aún a este proyecto.</span>
             {isAdmin && (
               <button

@@ -38,10 +38,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
           ref={ref}
           id={selectId}
           disabled={disabled}
-          className={`w-full bg-brand-surface border text-sm text-brand-text rounded-xl px-4 py-3 min-h-[44px] transition-all outline-none appearance-none cursor-pointer
+          className={`w-full bg-[#18181B] border text-xs font-bold text-white rounded-xl px-4 py-3 min-h-[44px] transition-all outline-none appearance-none cursor-pointer [&>option]:bg-[#18181B] [&>option]:text-white [&>option]:py-2
             ${icon ? 'pl-11' : ''} 
-            ${error ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-800 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20'} 
-            disabled:opacity-50 disabled:bg-slate-900 disabled:pointer-events-none ${className}`}
+            ${error ? 'border-rose-500 focus:border-rose-500 focus:ring-1 focus:ring-rose-500' : 'border-[#27272A] hover:border-[#3F3F46] focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20'} 
+            disabled:opacity-50 disabled:bg-[#121214] disabled:pointer-events-none ${className}`}
           {...props}
         >
           {children}

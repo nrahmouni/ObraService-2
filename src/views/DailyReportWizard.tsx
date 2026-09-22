@@ -176,18 +176,18 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
               <select 
                 value={projectId} 
                 onChange={(e) => setProjectId(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3.5 text-xs font-bold text-white focus:outline-none focus:border-amber-500"
+                className="w-full bg-[#18181B] border border-[#27272A] rounded-2xl px-4 py-3.5 text-xs font-bold text-white focus:outline-none focus:border-[#EA580C] [&>option]:bg-[#18181B] [&>option]:text-white"
               >
                 {activeProjects.map(p => {
                   const locStr = typeof p.location === 'string' ? p.location : (p.location?.address || p.address || 'Ubicación');
                   return (
-                    <option key={p.id} value={p.id} className="bg-slate-900 text-white">{p.name} ({locStr})</option>
+                    <option key={p.id} value={p.id}>{p.name} ({locStr})</option>
                   );
                 })}
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col space-y-3">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Horas Totales</label>
                 <input 

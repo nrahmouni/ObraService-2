@@ -217,7 +217,7 @@ export const ProjectLocationPicker: React.FC<ProjectLocationPickerProps> = ({
         ))}
       </div>
 
-      {/* Interactive Map Canvas / Tile Grid */}
+      {/* Interactive Map Canvas / Tiles */}
       <div 
         className="relative flex-1 w-full h-full overflow-hidden cursor-crosshair"
         onClick={(e) => {
@@ -234,9 +234,9 @@ export const ProjectLocationPicker: React.FC<ProjectLocationPickerProps> = ({
           onLocationChange(newLat, newLng, selectedAddress);
         }}
       >
-        {/* Render 3x3 Tile Grid for seamless background */}
+        {/* Render 3x3 Tiles for seamless background */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="grid grid-cols-3 w-[768px] h-[768px] transform -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 absolute">
+          <div className="flex flex-wrap w-[768px] h-[768px] transform -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 absolute [&>img]:w-[256px] [&>img]:h-[256px]">
             {[-1, 0, 1].map((dy) =>
               [-1, 0, 1].map((dx) => (
                 <img

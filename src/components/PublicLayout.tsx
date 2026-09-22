@@ -172,7 +172,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden mt-3 pt-3 border-t border-white/10 space-y-3 pb-2 animate-in fade-in slide-in-from-top-2">
-            <div className="grid grid-cols-2 gap-2 text-xs font-bold text-slate-300">
+            <div className="flex flex-col space-y-2 text-xs font-bold text-slate-300">
               <Link
                 to="/producto/que-agilizamos"
                 onClick={() => setMobileMenuOpen(false)}

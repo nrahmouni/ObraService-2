@@ -126,8 +126,8 @@ export const DocsView: React.FC<DocsViewProps> = ({ state }) => {
         </div>
       </div>
 
-      {/* Categories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* Categories Linear List */}
+      <div className="flex flex-col space-y-6">
         {categories.map((category) => (
           <div key={category.id} className="bg-[#1F2329] border border-white/5 rounded-[2.5rem] p-8 hover:border-[#FF6600]/30 transition-all group flex flex-col">
             <div className="flex items-start justify-between mb-6">

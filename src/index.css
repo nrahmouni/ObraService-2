@@ -1,12 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-bg: #030712;
-  --color-brand-surface: #0f172a;
+  --color-brand-bg: #121214;
+  --color-brand-surface: #18181b;
   --color-brand-accent: #ea580c;
-  --color-brand-blue: #3b82f6;
-  --color-brand-border: #1e293b;
-  --color-brand-text: #f8fafc;
+  --color-brand-border: #27272a;
+  --color-brand-text: #f4f4f5;
   
   --font-display: "Bricolage Grotesque", sans-serif;
   --font-body: "Plus Jakarta Sans", sans-serif;
@@ -14,20 +13,33 @@
 
 @layer base {
   :root {
-    --brand-bg: #030712;
-    --brand-surface: #0f172a;
+    --brand-bg: #121214;
+    --brand-surface: #18181b;
     --brand-accent: #ea580c;
-    --brand-steel: #3b82f6;
-    --brand-text: #f8fafc;
-    --brand-border: #1e293b;
+    --brand-text: #f4f4f5;
+    --brand-border: #27272a;
+  }
+
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
   }
 
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #030712;
-    color: #f8fafc;
+    background-color: #121214;
+    color: #f4f4f5;
     selection-background-color: #ea580c;
     selection-color: #ffffff;
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, h4, h5, h6, .font-display {
@@ -35,4 +47,5 @@
     letter-spacing: -0.02em;
   }
 }
+
 

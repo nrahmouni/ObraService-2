@@ -7,8 +7,8 @@ export const LandingFooter: React.FC = () => {
   return (
     <footer className="py-20 border-t border-white/5 bg-[#0F0F12]">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          <div className="col-span-1 lg:col-span-1">
+        <div className="flex flex-col space-y-12 mb-16">
+          <div className="w-full">
             <div className="mb-6 scale-90 origin-left">
               <ObraServiceLogo />
             </div>

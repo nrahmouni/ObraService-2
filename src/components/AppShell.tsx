@@ -24,7 +24,6 @@ import {
   Network,
   Sun,
   Moon,
-  LayoutGrid,
   List,
   Map as MapIcon,
   MessageSquare

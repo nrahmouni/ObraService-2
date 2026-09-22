@@ -31,7 +31,7 @@ import * as reportModule from './store/report';
 interface StoreState {
   isDemoMode: boolean;
   theme: 'light' | 'dark';
-  viewPreference: 'grid' | 'list';
+  viewPreference: 'cards' | 'list';
   currentUser: User | null;
   companies: Company[];
   users: User[];
@@ -208,7 +208,7 @@ function getSeedState(): StoreState {
   return {
     isDemoMode: false,
     theme: 'light',
-    viewPreference: 'grid',
+    viewPreference: 'cards',
     currentUser: null,
     companies: seedCompanies,
     users: seedUsers,
@@ -267,7 +267,7 @@ function migrateLegacyLocalStorage() {
           const upgraded: any = {
             isDemoMode: parsed.isDemoMode ?? false,
             theme: parsed.theme || 'light',
-            viewPreference: parsed.viewPreference || 'grid',
+            viewPreference: parsed.viewPreference === 'list' ? 'list' : 'cards',
             currentUser: parsed.currentUser || null,
             companies: parsed.companies || [],
             users: parsed.users || [],
@@ -306,7 +306,7 @@ function loadInitialProductionState(): StoreState {
         return {
           isDemoMode: false,
           theme: parsed.theme || 'light',
-          viewPreference: parsed.viewPreference || 'grid',
+          viewPreference: parsed.viewPreference === 'list' ? 'list' : 'cards',
           currentUser: parsed.currentUser || null,
           companies: parsed.companies || [],
           users: parsed.users || [],
@@ -341,7 +341,7 @@ function loadInitialDemoState(): StoreState {
         return {
           isDemoMode: true,
           theme: parsed.theme || 'light',
-          viewPreference: parsed.viewPreference || 'grid',
+          viewPreference: parsed.viewPreference === 'list' ? 'list' : 'cards',
           currentUser: parsed.currentUser || null,
           companies: parsed.companies || [],
           users: parsed.users || [],
@@ -435,7 +435,7 @@ class ObraStore {
         .flatMap(p => p.assignedSubcontractorIds || []);
 
       snapshot.companies = companies.filter(c => 
-        c.id === cid || c.type === 'MAIN_CONTRACTOR' || assignedSubIds.includes(c.id)
+        c.id === cid || assignedSubIds.includes(c.id) || myProjects.some(p => p.companyId === c.id)
       );
       snapshot.users = users.filter(u => 
         u.companyId === cid || assignedSubIds.includes(u.companyId)
@@ -499,7 +499,7 @@ class ObraStore {
     this.notify();
   }
 
-  public setViewPreference(pref: 'grid' | 'list') {
+  public setViewPreference(pref: 'cards' | 'list') {
     this.state.viewPreference = pref;
     this.notify();
   }
@@ -545,6 +545,19 @@ class ObraStore {
   }
 
   // --- Authentication Lifecycle ---
+
+  public switchRole(targetRole: UserRole): void {
+    const user = this.state.users.find(u => u.role === targetRole && u.active);
+    if (user) {
+      this.state.currentUser = user;
+    } else if (this.state.currentUser) {
+      this.state.currentUser = {
+        ...this.state.currentUser,
+        role: targetRole
+      };
+    }
+    this.notify();
+  }
 
   public login(email: string, role?: UserRole): { success: boolean; error?: string } {
     const cleanEmail = email.trim().toLowerCase();
@@ -637,6 +650,7 @@ class ObraStore {
     type: 'MAIN_CONTRACTOR' | 'SUBCONTRACTOR';
     address: string;
   }): { success: boolean; error?: string; company?: Company } {
+    this.state.isDemoMode = false;
     const res = companyModule.createCompany(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
     return res;
@@ -710,11 +724,29 @@ class ObraStore {
     if (!identifier) return undefined;
     const clean = identifier.trim().toUpperCase();
     const cleanEmail = identifier.trim().toLowerCase();
-    return (this.state.invitations || []).find(
+    const found = (this.state.invitations || []).find(
       (i: Invitation) => i.code?.toUpperCase() === clean || 
            i.id === identifier || 
            (i.status === 'Pending' && i.email?.toLowerCase() === cleanEmail)
     );
+    if (found) return found;
+
+    const company = (this.state.companies || []).find((c: Company) => c.inviteCode?.toUpperCase() === clean || c.id === identifier);
+    if (company) {
+      return {
+        id: `inv_${company.inviteCode}`,
+        code: company.inviteCode,
+        email: `alta_${company.inviteCode.toLowerCase()}@obra.es`,
+        role: company.type === 'SUBCONTRACTOR' ? 'SUBCONTRACTOR_USER' : 'SITE_MANAGER',
+        companyId: company.id,
+        companyName: company.name,
+        status: 'Pending',
+        invitedBy: 'usr_admin',
+        createdAt: new Date().toISOString(),
+        assignedProjectIds: (this.state.projects || []).filter((p: Project) => p.companyId === company.id).map((p: Project) => p.id)
+      };
+    }
+    return undefined;
   }
 
   public acceptInvitation(codeOrId: string, userData: { name: string; password?: string }): { success: boolean; user?: User; error?: string } {
@@ -1347,6 +1379,455 @@ class ObraStore {
       }
     }
   }
+
+  /**
+   * Generates a complete, rich set of randomized real-world construction data for testing
+   */
+  public populateRandomTestData() {
+    const timestamp = new Date().toISOString();
+    const todayStr = timestamp.split('T')[0];
+    const currentCompId = this.state.currentUser?.companyId || 'comp_norte';
+
+    // 1. Mock Subcontractors
+    const newSubcontractors: Company[] = [
+      {
+        id: `comp_sub_${Date.now()}_1`,
+        name: 'Estructuras & Encofrados Sureste S.L.',
+        taxId: 'B84930218',
+        type: 'SUBCONTRACTOR',
+        address: 'Polígono Industrial Las Mercedes, Nave 14, Madrid',
+        inviteCode: `SUB${Math.floor(1000 + Math.random() * 9000)}`,
+        active: true,
+        subscriptionStatus: 'Active',
+        createdAt: timestamp,
+      },
+      {
+        id: `comp_sub_${Date.now()}_2`,
+        name: 'Instalaciones ClimaTech & Fluidos S.L.',
+        taxId: 'B91823019',
+        type: 'SUBCONTRACTOR',
+        address: 'Calle Metalurgia 8, Getafe, Madrid',
+        inviteCode: `SUB${Math.floor(1000 + Math.random() * 9000)}`,
+        active: true,
+        subscriptionStatus: 'Active',
+        createdAt: timestamp,
+      },
+      {
+        id: `comp_sub_${Date.now()}_3`,
+        name: 'Excavaciones y Cimentaciones Madrid S.L.',
+        taxId: 'B72819302',
+        type: 'SUBCONTRACTOR',
+        address: 'Avenida de la Industria 42, Coslada, Madrid',
+        inviteCode: `SUB${Math.floor(1000 + Math.random() * 9000)}`,
+        active: true,
+        subscriptionStatus: 'Active',
+        createdAt: timestamp,
+      }
+    ];
+
+    // 2. Mock Projects
+    const newProjects: Project[] = [
+      {
+        id: `proj_${Date.now()}_1`,
+        code: `PRJ-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: 'Hospital Universitario Central - Fase II',
+        companyId: currentCompId,
+        status: 'Active',
+        budget: 2450000,
+        startDate: todayStr,
+        endDate: '2027-06-30',
+        validationRadiusMeters: 250,
+        assignedSubcontractorIds: newSubcontractors.map(s => s.id),
+        location: {
+          address: 'Calle Sinesio Delgado 10, Madrid',
+          lat: 40.4728,
+          lng: -3.6934,
+        },
+      },
+      {
+        id: `proj_${Date.now()}_2`,
+        code: `PRJ-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: 'Torre Residencial Jardines de Chamartín',
+        companyId: currentCompId,
+        status: 'Active',
+        budget: 4800000,
+        startDate: todayStr,
+        endDate: '2027-12-15',
+        validationRadiusMeters: 300,
+        assignedSubcontractorIds: [newSubcontractors[0].id, newSubcontractors[1].id],
+        location: {
+          address: 'Paseo de la Habana 88, Madrid',
+          lat: 40.4578,
+          lng: -3.6823,
+        },
+      },
+      {
+        id: `proj_${Date.now()}_3`,
+        code: `PRJ-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: 'Centro Logístico San Fernando E-4',
+        companyId: currentCompId,
+        status: 'Active',
+        budget: 1350000,
+        startDate: todayStr,
+        endDate: '2026-11-30',
+        validationRadiusMeters: 350,
+        assignedSubcontractorIds: [newSubcontractors[1].id, newSubcontractors[2].id],
+        location: {
+          address: 'Polígono Sur Parcela 12, San Fernando de Henares',
+          lat: 40.4285,
+          lng: -3.5350,
+        },
+      }
+    ];
+
+    // 3. Mock Machinery
+    const newMachinery: Machinery[] = [
+      {
+        id: `mac_${Date.now()}_1`,
+        code: `MAC-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        name: 'Grúa Torre Liebherr 90EC',
+        type: 'Grúa Torre',
+        active: true,
+        createdAt: timestamp,
+      },
+      {
+        id: `mac_${Date.now()}_2`,
+        code: `MAC-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        name: 'Excavadora Giratoria CAT 320',
+        type: 'Excavadora',
+        active: true,
+        createdAt: timestamp,
+      },
+      {
+        id: `mac_${Date.now()}_3`,
+        code: `MAC-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        name: 'Dumper 4x4 AUSA D600',
+        type: 'Dumper',
+        active: true,
+        createdAt: timestamp,
+      }
+    ];
+
+    // 4. Mock Workers
+    const workerDefs: { name: string; category: any; doc: string; sub: Company | null }[] = [
+      { name: 'Manuel Morales Soto', category: 'Oficial 1ª', doc: '48920194K', sub: newSubcontractors[0] },
+      { name: 'Antonio Rivas Gómez', category: 'Ferrallista', doc: '50392817J', sub: newSubcontractors[0] },
+      { name: 'David Navarro Ortiz', category: 'Electricista', doc: '71928301L', sub: newSubcontractors[1] },
+      { name: 'Gabriel Santos Vega', category: 'Fontanero', doc: '53910283H', sub: newSubcontractors[1] },
+      { name: 'Marcos Benítez Cruz', category: 'Maquinista', doc: '09823194P', sub: newSubcontractors[2] },
+      { name: 'Raúl Pardo Ibáñez', category: 'Peón Especialista', doc: '47291048M', sub: newSubcontractors[2] },
+      { name: 'Iván Carrasco Gil', category: 'Encargado General', doc: '12398472B', sub: null },
+      { name: 'Sergio Valverde Ramos', category: 'Oficial 1ª', doc: '52819302X', sub: null },
+    ];
+
+    const newWorkers: Worker[] = workerDefs.map((w, idx) => ({
+      id: `wrk_${Date.now()}_${idx}`,
+      code: `WRK-${Math.floor(1000 + Math.random() * 9000)}`,
+      name: w.name,
+      category: w.category,
+      companyId: w.sub ? w.sub.id : currentCompId,
+      companyNameSnapshot: w.sub ? w.sub.name : 'Construcciones Norte S.L.',
+      isSubcontractor: !!w.sub,
+      nationalId: w.doc,
+      active: true,
+      createdAt: timestamp,
+    }));
+
+    // 5. Mock Daily Reports
+    const workEntriesRep1: WorkEntry[] = [
+      {
+        id: `we_${Date.now()}_1`,
+        workerId: newWorkers[0].id,
+        workerNameSnapshot: newWorkers[0].name,
+        workerCategorySnapshot: newWorkers[0].category,
+        companyIdSnapshot: newSubcontractors[0].id,
+        companyNameSnapshot: newSubcontractors[0].name,
+        isSubcontractor: true,
+        normalHours: 8,
+        extraHours: 1,
+        totalHours: 9,
+        attendance: 'Presente'
+      },
+      {
+        id: `we_${Date.now()}_2`,
+        workerId: newWorkers[1].id,
+        workerNameSnapshot: newWorkers[1].name,
+        workerCategorySnapshot: newWorkers[1].category,
+        companyIdSnapshot: newSubcontractors[0].id,
+        companyNameSnapshot: newSubcontractors[0].name,
+        isSubcontractor: true,
+        normalHours: 8,
+        extraHours: 0,
+        totalHours: 8,
+        attendance: 'Presente'
+      },
+      {
+        id: `we_${Date.now()}_3`,
+        workerId: newWorkers[6].id,
+        workerNameSnapshot: newWorkers[6].name,
+        workerCategorySnapshot: newWorkers[6].category,
+        companyIdSnapshot: currentCompId,
+        companyNameSnapshot: 'Construcciones Norte S.L.',
+        isSubcontractor: false,
+        normalHours: 8,
+        extraHours: 0,
+        totalHours: 8,
+        attendance: 'Presente'
+      },
+      {
+        id: `we_${Date.now()}_4`,
+        workerId: newWorkers[7].id,
+        workerNameSnapshot: newWorkers[7].name,
+        workerCategorySnapshot: newWorkers[7].category,
+        companyIdSnapshot: currentCompId,
+        companyNameSnapshot: 'Construcciones Norte S.L.',
+        isSubcontractor: false,
+        normalHours: 7,
+        extraHours: 0,
+        totalHours: 7,
+        attendance: 'Presente'
+      }
+    ];
+
+    const workEntriesRep2: WorkEntry[] = [
+      {
+        id: `we_${Date.now()}_5`,
+        workerId: newWorkers[2].id,
+        workerNameSnapshot: newWorkers[2].name,
+        workerCategorySnapshot: newWorkers[2].category,
+        companyIdSnapshot: newSubcontractors[1].id,
+        companyNameSnapshot: newSubcontractors[1].name,
+        isSubcontractor: true,
+        normalHours: 8,
+        extraHours: 2,
+        totalHours: 10,
+        attendance: 'Presente'
+      },
+      {
+        id: `we_${Date.now()}_6`,
+        workerId: newWorkers[3].id,
+        workerNameSnapshot: newWorkers[3].name,
+        workerCategorySnapshot: newWorkers[3].category,
+        companyIdSnapshot: newSubcontractors[1].id,
+        companyNameSnapshot: newSubcontractors[1].name,
+        isSubcontractor: true,
+        normalHours: 8,
+        extraHours: 0,
+        totalHours: 8,
+        attendance: 'Presente'
+      }
+    ];
+
+    const newReports: DailyReport[] = [
+      {
+        id: `rep_${Date.now()}_1`,
+        code: `DR-${todayStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        projectId: newProjects[0].id,
+        projectNameSnapshot: newProjects[0].name,
+        creatorId: this.state.currentUser?.id || 'usr_admin',
+        creatorNameSnapshot: this.state.currentUser?.name || 'Jefe de Obra',
+        date: todayStr,
+        version: 1,
+        status: 'Submitted',
+        totalNormalHours: 31,
+        totalExtraHours: 1,
+        totalHours: 32,
+        comments: 'Hormigonado de zapatas y losa en módulo de urgencias completado conforme a plano.',
+        workEntries: workEntriesRep1,
+        evidenceUrls: [],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
+      {
+        id: `rep_${Date.now()}_2`,
+        code: `DR-${todayStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        projectId: newProjects[1].id,
+        projectNameSnapshot: newProjects[1].name,
+        creatorId: this.state.currentUser?.id || 'usr_admin',
+        creatorNameSnapshot: this.state.currentUser?.name || 'Jefe de Obra',
+        date: todayStr,
+        version: 1,
+        status: 'Submitted',
+        totalNormalHours: 16,
+        totalExtraHours: 2,
+        totalHours: 18,
+        comments: 'Paso de canalizaciones de climatización y bandejas portacables en pasillos técnicos.',
+        workEntries: workEntriesRep2,
+        evidenceUrls: [],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }
+    ];
+
+    // 6. Mock Delivery Notes (Albaranes)
+    const newDeliveryNotes: DeliveryNote[] = [
+      {
+        id: `dn_${Date.now()}_1`,
+        code: `DN-${todayStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        sourceDailyReportId: newReports[0].id,
+        sourceDailyReportCode: newReports[0].code,
+        projectId: newProjects[0].id,
+        projectNameSnapshot: newProjects[0].name,
+        subcontractorCompanyId: newSubcontractors[0].id,
+        subcontractorCompanyName: newSubcontractors[0].name,
+        mainContractorCompanyId: currentCompId,
+        date: todayStr,
+        status: 'Confirmed',
+        normalHours: 16,
+        extraHours: 1,
+        totalHours: 17,
+        workEntries: [workEntriesRep1[0], workEntriesRep1[1]],
+        confirmationDetails: {
+          confirmedByUserId: 'usr_sub_levante',
+          confirmedByUserName: 'Elena Ramos',
+          confirmedAt: timestamp,
+          subcontractorCompanyName: newSubcontractors[0].name,
+        },
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
+      {
+        id: `dn_${Date.now()}_2`,
+        code: `DN-${todayStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        sourceDailyReportId: newReports[1].id,
+        sourceDailyReportCode: newReports[1].code,
+        projectId: newProjects[1].id,
+        projectNameSnapshot: newProjects[1].name,
+        subcontractorCompanyId: newSubcontractors[1].id,
+        subcontractorCompanyName: newSubcontractors[1].name,
+        mainContractorCompanyId: currentCompId,
+        date: todayStr,
+        status: 'Pending',
+        normalHours: 16,
+        extraHours: 2,
+        totalHours: 18,
+        workEntries: [workEntriesRep2[0], workEntriesRep2[1]],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
+      {
+        id: `dn_${Date.now()}_3`,
+        code: `DN-${todayStr.replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
+        companyId: currentCompId,
+        sourceDailyReportId: newReports[0].id,
+        sourceDailyReportCode: newReports[0].code,
+        projectId: newProjects[2].id,
+        projectNameSnapshot: newProjects[2].name,
+        subcontractorCompanyId: newSubcontractors[2].id,
+        subcontractorCompanyName: newSubcontractors[2].name,
+        mainContractorCompanyId: currentCompId,
+        date: todayStr,
+        status: 'Disputed',
+        normalHours: 14,
+        extraHours: 0,
+        totalHours: 14,
+        workEntries: [],
+        disputeRecord: {
+          id: `disp_${Date.now()}`,
+          category: 'HORAS_INCORRECTAS',
+          reason: 'Discrepancia en horas computadas por parada técnica de máquina de 11:00 a 13:00.',
+          actorId: 'usr_sub',
+          actorName: 'Representante Subcontrata',
+          actorCompany: newSubcontractors[2].name,
+          createdAt: timestamp,
+        },
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      }
+    ];
+
+    // 7. Mock Time Logs
+    const newTimeLogs: TimeLog[] = [
+      {
+        id: `tl_${Date.now()}_1`,
+        userId: newWorkers[0].id,
+        userNameSnapshot: newWorkers[0].name,
+        userRoleSnapshot: 'SUBCONTRACTOR_USER',
+        companyId: newSubcontractors[0].id,
+        projectId: newProjects[0].id,
+        projectNameSnapshot: newProjects[0].name,
+        timestamp: `${todayStr}T08:02:14.000Z`,
+        lat: 40.4728,
+        lng: -3.6934,
+        distanceMeters: 12,
+        status: 'In',
+      },
+      {
+        id: `tl_${Date.now()}_2`,
+        userId: newWorkers[2].id,
+        userNameSnapshot: newWorkers[2].name,
+        userRoleSnapshot: 'SUBCONTRACTOR_USER',
+        companyId: newSubcontractors[1].id,
+        projectId: newProjects[1].id,
+        projectNameSnapshot: newProjects[1].name,
+        timestamp: `${todayStr}T07:58:30.000Z`,
+        lat: 40.4578,
+        lng: -3.6823,
+        distanceMeters: 8,
+        status: 'In',
+      }
+    ];
+
+    // 8. Mock Audit Events
+    const newAuditEvents: AuditEvent[] = [
+      {
+        id: `aud_${Date.now()}_1`,
+        actorId: this.state.currentUser?.id || 'usr_admin',
+        actorName: this.state.currentUser?.name || 'Administrador Principal',
+        actorRole: 'MAIN_CONTRACTOR_ADMIN',
+        actorCompanyName: 'Construcciones Norte S.L.',
+        actorCompanyId: currentCompId,
+        timestamp: timestamp,
+        operation: 'REPORT_SUBMITTED',
+        affectedEntity: 'DailyReport',
+        recordId: newReports[0].id,
+        recordCode: newReports[0].code,
+        details: `Emisión de Parte Diario ${newReports[0].code} con 4 operarios y 32h registradas`,
+      },
+      {
+        id: `aud_${Date.now()}_2`,
+        actorId: this.state.currentUser?.id || 'usr_admin',
+        actorName: this.state.currentUser?.name || 'Administrador Principal',
+        actorRole: 'MAIN_CONTRACTOR_ADMIN',
+        actorCompanyName: 'Construcciones Norte S.L.',
+        actorCompanyId: currentCompId,
+        timestamp: timestamp,
+        operation: 'DELIVERY_NOTE_CONFIRMED',
+        affectedEntity: 'DeliveryNote',
+        recordId: newDeliveryNotes[0].id,
+        recordCode: newDeliveryNotes[0].code,
+        details: `Confirmación digital inmutable de Albarán ${newDeliveryNotes[0].code} por ${newSubcontractors[0].name}`,
+      }
+    ];
+
+    // Merge into store state
+    this.state.companies = [...(this.state.companies || []), ...newSubcontractors];
+    this.state.projects = [...newProjects, ...(this.state.projects || [])];
+    this.state.machinery = [...newMachinery, ...(this.state.machinery || [])];
+    this.state.workers = [...newWorkers, ...(this.state.workers || [])];
+    this.state.reports = [...newReports, ...(this.state.reports || [])];
+    this.state.deliveryNotes = [...newDeliveryNotes, ...(this.state.deliveryNotes || [])];
+    this.state.timeLogs = [...newTimeLogs, ...(this.state.timeLogs || [])];
+    this.state.auditEvents = [...newAuditEvents, ...(this.state.auditEvents || [])];
+
+    this.notify();
+
+    return {
+      projectsCount: newProjects.length,
+      subcontractorsCount: newSubcontractors.length,
+      workersCount: newWorkers.length,
+      reportsCount: newReports.length,
+      deliveryNotesCount: newDeliveryNotes.length,
+    };
+  }
 }
 
 export const obraStore = new ObraStore();
+

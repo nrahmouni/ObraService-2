@@ -81,13 +81,24 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   throw new Error(JSON.stringify(errInfo));
 }
 
+export const isFirebaseConfigured = Boolean(
+  (rawApiKey && rawApiKey.trim() !== '' && !rawApiKey.includes('Placeholder')) ||
+  (firebaseConfigPlaceholder?.projectId && firebaseConfigPlaceholder.projectId !== 'obra-service-app')
+);
+
 // Test connection probe as required
 export async function testFirebaseConnection() {
+  if (!isFirebaseConfigured) {
+    // When no remote Firebase project is provisioned, operate seamlessly in resilient offline/local mode
+    return { ok: true, mode: 'local' };
+  }
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
+    return { ok: true, mode: 'online' };
   } catch (error) {
-    // Graceful warning instead of console.error to prevent sandbox testing environments from flagging offline states as fatal crashes
-    console.warn('[Firebase] Connection check deferred:', error instanceof Error ? error.message : String(error));
+    // Graceful warning instead of uncaught exception so the client operates seamlessly in offline mode
+    console.warn('[Firebase] Remote connection check deferred (operating in offline-first mode):', error instanceof Error ? error.message : String(error));
+    return { ok: false, mode: 'offline', error };
   }
 }
 

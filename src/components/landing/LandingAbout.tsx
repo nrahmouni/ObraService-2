@@ -6,7 +6,7 @@ export const LandingAbout: React.FC = () => {
   return (
     <section id="about" className="py-24 bg-white/[0.02]">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="flex flex-col space-y-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -20,7 +20,7 @@ export const LandingAbout: React.FC = () => {
               No somos solo un software; somos una <strong>red de confianza</strong>. Nuestro objetivo es que cada trabajador, cada m3 de hormigón y cada hora de maquinaria quede registrada de forma inmutable y transparente para todos los actores de la obra.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="flex flex-col space-y-4">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-[#FF6600]/10 rounded-xl">
                   <Target className="w-6 h-6 text-[#FF6600]" />

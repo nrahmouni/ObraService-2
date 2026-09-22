@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Truck, Building2, Mail, Search, LayoutGrid, List } from 'lucide-react';
+import { Users, Truck, Building2, Mail, Search, List } from 'lucide-react';
 import { AppState } from '../types';
 
 // Subtab Components
@@ -34,7 +34,7 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
       </div>
 
       {/* Metrics KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="flex flex-col space-y-2">
         <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 flex items-center gap-3.5">
           <div className="p-3 bg-brand-accent/10 text-brand-accent rounded-xl border border-brand-accent/10 shrink-0">
             <Users className="w-5 h-5 stroke-[2.5]" />
