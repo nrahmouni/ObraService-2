@@ -70,28 +70,62 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
     setSubmitting(true);
     try {
       const fullDesc = incidents ? `${description} [Incidencia: ${incidents}]` : description;
+      const targetProject = state.projects.find(p => p.id === projectId);
+      const userCompanyId = state.currentUser?.companyId || targetProject?.companyId || 'comp_main';
+      const userCompanyName = state.currentUser?.companyName || targetProject?.name || 'Empresa';
+      const isSubcontractor = state.currentUser?.role === 'SUBCONTRACTOR_USER';
+
+      const availableWorkers = state.workers.filter(w => w.companyId === userCompanyId && w.active);
+      const numWorkers = Math.max(1, parseInt(workersCount, 10) || 1);
+      const hoursPerWorker = Math.max(0.5, parseFloat(hours) || 8);
+
+      const generatedEntries = [];
+      for (let i = 0; i < numWorkers; i++) {
+        const assignedWorker = availableWorkers[i];
+        const workerId = assignedWorker?.id || (i === 0 && state.currentUser ? state.currentUser.id : `wrk_gen_${Date.now()}_${i}`);
+        const workerName = assignedWorker?.name || (i === 0 && state.currentUser ? state.currentUser.name : `Operario Especialista ${i + 1}`);
+        const workerCategory = assignedWorker?.category || 'Oficial 1ª';
+
+        generatedEntries.push({
+          id: `we_${Date.now()}_${i}`,
+          workerId,
+          workerNameSnapshot: workerName,
+          workerCategorySnapshot: workerCategory,
+          companyIdSnapshot: userCompanyId,
+          companyNameSnapshot: userCompanyName,
+          isSubcontractor,
+          normalHours: hoursPerWorker,
+          extraHours: 0,
+          totalHours: hoursPerWorker,
+          attendance: 'Presente' as const,
+        });
+      }
+
+      const totalNormal = hoursPerWorker * numWorkers;
+
       const draft = obraStore.saveReportDraft({
         projectId,
+        projectNameSnapshot: targetProject?.name || 'Proyecto de Obra',
         date: new Date().toISOString().split('T')[0],
         comments: fullDesc,
-        workEntries: [{
-          id: `we_${Date.now()}`,
-          workerId: state.currentUser?.id || 'w_1',
-          workerNameSnapshot: state.currentUser?.name || 'Operario',
-          workerCategorySnapshot: 'Oficial 1ª',
-          companyIdSnapshot: state.currentUser?.companyId || 'comp_sub_1',
-          companyNameSnapshot: 'Subcontrata',
-          isSubcontractor: true,
-          normalHours: Number(hours),
-          extraHours: 0,
-          totalHours: Number(hours),
-          attendance: 'Presente',
-        }],
+        evidenceUrls: photoUrl ? [photoUrl] : [],
+        evidenceAttachments: photoUrl ? [{
+          id: `att_${Date.now()}`,
+          url: photoUrl,
+          caption: description,
+          uploadedAt: new Date().toISOString(),
+          uploadedByUserId: state.currentUser?.id,
+          fileType: 'image/jpeg',
+        }] : [],
+        workEntries: generatedEntries,
+        totalNormalHours: totalNormal,
+        totalExtraHours: 0,
+        totalHours: totalNormal,
       });
 
       obraStore.submitDailyReport(draft.id);
 
-      toast.success('Parte diario registrado y sincronizado');
+      toast.success('Parte diario registrado y sincronizado con éxito');
       setSubmitting(false);
       navigate('/mobile/dashboard');
     } catch (err: any) {

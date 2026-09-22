@@ -10,7 +10,9 @@ import {
   onSnapshot, 
   setDoc, 
   updateDoc, 
-  Unsubscribe 
+  Unsubscribe,
+  query,
+  where
 } from 'firebase/firestore';
 import { onAuthStateChanged, User as FirebaseUser, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection } from './firebase';
@@ -93,7 +95,7 @@ export function initializeFirebaseSync() {
             id: firebaseUser.uid,
             name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario ObraService',
             email: firebaseUser.email || '',
-            role: existingUser?.role || (firebaseUser.email === 'naimrahmouni1998@gmail.com' ? 'MAIN_CONTRACTOR_ADMIN' : 'SITE_MANAGER'),
+            role: existingUser?.role || 'SITE_MANAGER',
             companyId: existingUser?.companyId || '',
             companyName: existingUser?.companyName || '',
             active: existingUser?.active ?? true,
@@ -101,31 +103,17 @@ export function initializeFirebaseSync() {
             createdAt: existingUser?.createdAt || new Date().toISOString(),
           };
 
-          // Persist / update user profile in Firestore
+          // Persist / update user profile in Firestore (Single Source of Truth)
           try {
             await setDoc(doc(db, 'users', firebaseUser.uid), mappedUser, { merge: true });
-            
-            // --- Sync to Cloud SQL ---
-            const token = await firebaseUser.getIdToken();
-            await fetch('/api/auth/sync-user', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                name: mappedUser.name,
-                role: mappedUser.role
-              })
-            });
           } catch (err) {
             handleFirestoreError(err, OperationType.WRITE, `users/${firebaseUser.uid}`);
           }
 
           obraStore.setAuthenticatedFirebaseUser(mappedUser);
 
-          // Attach real-time listeners to Firestore collections
-          attachCollectionListeners();
+          // Attach real-time listeners to Firestore collections with tenant isolation
+          attachCollectionListeners(mappedUser);
 
           // Flush any queued offline mutations now that Firebase user is verified
           flushOfflineQueue().catch(err => {
@@ -133,6 +121,7 @@ export function initializeFirebaseSync() {
           });
         } else {
           console.log('Firebase User signed out.');
+          stopFirebaseSync();
         }
       }, (error) => {
         console.warn('[FirebaseSync] Auth state change warning:', error?.message || error);
@@ -143,7 +132,30 @@ export function initializeFirebaseSync() {
   }
 }
 
-function attachCollectionListeners() {
+/**
+ * Detach all active Firestore listeners to prevent memory leaks and cross-tenant data leaks.
+ */
+export function stopFirebaseSync() {
+  if (activeUnsubscribers.length > 0) {
+    activeUnsubscribers.forEach(unsub => {
+      try {
+        unsub();
+      } catch (err) {
+        console.warn('[FirebaseSync] Error unsubscribing listener:', err);
+      }
+    });
+    activeUnsubscribers = [];
+  }
+}
+
+function attachCollectionListeners(user?: User | null) {
+  // Always unsubscribe previous listeners before attaching new ones
+  stopFirebaseSync();
+
+  const currentUser = user || obraStore.getState().currentUser;
+  const companyId = currentUser?.companyId;
+  const isSubcontractor = currentUser?.role === 'SUBCONTRACTOR_USER';
+
   // 1. Companies Listener
   const companiesPath = 'companies';
   const unsubCompanies = onSnapshot(collection(db, companiesPath), (snapshot) => {
@@ -151,7 +163,7 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as Company);
     });
-    obraStore.setSyncError(null); // Clear error on successful sync
+    obraStore.setSyncError(null);
     obraStore.syncRemoteCompanies(list);
   }, (error) => {
     console.error(`[FirebaseSync] Error syncing ${companiesPath}:`, error);
@@ -159,14 +171,18 @@ function attachCollectionListeners() {
   });
   activeUnsubscribers.push(unsubCompanies);
 
-  // 2. Projects Listener
+  // 2. Projects Listener (Tenant isolated if companyId is set)
   const projectsPath = 'projects';
-  const unsubProjects = onSnapshot(collection(db, projectsPath), (snapshot) => {
+  const projectsQuery = (companyId && !isSubcontractor)
+    ? query(collection(db, projectsPath), where('companyId', '==', companyId))
+    : collection(db, projectsPath);
+
+  const unsubProjects = onSnapshot(projectsQuery, (snapshot) => {
     const list: Project[] = [];
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as Project);
     });
-    obraStore.setSyncError(null); // Clear error on successful sync
+    obraStore.setSyncError(null);
     obraStore.syncRemoteProjects(list);
   }, (error) => {
     console.error(`[FirebaseSync] Error syncing ${projectsPath}:`, error);
@@ -174,14 +190,18 @@ function attachCollectionListeners() {
   });
   activeUnsubscribers.push(unsubProjects);
 
-  // 3. Workers Listener
+  // 3. Workers Listener (Tenant isolated if companyId is set)
   const workersPath = 'workers';
-  const unsubWorkers = onSnapshot(collection(db, workersPath), (snapshot) => {
+  const workersQuery = companyId
+    ? query(collection(db, workersPath), where('companyId', '==', companyId))
+    : collection(db, workersPath);
+
+  const unsubWorkers = onSnapshot(workersQuery, (snapshot) => {
     const list: Worker[] = [];
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as Worker);
     });
-    obraStore.setSyncError(null); // Clear error on successful sync
+    obraStore.setSyncError(null);
     obraStore.syncRemoteWorkers(list);
   }, (error) => {
     console.error(`[FirebaseSync] Error syncing ${workersPath}:`, error);
@@ -189,14 +209,18 @@ function attachCollectionListeners() {
   });
   activeUnsubscribers.push(unsubWorkers);
 
-  // 4. Daily Reports Listener
+  // 4. Daily Reports Listener (Tenant isolated to owning company)
   const reportsPath = 'dailyReports';
-  const unsubReports = onSnapshot(collection(db, reportsPath), (snapshot) => {
+  const reportsQuery = (companyId && !isSubcontractor)
+    ? query(collection(db, reportsPath), where('companyId', '==', companyId))
+    : collection(db, reportsPath);
+
+  const unsubReports = onSnapshot(reportsQuery, (snapshot) => {
     const list: DailyReport[] = [];
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as DailyReport);
     });
-    obraStore.setSyncError(null); // Clear error on successful sync
+    obraStore.setSyncError(null);
     obraStore.syncRemoteReports(list);
   }, (error) => {
     console.error(`[FirebaseSync] Error syncing ${reportsPath}:`, error);
@@ -204,14 +228,18 @@ function attachCollectionListeners() {
   });
   activeUnsubscribers.push(unsubReports);
 
-  // 5. Delivery Notes Listener
+  // 5. Delivery Notes Listener (Tenant isolated for both Subcontractor and Main Contractor)
   const deliveryNotesPath = 'deliveryNotes';
-  const unsubDeliveryNotes = onSnapshot(collection(db, deliveryNotesPath), (snapshot) => {
+  const deliveryNotesQuery = isSubcontractor
+    ? (companyId ? query(collection(db, deliveryNotesPath), where('subcontractorCompanyId', '==', companyId)) : collection(db, deliveryNotesPath))
+    : (companyId ? query(collection(db, deliveryNotesPath), where('companyId', '==', companyId)) : collection(db, deliveryNotesPath));
+
+  const unsubDeliveryNotes = onSnapshot(deliveryNotesQuery, (snapshot) => {
     const list: DeliveryNote[] = [];
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as DeliveryNote);
     });
-    obraStore.setSyncError(null); // Clear error on successful sync
+    obraStore.setSyncError(null);
     obraStore.syncRemoteDeliveryNotes(list);
   }, (error) => {
     console.error(`[FirebaseSync] Error syncing ${deliveryNotesPath}:`, error);
@@ -226,7 +254,7 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as AuditEvent);
     });
-    obraStore.setSyncError(null); // Clear error on successful sync
+    obraStore.setSyncError(null);
     obraStore.syncRemoteAuditEvents(list);
   }, (error) => {
     console.error(`[FirebaseSync] Error syncing ${auditEventsPath}:`, error);
@@ -241,7 +269,7 @@ function attachCollectionListeners() {
     snapshot.forEach(docSnap => {
       list.push(docSnap.data() as User);
     });
-    obraStore.setSyncError(null); // Clear error on successful sync
+    obraStore.setSyncError(null);
     obraStore.syncRemoteUsers(list);
   }, (error) => {
     console.error(`[FirebaseSync] Error syncing ${usersPath}:`, error);

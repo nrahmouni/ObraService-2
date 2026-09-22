@@ -43,7 +43,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        (request.auth.token.email == 'naimrahmouni1998@gmail.com') ||
+        (request.auth.token.role == 'MAIN_CONTRACTOR_ADMIN') ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'MAIN_CONTRACTOR_ADMIN')
       );
@@ -102,9 +102,10 @@ service cloud.firestore {
     }
 
     function isValidDailyReport(data) {
-      return data.keys().hasAll(['id', 'code', 'projectId', 'date', 'creatorId', 'status', 'version']) &&
+      return data.keys().hasAll(['id', 'code', 'companyId', 'projectId', 'date', 'creatorId', 'status', 'version']) &&
         data.id is string && data.id.size() <= 128 &&
         data.code is string && data.code.size() <= 40 &&
+        data.companyId is string && data.companyId.size() <= 128 &&
         data.projectId is string && data.projectId.size() <= 128 &&
         data.date is string && data.date.size() <= 20 &&
         data.creatorId is string && data.creatorId.size() <= 128 &&
@@ -113,9 +114,10 @@ service cloud.firestore {
     }
 
     function isValidDeliveryNote(data) {
-      return data.keys().hasAll(['id', 'code', 'sourceDailyReportId', 'projectId', 'subcontractorCompanyId', 'status']) &&
+      return data.keys().hasAll(['id', 'code', 'companyId', 'sourceDailyReportId', 'projectId', 'subcontractorCompanyId', 'status']) &&
         data.id is string && data.id.size() <= 128 &&
         data.code is string && data.code.size() <= 40 &&
+        data.companyId is string && data.companyId.size() <= 128 &&
         data.sourceDailyReportId is string && data.sourceDailyReportId.size() <= 128 &&
         data.projectId is string && data.projectId.size() <= 128 &&
         data.subcontractorCompanyId is string && data.subcontractorCompanyId.size() <= 128 &&
@@ -152,15 +154,12 @@ service cloud.firestore {
       allow get: if isUserVerified() && isValidId(userId) && (isAdmin() || isOwner(userId) || isSameCompany(existing().companyId));
       allow list: if isUserVerified();
       allow create: if isUserVerified() && isValidId(userId) && isValidUser(incoming()) && (
-        isAdmin() || isOwner(userId) || isSameCompany(incoming().companyId)
+        isAdmin() || isOwner(userId)
       );
       allow update: if isUserVerified() && isValidId(userId) && isValidUser(incoming()) && (
         isAdmin() || (
           isOwner(userId) &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'companyId', 'companyName', 'assignedProjectIds', 'active', 'createdAt', 'role', 'email'])
-        ) || (
-          isSameCompany(existing().companyId) &&
-          incoming().diff(existing()).affectedKeys().hasOnly(['assignedProjectIds', 'active', 'role'])
+          incoming().diff(existing()).affectedKeys().hasOnly(['name'])
         )
       );
       allow delete: if isAdmin() && isValidId(userId);
@@ -202,18 +201,19 @@ service cloud.firestore {
     match /dailyReports/{reportId} {
       allow get: if isUserVerified() && isValidId(reportId) && (
         isAdmin() ||
-        isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId)
+        isSameCompany(existing().companyId)
       );
       allow list: if isUserVerified();
       allow create: if isUserVerified() && isValidId(reportId) && isValidDailyReport(incoming()) && (
         isAdmin() || (
-          isSameCompany(get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.companyId) &&
+          isSameCompany(incoming().companyId) &&
           (incoming().creatorId == request.auth.uid)
         )
       );
       allow update: if isUserVerified() && isValidId(reportId) && isValidDailyReport(incoming()) && (
         isAdmin() || (
-          isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId) &&
+          isSameCompany(existing().companyId) &&
+          isSameCompany(incoming().companyId) &&
           (existing().status == 'Draft' || existing().status == 'Submitted') &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'status', 'workEntries', 'totalNormalHours', 'totalExtraHours', 'totalHours', 
@@ -229,24 +229,30 @@ service cloud.firestore {
     match /deliveryNotes/{deliveryNoteId} {
       allow get: if isUserVerified() && isValidId(deliveryNoteId) && (
         isAdmin() ||
-        isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId) ||
+        isSameCompany(existing().companyId) ||
         isSameCompany(existing().subcontractorCompanyId)
       );
       allow list: if isUserVerified();
       allow create: if isUserVerified() && isValidId(deliveryNoteId) && isValidDeliveryNote(incoming()) && (
         isAdmin() ||
-        isSameCompany(get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.companyId) ||
-        isSameCompany(incoming().subcontractorCompanyId)
+        isSameCompany(incoming().companyId)
       );
       allow update: if isUserVerified() && isValidId(deliveryNoteId) && isValidDeliveryNote(incoming()) && (
         isAdmin() ||
-        (isSameCompany(get(/databases/$(database)/documents/projects/$(existing().projectId)).data.companyId) &&
+        (isSameCompany(existing().companyId) &&
+          isSameCompany(incoming().companyId) &&
           existing().status == 'Pending' &&
           incoming().diff(existing()).affectedKeys().hasOnly([
             'status', 'confirmationDetails', 'confirmedBy', 'disputeRecord', 'dispute', 'correctionNotice', 'updatedAt'
           ])
         ) ||
-        isSameCompany(existing().subcontractorCompanyId)
+        (isSameCompany(existing().subcontractorCompanyId) &&
+          existing().status == 'Pending' &&
+          (incoming().status == 'Confirmed' || incoming().status == 'Disputed') &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'status', 'confirmationDetails', 'confirmedBy', 'disputeRecord', 'dispute', 'updatedAt'
+          ])
+        )
       );
       allow delete: if isAdmin() && isValidId(deliveryNoteId);
     }
@@ -268,17 +274,17 @@ service cloud.firestore {
     match /time_logs/{timeLogId} {
       allow get: if isUserVerified() && isValidId(timeLogId);
       allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(timeLogId);
+      allow create: if isUserVerified() && isValidId(timeLogId) && (isAdmin() || incoming().userId == request.auth.uid);
       allow update: if isUserVerified() && isValidId(timeLogId) && (isAdmin() || incoming().userId == request.auth.uid);
       allow delete: if isAdmin() && isValidId(timeLogId);
     }
 
     // 9. Invitations (Guest access & Team Onboarding)
     match /invitations/{invitationId} {
-      allow get: if isValidId(invitationId);
+      allow get: if isUserVerified() && isValidId(invitationId);
       allow list: if isUserVerified();
-      allow create: if isUserVerified() && isValidId(invitationId);
-      allow update: if isValidId(invitationId);
+      allow create: if isUserVerified() && isValidId(invitationId) && isAdmin();
+      allow update: if isUserVerified() && isValidId(invitationId);
       allow delete: if isAdmin() && isValidId(invitationId);
     }
 

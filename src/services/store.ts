@@ -1167,35 +1167,52 @@ class ObraStore {
 
     if (data.id) {
       const idx = this.state.reports.findIndex(r => r.id === data.id);
+      const targetProject = this.state.projects.find(p => p.id === (data.projectId || this.state.reports[idx]?.projectId));
+      const companyId = data.companyId || this.state.reports[idx]?.companyId || targetProject?.companyId || this.state.currentUser?.companyId || 'comp_main';
       if (idx !== -1) {
         this.state.reports[idx] = {
           ...this.state.reports[idx],
           ...data,
+          companyId,
           updatedAt: now,
         } as DailyReport;
         report = this.state.reports[idx];
       } else {
-        report = data as DailyReport;
+        report = { ...data, companyId } as DailyReport;
         this.state.reports.push(report);
       }
     } else {
       const code = generateDailyReportCode(data.date || now.split('T')[0], this.state.reports.length);
+      const targetProject = this.state.projects.find(p => p.id === data.projectId);
+      const companyId = data.companyId || targetProject?.companyId || this.state.currentUser?.companyId || 'comp_main';
+      const normalHrs = data.totalNormalHours !== undefined 
+        ? data.totalNormalHours 
+        : (data.workEntries ? data.workEntries.reduce((a, b) => a + (b.normalHours || 0), 0) : 0);
+      const extraHrs = data.totalExtraHours !== undefined 
+        ? data.totalExtraHours 
+        : (data.workEntries ? data.workEntries.reduce((a, b) => a + (b.extraHours || 0), 0) : 0);
+      const totalHrs = data.totalHours !== undefined ? data.totalHours : (normalHrs + extraHrs);
+
       report = {
         id: `dr_${Date.now()}`,
         code,
+        companyId,
         projectId: data.projectId || '',
-        projectNameSnapshot: data.projectNameSnapshot || '',
+        projectNameSnapshot: data.projectNameSnapshot || targetProject?.name || '',
         date: data.date || now.split('T')[0],
         creatorId: this.state.currentUser?.id || 'usr_unknown',
         creatorNameSnapshot: this.state.currentUser?.name || 'Jefe de Obra',
         status: 'Draft',
         workEntries: data.workEntries || [],
-        totalNormalHours: data.totalNormalHours || 0,
-        totalExtraHours: data.totalExtraHours || 0,
-        totalHours: data.totalHours || 0,
+        machineryEntries: data.machineryEntries || [],
+        materialEntries: data.materialEntries || [],
+        totalNormalHours: normalHrs,
+        totalExtraHours: extraHrs,
+        totalHours: totalHrs,
         comments: data.comments || '',
         siteConditions: data.siteConditions || '',
         evidenceUrls: data.evidenceUrls || [],
+        evidenceAttachments: data.evidenceAttachments || [],
         version: 1,
         createdAt: now,
         updatedAt: now,
@@ -1373,6 +1390,7 @@ class ObraStore {
       confirmedAt: new Date().toISOString(),
       subcontractorCompanyName: note.subcontractorCompanyName,
     };
+    note.confirmedBy = note.confirmationDetails;
     note.updatedAt = new Date().toISOString();
 
     this.logAuditEvent({
@@ -1415,6 +1433,7 @@ class ObraStore {
         confirmedAt: new Date().toISOString(),
         subcontractorCompanyName: note.subcontractorCompanyName,
       };
+      note.confirmedBy = note.confirmationDetails;
       note.updatedAt = new Date().toISOString();
 
       this.logAuditEvent({
@@ -1475,6 +1494,7 @@ class ObraStore {
       actorCompany: this.state.currentUser.companyName || note.subcontractorCompanyName,
       createdAt: new Date().toISOString(),
     };
+    note.dispute = note.disputeRecord;
     note.updatedAt = new Date().toISOString();
 
     this.logAuditEvent({
@@ -1529,6 +1549,7 @@ class ObraStore {
     }
 
     note.status = 'Confirmed';
+    note.dispute = note.disputeRecord;
     note.updatedAt = new Date().toISOString();
 
     this.logAuditEvent({
@@ -1560,9 +1581,14 @@ class ObraStore {
 
     const now = new Date().toISOString();
     const code = `DN-${now.split('T')[0].replace(/-/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const targetProject = this.state.projects.find(p => p.id === data.projectId);
+    const mainContractorId = targetProject?.companyId || 'comp_main';
+
     const note: DeliveryNote = {
       id: `dn_${Date.now()}`,
       code,
+      companyId: mainContractorId,
+      mainContractorCompanyId: mainContractorId,
       sourceDailyReportId: 'dr_direct_upload',
       sourceDailyReportCode: 'CARGA_DIRECTA',
       dailyReportCodeSnapshot: 'CARGA_DIRECTA',

@@ -35,6 +35,16 @@ export interface Company {
   createdAt: string;
 }
 
+export interface CompanyRelationship {
+  id: string;
+  mainContractorCompanyId: string;
+  subcontractorCompanyId: string;
+  status: 'Active' | 'Pending' | 'Terminated';
+  assignedProjectIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -194,9 +204,33 @@ export interface MachineryEntry {
   comments?: string;
 }
 
+export interface MaterialEntry {
+  id: string;
+  materialName: string;
+  quantity: number;
+  unit: string; // 'm3' | 'kg' | 't' | 'ud' | 'ml'
+  supplierName?: string;
+  deliveryNoteReference?: string;
+  companyIdSnapshot: string;
+  comments?: string;
+}
+
+export interface EvidenceAttachment {
+  id: string;
+  url: string;
+  caption?: string;
+  uploadedAt: string;
+  uploadedByUserId?: string;
+  fileType?: string; // 'image/jpeg' | 'image/png' | 'application/pdf'
+  sizeBytes?: number;
+}
+
+export type Evidence = EvidenceAttachment;
+
 export interface DailyReport {
   id: string;
   code: string; // DR-YYYYMMDD-XXXX
+  companyId: string; // Empresa constructora principal (Tenant ID)
   projectId: string;
   projectNameSnapshot: string;
   date: string; // YYYY-MM-DD
@@ -205,12 +239,14 @@ export interface DailyReport {
   status: DailyReportStatus;
   workEntries: WorkEntry[];
   machineryEntries?: MachineryEntry[];
+  materialEntries?: MaterialEntry[];
   totalNormalHours: number;
   totalExtraHours: number;
   totalHours: number;
   comments: string;
   siteConditions?: string;
   evidenceUrls: string[];
+  evidenceAttachments?: EvidenceAttachment[];
   locationSnapshot?: LocationSnapshot;
   analysisItems?: AutomatedAnalysisItem[];
   correctionReason?: string;
@@ -262,6 +298,8 @@ export interface DisputeRecord {
   };
 }
 
+export type Dispute = DisputeRecord;
+
 export interface ConfirmationDetails {
   confirmedByUserId: string;
   confirmedByUserName: string;
@@ -271,9 +309,23 @@ export interface ConfirmationDetails {
   timestamp?: string;
 }
 
+export interface DeliveryNoteLine {
+  id: string;
+  workerId: string;
+  workerNameSnapshot: string;
+  workerCategorySnapshot: string;
+  companyIdSnapshot?: string;
+  companyNameSnapshot?: string;
+  normalHours: number;
+  extraHours: number;
+  totalHours: number;
+  notes?: string;
+}
+
 export interface DeliveryNote {
   id: string;
   code: string; // DN-YYYYMMDD-XXXX
+  companyId: string; // Empresa constructora principal (Tenant ID)
   sourceDailyReportId: string;
   sourceDailyReportCode: string;
   dailyReportCodeSnapshot?: string;
@@ -283,9 +335,9 @@ export interface DeliveryNote {
   subcontractorCompanyId: string;
   subcontractorCompanyTaxId?: string;
   subcontractorCompanyName: string;
-  mainContractorCompanyId?: string;
+  mainContractorCompanyId: string;
   workEntries: WorkEntry[];
-  lines?: WorkEntry[];
+  lines?: (DeliveryNoteLine | WorkEntry)[];
   normalHours: number;
   extraHours: number;
   totalHours: number;
@@ -295,6 +347,7 @@ export interface DeliveryNote {
   disputeRecord?: DisputeRecord;
   dispute?: DisputeRecord;
   correctionNotice?: string;
+  evidenceAttachments?: EvidenceAttachment[];
   createdAt: string;
   updatedAt: string;
 }
@@ -355,6 +408,8 @@ export interface NotificationItem {
   read: boolean;
   createdAt: string;
 }
+
+export type Notification = NotificationItem;
 
 export interface Invitation {
   id: string;
