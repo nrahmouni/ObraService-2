@@ -28,11 +28,13 @@ export type TabKey =
   | 'projects' 
   | 'map'
   | 'team' 
+  | 'workers'
   | 'chat'
   | 'audit'
   | 'settings'
   | 'integrations'
-  | 'docs';
+  | 'docs'
+  | 'profile';
 import toast from 'react-hot-toast';
 
 interface MainLayoutProps {
@@ -177,12 +179,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     <div className="min-h-screen bg-[#F9FAFB] text-slate-900 flex flex-col font-sans selection:bg-[#FF6600] selection:text-white antialiased">
       {/* Dynamic Header */}
       <header className="h-12 border-b border-slate-200 flex items-center justify-between px-4 bg-white sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#FF6600] to-orange-500 flex items-center justify-center shadow-sm shadow-[#FF6600]/20">
+        <div 
+          onClick={() => onSelectTab('dashboard')} 
+          className="flex items-center gap-3 cursor-pointer group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#FF6600] to-orange-500 flex items-center justify-center shadow-sm shadow-[#FF6600]/20 group-hover:scale-105 transition-transform">
             <HardHat className="w-4.5 h-4.5 text-white" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xs font-black text-slate-950 uppercase tracking-tight">ObraService</span>
+            <span className="text-xs font-black text-slate-950 uppercase tracking-tight group-hover:text-[#FF6600] transition-colors">ObraService</span>
             <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">{activeCompany?.name || 'Cargando...'}</span>
           </div>
         </div>

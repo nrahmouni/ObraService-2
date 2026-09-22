@@ -25,16 +25,42 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
 
   const activeProjects = state.projects.filter(p => p.status === 'Active' || p.status === 'Planned');
 
-  // Check PRL Compliance
-  const companyId = state.currentUser?.companyId || '';
-  const compliance = companyId ? checkOperationalStatus(companyId) : { isBlocked: false, expiredDocs: [], pendingDocs: [] };
+  // Photo upload state
+  const [photoPreview, setPhotoPreview] = useState<string>('');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > height && width > maxDim) {
+            height = (height * maxDim) / width;
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = (width * maxDim) / height;
+            height = maxDim;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.7);
+          setPhotoPreview(compressed);
+          setPhotoUrl(compressed);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = () => {
-    if (compliance.isBlocked) {
-      toast.error(compliance.reason || 'Bloqueo preventivo de PRL: No se pueden emitir partes con documentación caducada.');
-      return;
-    }
-
     if (!description.trim()) {
       toast.error('Debe introducir una descripción de los trabajos.');
       setStep(2);
@@ -101,17 +127,6 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
           style={{ width: `${(step / 3) * 100}%` }}
         ></div>
       </div>
-
-      {/* Compliance Warning Banner if Blocked */}
-      {compliance.isBlocked && (
-        <div className="mx-4 mt-4 p-3.5 bg-red-950/70 border border-red-800/80 rounded-2xl flex items-start gap-3 text-xs text-red-200">
-          <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <span className="font-bold text-red-300 uppercase tracking-wider text-[10px]">Bloqueo Preventivo PRL</span>
-            <p className="text-slate-300 leading-tight">{compliance.reason}</p>
-          </div>
-        </div>
-      )}
 
       {/* Content */}
       <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
@@ -219,15 +234,19 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
               )}
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">URL Foto Evidencia (Opcional)</label>
-              <input 
-                type="text"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                placeholder="https://images.unsplash.com/..."
-                className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3.5 text-xs font-medium text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
-              />
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Adjuntar Foto Evidencia (Cámara / Galería)</label>
+              <div className="flex items-center gap-3">
+                <label className="px-4 py-3 bg-slate-900 border border-slate-800 hover:border-amber-500 rounded-2xl text-xs font-bold text-slate-300 hover:text-white cursor-pointer transition-colors flex items-center gap-2">
+                  <span>📷 Capturar o Seleccionar Foto</span>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
+              </div>
+              {photoPreview && (
+                <div className="mt-2 relative rounded-2xl overflow-hidden border border-slate-800 max-h-36">
+                  <img src={photoPreview} alt="Evidencia" className="w-full object-cover max-h-36" />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -252,16 +271,12 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
           ) : (
             <button 
               type="button"
-              disabled={submitting || compliance.isBlocked}
+              disabled={submitting}
               onClick={handleSubmit}
-              className={`w-full h-14 font-black rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer active:scale-95 ${
-                compliance.isBlocked 
-                  ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40 border border-emerald-500/30'
-              }`}
+              className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 transition-all cursor-pointer border border-emerald-500/30 active:scale-95 disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>{compliance.isBlocked ? 'Bloqueado por PRL' : 'Enviar Parte de Tajo'}</span>
+              <span>Guardar y Enviar Parte</span>
             </button>
           )}
         </div>

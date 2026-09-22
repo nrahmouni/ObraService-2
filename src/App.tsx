@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { obraStore } from './services/store';
 import { initializeFirebaseSync } from './services/firebaseSync';
 import { AppState, Role } from './types';
@@ -12,8 +12,14 @@ import { MobileShell } from './components/MobileShell';
 import { DailyReportWizard } from './views/DailyReportWizard';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Toaster } from 'react-hot-toast';
+import { PublicEntryView } from './views/PublicEntryView';
+import { MasterDashboardView } from './views/MasterDashboardView';
+import { OnboardingView } from './views/OnboardingView';
+import { NotFoundView } from './views/NotFoundView';
+import { toast } from 'react-hot-toast';
 
 export default function App() {
+  const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>(obraStore.getState());
 
   useEffect(() => {
@@ -53,6 +59,21 @@ export default function App() {
         <Route path="/invitation" element={<InviteAcceptanceView />} />
         <Route path="/invite" element={<InviteAcceptanceView />} />
 
+        {/* Onboarding */}
+        <Route path="/onboarding" element={
+          <ProtectedRoute currentUser={currentUser}>
+            <OnboardingView onComplete={() => navigate('/admin/dashboard')} />
+          </ProtectedRoute>
+        } />
+
+        {/* King Master Admin Panel */}
+        <Route path="/admin/master" element={
+          <ProtectedRoute currentUser={currentUser}>
+            <MasterDashboardView />
+          </ProtectedRoute>
+        } />
+        <Route path="/master" element={<Navigate to="/admin/master" replace />} />
+
         {/* Admin / Manager Desktop Experience */}
         <Route path="/admin/*" element={
           <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
@@ -73,17 +94,30 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        {/* Root Redirect */}
+        {/* Root Redirect to Landing Page or Dashboard */}
         <Route path="/" element={
           currentUser ? (
             currentUser.role === Role.WORKER ? 
               <Navigate to="/mobile/dashboard" replace /> : 
               <Navigate to="/admin/dashboard" replace />
-          ) : <Navigate to="/login" replace />
+          ) : (
+            <PublicEntryView 
+              onOpenLogin={() => navigate('/login')}
+              onOpenRegister={() => {
+                toast.error('El registro público libre está desactivado. Todo alta de empresa u obra debe realizarse de forma oficial, u obtener invitación corporativa.');
+              }}
+              onOpenJoinCode={() => navigate('/invitation')}
+              onDemoAccess={() => {
+                obraStore.enterDemoMode();
+                toast.success('Entorno Demo de ObraService activado con éxito.');
+                navigate('/login');
+              }}
+            />
+          )
         } />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Fallback 404 */}
+        <Route path="*" element={<NotFoundView />} />
       </Routes>
     </AppDataProvider>
   );

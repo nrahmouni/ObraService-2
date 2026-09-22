@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obraStore } from '../services/store';
 import { Role } from '../types';
-import { signInWithGoogle, signInWithEmail } from '../services/firebase';
-import { Building2, KeyRound, ShieldCheck, ArrowRight, AlertCircle, Loader2, HardHat, FileCheck } from 'lucide-react';
+import { signInWithEmail } from '../services/firebase';
+import { Building2, ArrowRight, AlertCircle, Loader2, FileCheck, WifiOff } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export const LoginView: React.FC = () => {
@@ -12,53 +12,116 @@ export const LoginView: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockSeconds, setLockSeconds] = useState(0);
 
   const DEMO_ACCOUNTS = [
     { name: 'Carlos Mendoza', role: 'Admin Constructora', email: 'carlos.mendoza@construccionesnorte.es' },
     { name: 'Javier Ortiz', role: 'Jefe de Obra', email: 'javier.ortiz@construccionesnorte.es' },
     { name: 'Elena Ramos', role: 'Subcontratista', email: 'elena.ramos@estructuraslevante.es' },
+    { name: 'King Master', role: 'Super Admin', email: 'nmriffan31@obraservice.es' },
   ];
+
+  useEffect(() => {
+    let timer: any;
+    if (lockSeconds > 0) {
+      timer = setInterval(() => {
+        setLockSeconds((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [lockSeconds]);
+
+  const redirectUserByRole = () => {
+    const state = obraStore.getState();
+    const isKingMasterUser = state.currentUser?.email && (
+      state.currentUser.email.toLowerCase() === 'nmriffan31' ||
+      state.currentUser.email.toLowerCase().startsWith('nmriffan31@') ||
+      state.currentUser.email.toLowerCase() === 'naimrahmouni1998@gmail.com'
+    );
+
+    if (isKingMasterUser) {
+      navigate('/admin/master');
+    } else if (state.currentUser?.role === Role.WORKER) {
+      navigate('/mobile/dashboard');
+    } else {
+      navigate('/admin/dashboard');
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (lockSeconds > 0) {
+      toast.error(`Formulario bloqueado. Reintente en ${lockSeconds}s.`);
+      return;
+    }
+
+    if (!navigator.onLine) {
+      toast.error('Sin conexión a internet');
+    }
+
     setError('');
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+    const isDemo = DEMO_ACCOUNTS.some(acc => acc.email.toLowerCase() === cleanEmail);
+
     try {
-      // Check if demo account
-      const isDemo = DEMO_ACCOUNTS.some(acc => acc.email === email);
       if (isDemo) {
         obraStore.enterDemoMode();
-      }
-
-      // Try Firebase login or local store fallback
-      try {
-        await signInWithEmail(email, password);
-      } catch (fbErr) {
-        // fallback to store login if firebase auth fails in test environment
-        const res = obraStore.login(email);
-        if (!res.success) {
-          throw new Error(res.error || 'Credenciales no válidas.');
+        const res = obraStore.login(cleanEmail);
+        if (res.success) {
+          setLoading(false);
+          setFailedAttempts(0);
+          toast.success('Sesión iniciada correctamente');
+          redirectUserByRole();
+          return;
         }
       }
 
-      const state = obraStore.getState();
-      setLoading(false);
-      toast.success('Sesión iniciada correctamente');
-      if (state.currentUser?.role === Role.WORKER) {
-        navigate('/mobile/dashboard');
-      } else {
-        navigate('/admin/dashboard');
+      // Try Firebase authentication first
+      try {
+        await signInWithEmail(cleanEmail, password);
+      } catch (fbErr) {
+        // Fallback to store login if firebase auth is offline or test account
+        const res = obraStore.login(cleanEmail);
+        if (!res.success) {
+          throw new Error('El correo electrónico o la contraseña no son correctos.');
+        }
       }
+
+      setLoading(false);
+      setFailedAttempts(0);
+      toast.success('Sesión iniciada correctamente');
+      redirectUserByRole();
     } catch (err: any) {
       setLoading(false);
-      setError(err.message || 'Error al iniciar sesión. Verifique sus credenciales.');
+      setPassword(''); // Clear password field on error
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+
+      if (attempts >= 3) {
+        setLockSeconds(30);
+        setError('Demasiados intentos fallidos. El formulario ha sido bloqueado por 30 segundos por seguridad.');
+        toast.error('Bloqueo de seguridad activado por 30s');
+      } else {
+        setError(err.message || 'El correo electrónico o la contraseña no son correctos.');
+      }
     }
   };
 
   const handleQuickDemo = (demoEmail: string) => {
     setEmail(demoEmail);
     setPassword('demo-2026');
+    setError('');
+    
+    // Auto authenticates cleanly without error
+    obraStore.enterDemoMode();
+    const res = obraStore.login(demoEmail);
+    if (res.success) {
+      toast.success(`Accediendo como ${demoEmail}`);
+      redirectUserByRole();
+    }
   };
 
   return (
@@ -112,10 +175,12 @@ export const LoginView: React.FC = () => {
 
           <button 
             type="submit"
-            disabled={loading}
+            disabled={loading || lockSeconds > 0}
             className="w-full h-14 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-3 shadow-lg shadow-amber-950/50 transition-all cursor-pointer border border-amber-500/30 active:scale-95 disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : lockSeconds > 0 ? (
+              <span>Bloqueado ({lockSeconds}s)</span>
+            ) : (
               <>
                 <span>Iniciar Sesión en Obra</span>
                 <ArrowRight className="w-4 h-4" />

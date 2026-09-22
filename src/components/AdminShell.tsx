@@ -6,10 +6,12 @@ import { DeliveryNotesView } from '../views/DeliveryNotesView';
 import { ProjectsView } from '../views/ProjectsView';
 import { MapView } from '../views/MapView';
 import { TeamView } from '../views/TeamView';
+import { WorkersManagementView } from '../views/WorkersManagementView';
 import { AuditTrailView } from '../views/AuditTrailView';
 import { SettingsView } from '../views/SettingsView';
 import { IntegrationsView } from '../views/IntegrationsView';
 import { DocsView } from '../views/DocsView';
+import { ProfileView } from '../views/ProfileView';
 import { AppState, Role } from '../types';
 import { obraStore } from '../services/store';
 
@@ -44,10 +46,12 @@ export const AdminShell: React.FC<AdminShellProps> = ({ state }) => {
       {currentTab === 'projects' && <ProjectsView state={state} onNavigate={(t) => setCurrentTab(t as any)} />}
       {currentTab === 'map' && <MapView state={state} />}
       {currentTab === 'team' && <TeamView state={state} />}
+      {currentTab === 'workers' && <WorkersManagementView state={state} />}
       {currentTab === 'audit' && <AuditTrailView state={state} />}
       {currentTab === 'settings' && <SettingsView state={state} />}
       {currentTab === 'integrations' && <IntegrationsView state={state} />}
       {currentTab === 'docs' && <DocsView state={state} />}
+      {currentTab === 'profile' && <ProfileView state={state} />}
     </MainLayout>
   );
 };

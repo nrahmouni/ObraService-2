@@ -76,15 +76,6 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
       return;
     }
 
-    // 0. PRL Compliance Gateway Check
-    if (currentUser.companyId) {
-      const compliance = checkOperationalStatus(currentUser.companyId);
-      if (compliance.isBlocked) {
-        toast.error(compliance.reason || 'Bloqueo preventivo PRL: Documentación caducada.', { duration: 6000 });
-        return;
-      }
-    }
-
     // Extract project coordinates
     const projectLat = activeProject.location?.lat ?? activeProject.latitude;
     const projectLng = activeProject.location?.lng ?? activeProject.longitude;
@@ -109,8 +100,8 @@ export const ClockInButton: React.FC<ClockInButtonProps> = ({
         projectLng
       );
 
-      // Maximum threshold: strict 200 meters requirement
-      const maxAllowedMeters = 200;
+      // Maximum threshold: use project geofence radius or 200m default
+      const maxAllowedMeters = activeProject.validationRadiusMeters || 200;
 
       // 3. Validation Check: If distance > 200m, block clock-in
       if (distanceMeters > maxAllowedMeters) {

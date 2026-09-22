@@ -112,6 +112,11 @@ export interface Worker {
   category: WorkerCategory;
   companyId: string; // Puede ser la empresa principal o una subcontrata
   nationalId?: string;
+  taxId?: string;
+  phone?: string;
+  assignedProjectIds?: string[];
+  companyNameSnapshot?: string;
+  isSubcontractor?: boolean;
   active: boolean;
   createdAt: string;
 }
@@ -333,6 +338,10 @@ export interface AuditEvent {
   newValue?: string;
   dailyReportId?: string;
   deliveryNoteId?: string;
+  action?: string;
+  description?: string;
+  severity?: 'Info' | 'Warning' | 'Success' | 'Danger';
+  category?: string;
 }
 
 export interface NotificationItem {

@@ -1,24 +1,35 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
 import firebaseConfigPlaceholder from '../../firebase-applet-config.json';
 
+const rawApiKey = import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigPlaceholder.apiKey;
+const apiKey = (rawApiKey && rawApiKey.trim() !== '') ? rawApiKey : 'AIzaSyDemoPlaceholderKeyForObraService12345';
+
 const firebaseConfig = {
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigPlaceholder.projectId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigPlaceholder.appId,
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigPlaceholder.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigPlaceholder.authDomain,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || (firebaseConfigPlaceholder as any).firestoreDatabaseId,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigPlaceholder.projectId || 'obra-service-app',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigPlaceholder.appId || '1:123456789:web:123456',
+  apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigPlaceholder.authDomain || 'obra-service-app.firebaseapp.com',
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || (firebaseConfigPlaceholder as any).firestoreDatabaseId || '(default)',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigPlaceholder.storageBucket,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigPlaceholder.messagingSenderId,
   oAuthClientId: import.meta.env.VITE_FIREBASE_OAUTH_CLIENT_ID || (firebaseConfigPlaceholder as any).oAuthClientId,
 };
 
-const app = initializeApp(firebaseConfig);
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // CRITICAL: The app will break without this line
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth(app);
+
+let instanceAuth: any = null;
+try {
+  instanceAuth = getAuth(app);
+} catch (err) {
+  console.warn('[Firebase] Warning initializing auth client:', err);
+}
+
+export const auth = instanceAuth;
 export const googleProvider = new GoogleAuthProvider();
 
 export enum OperationType {
@@ -51,12 +62,12 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+      userId: auth?.currentUser?.uid,
+      email: auth?.currentUser?.email,
+      emailVerified: auth?.currentUser?.emailVerified,
+      isAnonymous: auth?.currentUser?.isAnonymous,
+      tenantId: auth?.currentUser?.tenantId,
+      providerInfo: auth?.currentUser?.providerData?.map((provider: any) => ({
         providerId: provider.providerId,
         email: provider.email,
       })) || []
@@ -80,29 +91,47 @@ export async function testFirebaseConnection() {
 
 // Convenience helper for 1-click Google Sign-in
 export async function signInWithGoogle() {
+  if (!auth) {
+    return { success: false, error: 'Servicio de autenticación no disponible en este momento.' };
+  }
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return { success: true, user: result.user };
   } catch (error: any) {
+    if (error?.code === 'auth/invalid-api-key' || error?.message?.includes('invalid-api-key')) {
+      console.warn('[Firebase] Invalid API Key detected for Google auth.');
+      return { success: false, error: 'Firebase Auth no configurado. Utilice el inicio rápido de demostración.' };
+    }
     console.error('Error signing in with Google:', error);
     return { success: false, error: error.message || 'Error al iniciar sesión con Google' };
   }
 }
 
 export async function signInWithEmail(email: string, pass: string) {
+  if (!auth) {
+    throw new Error('AUTH_UNAVAILABLE');
+  }
   try {
     const res = await signInWithEmailAndPassword(auth, email, pass);
     return { success: true, user: res.user };
   } catch (error: any) {
+    if (error?.code === 'auth/invalid-api-key' || error?.message?.includes('invalid-api-key')) {
+      console.warn('[Firebase] Invalid API Key for email sign in.');
+      throw new Error('INVALID_API_KEY');
+    }
     throw new Error(error.message || 'Error al autenticar con correo y contraseña');
   }
 }
 
 export async function logOutFirebase() {
+  if (!auth) {
+    return { success: true };
+  }
   try {
     await signOut(auth);
     return { success: true };
   } catch (error: any) {
+    console.warn('[Firebase] LogOut warning:', error?.message || error);
     return { success: false, error: error.message };
   }
 }

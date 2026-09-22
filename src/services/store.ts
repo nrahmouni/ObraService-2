@@ -56,58 +56,258 @@ interface StoreState {
 const PROD_STORAGE_KEY = 'obraservice_prod_v1';
 const DEMO_STORAGE_KEY = 'obraservice_demo_v1';
 
-function loadInitialProductionState(): StoreState {
-  try {
-    const raw = localStorage.getItem(PROD_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        isDemoMode: false,
-        theme: parsed.theme || 'light',
-        viewPreference: parsed.viewPreference || 'grid',
-        currentUser: parsed.currentUser || null,
-        companies: parsed.companies || [],
-        users: parsed.users || [],
-        projects: parsed.projects || [],
-        workers: parsed.workers || [],
-        machinery: parsed.machinery || [],
-        reports: parsed.reports || [],
-        deliveryNotes: parsed.deliveryNotes || [],
-        auditEvents: parsed.auditEvents || [],
-        invitations: parsed.invitations || [],
-        messages: parsed.messages || [],
-        syncError: parsed.syncError || null,
-        timeLogs: parsed.timeLogs || [],
-        complianceDocuments: parsed.complianceDocuments || [],
-      };
+function getSeedState(): StoreState {
+  const seedCompanies: Company[] = [
+    {
+      id: 'comp_norte',
+      name: 'Construcciones Norte S.L.',
+      taxId: 'B87654321',
+      type: 'MAIN_CONTRACTOR',
+      address: 'Paseo de la Castellana 140, Madrid',
+      inviteCode: 'NORTE2026',
+      active: true,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'comp_levante',
+      name: 'Estructuras Levante S.L.',
+      taxId: 'B12345678',
+      type: 'SUBCONTRACTOR',
+      address: 'Avenida Al Vedat 22, Torrent, Valencia',
+      inviteCode: 'LEVANTE2026',
+      active: true,
+      createdAt: new Date().toISOString()
     }
-  } catch (e) {
-    console.error('Error reading production localStorage', e);
-  }
+  ];
+
+  const seedUsers: User[] = [
+    {
+      id: 'usr_admin',
+      name: 'Carlos Mendoza',
+      email: 'carlos.mendoza@construccionesnorte.es',
+      role: 'MAIN_CONTRACTOR_ADMIN',
+      companyId: 'comp_norte',
+      companyName: 'Construcciones Norte S.L.',
+      active: true,
+      assignedProjectIds: ['proj_metro'],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'usr_site_manager',
+      name: 'Javier Ortiz',
+      email: 'javier.ortiz@construccionesnorte.es',
+      role: 'SITE_MANAGER',
+      companyId: 'comp_norte',
+      companyName: 'Construcciones Norte S.L.',
+      active: true,
+      assignedProjectIds: ['proj_metro'],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'usr_sub_levante',
+      name: 'Elena Ramos',
+      email: 'elena.ramos@estructuraslevante.es',
+      role: 'SUBCONTRACTOR_USER',
+      companyId: 'comp_levante',
+      companyName: 'Estructuras Levante S.L.',
+      active: true,
+      assignedProjectIds: ['proj_metro'],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'usr_master_direct',
+      name: 'King Master',
+      email: 'nmriffan31@obraservice.es',
+      role: 'MAIN_CONTRACTOR_ADMIN',
+      companyId: 'comp_norte',
+      companyName: 'Construcciones Norte S.L.',
+      active: true,
+      assignedProjectIds: ['proj_metro'],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'usr_master_email',
+      name: 'Naim Rahmouni',
+      email: 'naimrahmouni1998@gmail.com',
+      role: 'MAIN_CONTRACTOR_ADMIN',
+      companyId: 'comp_norte',
+      companyName: 'Construcciones Norte S.L.',
+      active: true,
+      assignedProjectIds: ['proj_metro'],
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const seedProjects: Project[] = [
+    {
+      id: 'proj_metro',
+      code: 'PRJ-4091',
+      name: 'Ampliación de Metro Línea 5',
+      status: 'Active',
+      location: {
+        address: 'Gran Vía 45, Madrid',
+        lat: 40.4202,
+        lng: -3.7041,
+        latitude: 40.4202,
+        longitude: -3.7041
+      },
+      validationRadiusMeters: 300,
+      plannedWorkloadHours: 2400,
+      plannedHours: 2400,
+      companyId: 'comp_norte',
+      client: 'Comunidad de Madrid',
+      initialBudget: 4500000,
+      budget: 4500000,
+      spentBudget: 1200000,
+      projectType: 'Civil',
+      description: 'Excavación, refuerzo estructural y acondicionamiento de la nueva estación intermedia en Gran Vía.'
+    }
+  ];
+
+  const seedWorkers: Worker[] = [
+    {
+      id: 'work_1',
+      code: 'W-001',
+      name: 'Carlos Soler',
+      category: 'Encargado General',
+      companyId: 'comp_norte',
+      active: true,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'work_2',
+      code: 'W-002',
+      name: 'Manuel Vega',
+      category: 'Oficial 1ª',
+      companyId: 'comp_levante',
+      active: true,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'work_3',
+      code: 'W-003',
+      name: 'Antonio López',
+      category: 'Peón Especialista',
+      companyId: 'comp_levante',
+      active: true,
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const seedInvitations = [
+    {
+      id: 'inv_levante_1',
+      code: 'INV-LEVANTE',
+      email: 'elena.ramos@estructuraslevante.es',
+      role: 'SUBCONTRACTOR_USER',
+      companyId: 'comp_levante',
+      companyName: 'Estructuras Levante S.L.',
+      assignedProjectIds: ['proj_metro'],
+      status: 'Pending',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  ];
 
   return {
     isDemoMode: false,
     theme: 'light',
     viewPreference: 'grid',
     currentUser: null,
-    companies: [],
-    users: [],
-    projects: [],
-    workers: [],
-    machinery: [],
+    companies: seedCompanies,
+    users: seedUsers,
+    projects: seedProjects,
+    workers: seedWorkers,
+    machinery: [
+      {
+        id: 'mach_1',
+        code: 'MAC-001',
+        name: 'Excavadora Caterpillar 320',
+        type: 'Excavadora',
+        companyId: 'comp_norte',
+        active: true,
+        createdAt: new Date().toISOString()
+      }
+    ],
     reports: [],
     deliveryNotes: [],
     auditEvents: [],
-    invitations: [],
+    invitations: seedInvitations,
     messages: [],
     syncError: null,
     timeLogs: [],
-    complianceDocuments: [],
+    complianceDocuments: []
   };
 }
 
+function loadInitialProductionState(): StoreState {
+  try {
+    const raw = localStorage.getItem(PROD_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.users && parsed.users.length > 0) {
+        return {
+          isDemoMode: false,
+          theme: parsed.theme || 'light',
+          viewPreference: parsed.viewPreference || 'grid',
+          currentUser: parsed.currentUser || null,
+          companies: parsed.companies || [],
+          users: parsed.users || [],
+          projects: parsed.projects || [],
+          workers: parsed.workers || [],
+          machinery: parsed.machinery || [],
+          reports: parsed.reports || [],
+          deliveryNotes: parsed.deliveryNotes || [],
+          auditEvents: parsed.auditEvents || [],
+          invitations: parsed.invitations || [],
+          messages: parsed.messages || [],
+          syncError: parsed.syncError || null,
+          timeLogs: parsed.timeLogs || [],
+          complianceDocuments: parsed.complianceDocuments || [],
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Error reading production localStorage', e);
+  }
+
+  return getSeedState();
+}
+
 function loadInitialDemoState(): StoreState {
-  return loadInitialProductionState();
+  try {
+    const raw = localStorage.getItem(DEMO_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.users && parsed.users.length > 0) {
+        return {
+          isDemoMode: true,
+          theme: parsed.theme || 'light',
+          viewPreference: parsed.viewPreference || 'grid',
+          currentUser: parsed.currentUser || null,
+          companies: parsed.companies || [],
+          users: parsed.users || [],
+          projects: parsed.projects || [],
+          workers: parsed.workers || [],
+          machinery: parsed.machinery || [],
+          reports: parsed.reports || [],
+          deliveryNotes: parsed.deliveryNotes || [],
+          auditEvents: parsed.auditEvents || [],
+          invitations: parsed.invitations || [],
+          messages: parsed.messages || [],
+          syncError: parsed.syncError || null,
+          timeLogs: parsed.timeLogs || [],
+          complianceDocuments: parsed.complianceDocuments || [],
+        };
+      }
+    }
+  } catch (e) {
+    console.error('Error reading demo localStorage', e);
+  }
+
+  const seed = getSeedState();
+  seed.isDemoMode = true;
+  return seed;
 }
 
 type Listener = (state: StoreState) => void;
@@ -258,6 +458,31 @@ class ObraStore {
     }
   }
 
+  public impersonateUser(userId: string) {
+    const target = this.state.users.find(u => u.id === userId);
+    if (target) {
+      if (!sessionStorage.getItem('king_master_original_uid')) {
+        sessionStorage.setItem('king_master_original_uid', this.state.currentUser?.id || '');
+      }
+      this.state.currentUser = target;
+      this.notify();
+    }
+  }
+
+  public stopImpersonation() {
+    const originalUid = sessionStorage.getItem('king_master_original_uid');
+    if (originalUid) {
+      const original = this.state.users.find(u => u.id === originalUid);
+      if (original) {
+        this.state.currentUser = original;
+        sessionStorage.removeItem('king_master_original_uid');
+        this.notify();
+        return true;
+      }
+    }
+    return false;
+  }
+
   // --- Authentication Lifecycle ---
 
   public login(email: string, role?: UserRole): { success: boolean; error?: string } {
@@ -365,6 +590,17 @@ class ObraStore {
     this.dispatchSync('user', this.state.currentUser);
     this.notify();
     return { success: true, company: newCompany };
+  }
+
+  public toggleCompanyActive(companyId: string) {
+    const target = this.state.companies.find(c => c.id === companyId);
+    if (target) {
+      target.active = !target.active;
+      this.dispatchSync('company', target);
+      this.notify();
+      return target.active;
+    }
+    return false;
   }
 
   public createSubcontractor(data: {
@@ -780,6 +1016,10 @@ class ObraStore {
     });
     this.notify();
     return true;
+  }
+
+  public addWorker(data: Omit<Worker, 'id' | 'code' | 'createdAt'>): { success: boolean; worker?: Worker; error?: string } {
+    return this.createWorker(data);
   }
 
   public createWorker(data: Omit<Worker, 'id' | 'code' | 'createdAt'>): { success: boolean; worker?: Worker; error?: string } {

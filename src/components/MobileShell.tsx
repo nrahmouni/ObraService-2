@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MobileLayout, TabKey } from './MobileLayout';
 import { DailyReportsView } from '../views/DailyReportsView';
 import { SettingsView } from '../views/SettingsView';
+import { WorkersManagementView } from '../views/WorkersManagementView';
+import { ProfileView } from '../views/ProfileView';
 import { AppState, Role } from '../types';
 import { obraStore } from '../services/store';
 import { useNavigate } from 'react-router-dom';
@@ -94,7 +96,9 @@ export const MobileShell: React.FC<MobileShellProps> = ({ state }) => {
       )}
 
       {currentTab === 'reports' && <DailyReportsView state={state} onOpenReportModal={() => {}} />}
+      {currentTab === 'workers' && <WorkersManagementView state={state} />}
       {currentTab === 'settings' && <SettingsView state={state} />}
+      {currentTab === 'profile' && <ProfileView state={state} />}
     </MobileLayout>
   );
 };

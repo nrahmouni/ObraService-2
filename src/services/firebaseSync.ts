@@ -12,7 +12,7 @@ import {
   updateDoc, 
   Unsubscribe 
 } from 'firebase/firestore';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection } from './firebase';
 import { obraStore } from './store';
 import { AuditEvent, Company, DailyReport, DeliveryNote, Project, User, Worker } from '../types';
@@ -27,6 +27,17 @@ let isSyncInitialized = false;
 export function initializeFirebaseSync() {
   if (isSyncInitialized) return;
   isSyncInitialized = true;
+
+  // Configure local persistence so users stay logged in across browser restarts
+  if (auth) {
+    try {
+      setPersistence(auth, browserLocalPersistence).catch(err => {
+        console.warn('[FirebaseSync] Error setting local persistence:', err);
+      });
+    } catch (err) {
+      console.warn('[FirebaseSync] Exception setting persistence:', err);
+    }
+  }
 
   // Run connection test probe as required by Firebase skill
   testFirebaseConnection();
@@ -64,64 +75,72 @@ export function initializeFirebaseSync() {
     }
   });
 
-  onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-    // Teardown previous collection listeners
-    activeUnsubscribers.forEach(unsub => unsub());
-    activeUnsubscribers = [];
+  if (auth) {
+    try {
+      onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+        // Teardown previous collection listeners
+        activeUnsubscribers.forEach(unsub => unsub());
+        activeUnsubscribers = [];
 
-    if (firebaseUser) {
-      console.log('Firebase Authenticated:', firebaseUser.email);
-      // Switch store to production / synced mode
-      const currentState = obraStore.getState();
-      
-      const existingUser = currentState.users.find(u => u.id === firebaseUser.uid);
+        if (firebaseUser) {
+          console.log('Firebase Authenticated:', firebaseUser.email);
+          // Switch store to production / synced mode
+          const currentState = obraStore.getState();
+          
+          const existingUser = currentState.users.find(u => u.id === firebaseUser.uid);
 
-      const mappedUser: User = {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario ObraService',
-        email: firebaseUser.email || '',
-        role: existingUser?.role || (firebaseUser.email === 'naimrahmouni1998@gmail.com' ? 'MAIN_CONTRACTOR_ADMIN' : 'SITE_MANAGER'),
-        companyId: existingUser?.companyId || '',
-        companyName: existingUser?.companyName || '',
-        active: existingUser?.active ?? true,
-        assignedProjectIds: existingUser?.assignedProjectIds || [],
-        createdAt: existingUser?.createdAt || new Date().toISOString(),
-      };
+          const mappedUser: User = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario ObraService',
+            email: firebaseUser.email || '',
+            role: existingUser?.role || (firebaseUser.email === 'naimrahmouni1998@gmail.com' ? 'MAIN_CONTRACTOR_ADMIN' : 'SITE_MANAGER'),
+            companyId: existingUser?.companyId || '',
+            companyName: existingUser?.companyName || '',
+            active: existingUser?.active ?? true,
+            assignedProjectIds: existingUser?.assignedProjectIds || [],
+            createdAt: existingUser?.createdAt || new Date().toISOString(),
+          };
 
-      // Persist / update user profile in Firestore
-      try {
-        await setDoc(doc(db, 'users', firebaseUser.uid), mappedUser, { merge: true });
-        
-        // --- Sync to Cloud SQL ---
-        const token = await firebaseUser.getIdToken();
-        await fetch('/api/auth/sync-user', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            name: mappedUser.name,
-            role: mappedUser.role
-          })
-        });
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, `users/${firebaseUser.uid}`);
-      }
+          // Persist / update user profile in Firestore
+          try {
+            await setDoc(doc(db, 'users', firebaseUser.uid), mappedUser, { merge: true });
+            
+            // --- Sync to Cloud SQL ---
+            const token = await firebaseUser.getIdToken();
+            await fetch('/api/auth/sync-user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                name: mappedUser.name,
+                role: mappedUser.role
+              })
+            });
+          } catch (err) {
+            handleFirestoreError(err, OperationType.WRITE, `users/${firebaseUser.uid}`);
+          }
 
-      obraStore.setAuthenticatedFirebaseUser(mappedUser);
+          obraStore.setAuthenticatedFirebaseUser(mappedUser);
 
-      // Attach real-time listeners to Firestore collections
-      attachCollectionListeners();
+          // Attach real-time listeners to Firestore collections
+          attachCollectionListeners();
 
-      // Flush any queued offline mutations now that Firebase user is verified
-      flushOfflineQueue().catch(err => {
-        console.warn('[FirebaseSync] Queue flush on auth completed with notes:', err);
+          // Flush any queued offline mutations now that Firebase user is verified
+          flushOfflineQueue().catch(err => {
+            console.warn('[FirebaseSync] Queue flush on auth completed with notes:', err);
+          });
+        } else {
+          console.log('Firebase User signed out.');
+        }
+      }, (error) => {
+        console.warn('[FirebaseSync] Auth state change warning:', error?.message || error);
       });
-    } else {
-      console.log('Firebase User signed out.');
+    } catch (err) {
+      console.warn('[FirebaseSync] Exception attaching auth observer:', err);
     }
-  });
+  }
 }
 
 function attachCollectionListeners() {
