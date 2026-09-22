@@ -1,7 +1,9 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
-import firebaseConfigPlaceholder from '../../firebase-applet-config.json';
+
+const configModules = import.meta.glob('../../firebase-applet-config.json', { eager: true }) as Record<string, any>;
+const firebaseConfigPlaceholder = configModules['../../firebase-applet-config.json']?.default || {};
 
 const rawApiKey = import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigPlaceholder.apiKey;
 const apiKey = (rawApiKey && rawApiKey.trim() !== '') ? rawApiKey : 'AIzaSyDemoPlaceholderKeyForObraService12345';
