@@ -297,39 +297,28 @@ function migrateLegacyLocalStorage() {
 }
 
 function loadInitialProductionState(): StoreState {
-  try {
-    migrateLegacyLocalStorage();
-    const raw = localStorage.getItem(PROD_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.users && parsed.users.length > 0) {
-        return {
-          isDemoMode: false,
-          theme: parsed.theme || 'light',
-          viewPreference: parsed.viewPreference === 'list' ? 'list' : 'cards',
-          currentUser: parsed.currentUser || null,
-          companies: parsed.companies || [],
-          users: parsed.users || [],
-          projects: parsed.projects || [],
-          workers: parsed.workers || [],
-          machinery: parsed.machinery || [],
-          reports: parsed.reports || [],
-          deliveryNotes: parsed.deliveryNotes || [],
-          auditEvents: parsed.auditEvents || [],
-          invitations: parsed.invitations || [],
-          messages: parsed.messages || [],
-          syncError: parsed.syncError || null,
-          timeLogs: parsed.timeLogs || [],
-          complianceDocuments: parsed.complianceDocuments || [],
-          notifications: parsed.notifications || [],
-        };
-      }
-    }
-  } catch (e) {
-    console.error('Error reading production localStorage', e);
-  }
-
-  return getSeedState();
+  // Production mode: Never store operational data in localStorage or load mock seeds.
+  // Operational data syncs strictly from secure Firestore backend.
+  return {
+    isDemoMode: false,
+    theme: 'light',
+    viewPreference: 'cards',
+    currentUser: null,
+    companies: [],
+    users: [],
+    projects: [],
+    workers: [],
+    machinery: [],
+    reports: [],
+    deliveryNotes: [],
+    auditEvents: [],
+    invitations: [],
+    messages: [],
+    syncError: null,
+    timeLogs: [],
+    complianceDocuments: [],
+    notifications: [],
+  };
 }
 
 function loadInitialDemoState(): StoreState {

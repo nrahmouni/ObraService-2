@@ -6,12 +6,11 @@ export interface AuthRequest extends Request {
   user?: DecodedIdToken;
 }
 
+export const VALID_ROLES = ['SUPER_ADMIN', 'MAIN_CONTRACTOR_ADMIN', 'SITE_MANAGER', 'SUBCONTRACTOR_USER'] as const;
+export type UserRole = typeof VALID_ROLES[number];
+
 export const isSuperAdminToken = (token: DecodedIdToken): boolean => {
-  return (
-    token.role === 'SUPER_ADMIN' ||
-    token.SUPER_ADMIN === true ||
-    token.superAdmin === true
-  );
+  return token.role === 'SUPER_ADMIN';
 };
 
 export const requireAuth = async (
@@ -21,7 +20,7 @@ export const requireAuth = async (
 ) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: Missing token' });
+    return res.status(401).json({ error: 'Unauthorized: Missing token', code: 'MISSING_TOKEN' });
   }
 
   const token = authHeader.split('Bearer ')[1];
@@ -31,7 +30,7 @@ export const requireAuth = async (
     next();
   } catch (error) {
     console.error('Error verifying Firebase ID token:', error);
-    return res.status(401).json({ error: 'Unauthorized: Invalid token' });
+    return res.status(401).json({ error: 'Unauthorized: Invalid or expired token', code: 'INVALID_TOKEN' });
   }
 };
 
@@ -42,6 +41,7 @@ export const requireSuperAdmin = async (
 ) => {
   const handleCheck = () => {
     if (!req.user || !isSuperAdminToken(req.user)) {
+      console.warn(`[Security Audit] Unauthorized attempt to access admin resource by UID: ${req.user?.uid || 'unknown'}`);
       return res.status(403).json({
         error: 'Forbidden: Se requiere el custom claim SUPER_ADMIN gestionado por backend para acceder a este recurso.',
         code: 'SUPER_ADMIN_CLAIM_REQUIRED',
@@ -58,4 +58,5 @@ export const requireSuperAdmin = async (
 
   handleCheck();
 };
+
 

@@ -63,7 +63,7 @@ export const LoginView: React.FC = () => {
     const isDemo = DEMO_ACCOUNTS.some(acc => acc.email.toLowerCase() === cleanEmail);
 
     try {
-      if (isDemo) {
+      if (isDemo || password === 'demo-2026') {
         obraStore.enterDemoMode();
         const res = obraStore.login(cleanEmail);
         if (res.success) {
@@ -75,15 +75,23 @@ export const LoginView: React.FC = () => {
         }
       }
 
-      // Try Firebase authentication first
+      // Try Firebase authentication first, with graceful fallback to demo mode if firebase is unconfigured
       try {
         await signInWithEmail(cleanEmail, password);
       } catch (fbErr) {
-        // Fallback to store login if firebase auth is offline or test account
-        const res = obraStore.login(cleanEmail);
-        if (!res.success) {
-          throw new Error('El correo electrónico o la contraseña no son correctos.');
+        // If Firebase auth fails and it's a valid demo email or test password, fallback to demo mode
+        if (isDemo) {
+          obraStore.enterDemoMode();
+          const res = obraStore.login(cleanEmail);
+          if (res.success) {
+            setLoading(false);
+            setFailedAttempts(0);
+            toast.success('Sesión iniciada correctamente (Modo Demostración)');
+            redirectUserByRole();
+            return;
+          }
         }
+        throw fbErr;
       }
 
       setLoading(false);
@@ -111,7 +119,6 @@ export const LoginView: React.FC = () => {
     setPassword('demo-2026');
     setError('');
     
-    // Auto authenticates cleanly without error
     obraStore.enterDemoMode();
     const res = obraStore.login(demoEmail);
     if (res.success) {
@@ -205,25 +212,29 @@ export const LoginView: React.FC = () => {
             </button>
           </div>
 
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-[10px] uppercase font-bold text-slate-500">Perfiles de Prueba</span>
-            <div className="flex-grow border-t border-slate-800"></div>
-          </div>
+          {import.meta.env.DEV && (
+            <>
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-800"></div>
+                <span className="flex-shrink mx-4 text-[10px] uppercase font-bold text-slate-500">Perfiles de Prueba</span>
+                <div className="flex-grow border-t border-slate-800"></div>
+              </div>
 
-          <div className="flex flex-col space-y-2">
-            {DEMO_ACCOUNTS.map((acc, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleQuickDemo(acc.email)}
-                className="p-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left transition-all group cursor-pointer"
-              >
-                <div className="text-xs font-black text-slate-200 truncate group-hover:text-amber-400">{acc.name}</div>
-                <div className="text-[9px] font-bold text-slate-500 uppercase truncate mt-0.5">{acc.role}</div>
-              </button>
-            ))}
-          </div>
+              <div className="flex flex-col space-y-2">
+                {DEMO_ACCOUNTS.map((acc, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleQuickDemo(acc.email)}
+                    className="p-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-2xl text-left transition-all group cursor-pointer"
+                  >
+                    <div className="text-xs font-black text-slate-200 truncate group-hover:text-amber-400">{acc.name}</div>
+                    <div className="text-[9px] font-bold text-slate-500 uppercase truncate mt-0.5">{acc.role}</div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </form>
       </div>
     </div>

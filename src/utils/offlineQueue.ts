@@ -10,12 +10,15 @@ const syncQueueStore = localforage.createInstance({
 });
 
 export interface QueueItem {
-  id: string; // Entity ID (e.g., dr_12345)
+  id: string; // Entity ID
   entity: 'dailyReport' | 'deliveryNote' | 'timeLog' | 'project' | 'worker' | 'machinery' | 'auditEvent' | 'user' | 'company' | 'invitation' | 'notification';
   data: any;
   timestamp: number;
-  retryCount?: number;
+  idempotencyKey: string;
+  status: 'pending' | 'synced' | 'error';
+  retryCount: number;
   lastError?: string;
+  version?: number;
 }
 
 /**
@@ -41,22 +44,27 @@ export function sanitizeForFirestore<T>(data: T): T {
 }
 
 /**
- * Add an item to the offline sync queue.
+ * Add an item to the offline sync queue with outbox pattern, idempotency key, and versioning.
  */
 export async function enqueueOfflineItem(entity: QueueItem['entity'], data: any): Promise<void> {
   const sanitized = sanitizeForFirestore(data);
   const id = sanitized?.id || `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const idempotencyKey = sanitized?.idempotencyKey || `idem_${id}_${Date.now()}`;
+  
   const item: QueueItem = {
     id,
     entity,
-    data: sanitized,
+    data: { ...sanitized, idempotencyKey },
     timestamp: Date.now(),
-    retryCount: 0
+    idempotencyKey,
+    status: 'pending',
+    retryCount: 0,
+    version: sanitized?.version || 1
   };
 
   await syncQueueStore.setItem(id, item);
-  console.log(`[OfflineQueue] Item queued successfully for ${entity}:`, id);
-  toast.success(`Modo sin conexión: Cambios guardados localmente (${entity.toUpperCase()}). Se sincronizarán al recuperar cobertura.`, {
+  console.log(`[OfflineQueue Outbox] Item queued successfully for ${entity}:`, id, `(Idempotency: ${idempotencyKey})`);
+  toast.success(`Modo sin conexión: Cambios guardados en cola outbox (${entity.toUpperCase()}). Se sincronizarán al recuperar cobertura.`, {
     id: `offline-queued-${id}`,
     duration: 4000
   });
