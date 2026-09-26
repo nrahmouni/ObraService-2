@@ -1,8 +1,7 @@
 import React from 'react';
-import { Search, Filter, CheckCircle2, ChevronRight, Zap } from 'lucide-react';
+import { Search, Filter, CheckCircle2, ChevronRight, Zap, FileText, Clock, Building2 } from 'lucide-react';
 import { DeliveryNote, AppState } from '../../types';
-import { Table } from '../ui/Table';
-import { StatusPill } from '../ui/StatusPill';
+import { Badge } from '../ui/Badge';
 
 interface DeliveryNoteListProps {
   state: AppState;
@@ -32,18 +31,18 @@ export const DeliveryNoteList: React.FC<DeliveryNoteListProps> = ({
   const pendingCount = notes.filter(n => n.status === 'Pending').length;
 
   return (
-    <div className="space-y-4 font-sans text-slate-300 animate-in fade-in">
-      {/* Filters Card */}
-      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 bg-[#0F172A] p-4 rounded-xl border border-slate-800">
-        <div className="flex flex-wrap items-center gap-1.5">
+    <div className="space-y-6 animate-in fade-in">
+      {/* Filters Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex overflow-x-auto no-scrollbar bg-brand-surface border border-brand-border p-1 rounded-xl gap-1">
           {(['ALL', 'Pending', 'Confirmed', 'Disputed'] as const).map(filter => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+              className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider whitespace-nowrap min-h-[38px] transition-all text-center ${
                 statusFilter === filter 
-                  ? 'bg-brand-accent text-white' 
-                  : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-brand-accent text-white shadow-lg' 
+                  : 'text-brand-muted hover:text-white'
               }`}
             >
               {filter === 'ALL' ? 'Todos' : filter === 'Pending' ? 'Pendientes' : filter === 'Confirmed' ? 'Confirmados' : 'Disputados'}
@@ -55,57 +54,69 @@ export const DeliveryNoteList: React.FC<DeliveryNoteListProps> = ({
         {isSubcontractor && pendingCount > 0 && (
           <button
             onClick={onBatchConfirm}
-            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shrink-0 cursor-pointer shadow-md"
+            className="btn-primary h-11 sm:h-10 px-5 bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20 w-full sm:w-auto justify-center"
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Firmar en Lote ({pendingCount})</span>
+            <Zap className="w-4 h-4" />
+            <span>Firmar Lote ({pendingCount})</span>
           </button>
         )}
       </div>
 
-      {/* Main Albaranes List */}
-      <div className="flex flex-col space-y-3 w-full">
+      {/* Main Albaranes Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {notes.map(note => (
           <div 
             key={note.id} 
-            className="bg-[#0F172A] border border-slate-800 hover:border-slate-700 rounded-2xl p-4 transition-all cursor-pointer flex flex-col space-y-3 group shadow-lg"
             onClick={() => onSelect(note)}
+            className="card group cursor-pointer hover:border-brand-accent/40 transition-all duration-300 flex flex-col"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-slate-100 uppercase font-mono tracking-wider">{note.code}</span>
-                <span className="text-[10px] text-slate-400 font-bold">• {note.date}</span>
+            <div className="p-5 flex-1 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-brand-bg border border-brand-border text-brand-accent font-mono text-[10px] font-black">
+                    {note.code}
+                  </span>
+                  <span className="text-[10px] text-brand-muted font-bold uppercase">{note.date}</span>
+                </div>
+                <Badge status={note.status} className="text-[9px] px-2 py-0.5 rounded uppercase font-black" />
               </div>
-              <StatusPill status={note.status} />
+
+              <div>
+                <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-1">Subcontratista</div>
+                <div className="text-sm font-black text-white uppercase tracking-tight group-hover:text-brand-accent transition-colors truncate">
+                  {note.subcontractorCompanyName}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-1">Obra / Proyecto</div>
+                <div className="text-xs font-medium text-brand-muted uppercase truncate">
+                  {note.projectNameSnapshot}
+                </div>
+              </div>
+
+              <div className="pt-2">
+                 <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-1">Certificado</div>
+                 <div className="flex items-center gap-1.5 text-sm font-black text-white font-mono">
+                    <Clock className="w-4 h-4 text-brand-accent" />
+                    <span>{note.totalHours} Horas</span>
+                 </div>
+              </div>
             </div>
 
-            <div className="flex flex-col space-y-1.5 text-xs">
-              <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Empresa Subcontratista</span>
-                <span className="font-bold text-slate-200 uppercase">{note.subcontractorCompanyName}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Obra / Proyecto</span>
-                <span className="font-medium text-slate-300 uppercase">{note.projectNameSnapshot}</span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Total:</span>
-                <span className="font-black text-brand-accent font-mono">{note.totalHours} Horas</span>
-              </div>
-              <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 group-hover:text-brand-accent transition-colors">
-                <span>Ver Albarán</span>
-                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </div>
+            <div className="px-5 py-3 bg-brand-surface/50 border-t border-brand-border flex items-center justify-between group-hover:bg-brand-surface transition-colors">
+               <span className="text-[10px] font-black text-brand-muted uppercase tracking-widest">Abrir Albarán</span>
+               <ChevronRight className="w-4 h-4 text-brand-muted group-hover:text-white transition-all transform group-hover:translate-x-1" />
             </div>
           </div>
         ))}
 
         {notes.length === 0 && (
-          <div className="p-8 text-center bg-[#0F172A] border border-slate-800 rounded-2xl text-slate-500 text-xs font-bold uppercase tracking-wider">
-            No se han encontrado albaranes de jornada registrados
+          <div className="md:col-span-2 lg:col-span-3 card p-12 text-center flex flex-col items-center gap-4 border-dashed border-brand-border">
+            <div className="w-16 h-16 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-muted">
+              <FileText className="w-8 h-8" />
+            </div>
+            <p className="text-sm font-bold text-brand-muted uppercase tracking-widest">No hay albaranes registrados</p>
           </div>
         )}
       </div>

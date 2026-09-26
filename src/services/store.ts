@@ -20,7 +20,15 @@ import {
   TimeLog,
   Invitation,
   ComplianceDocument,
-  NotificationItem
+  NotificationItem,
+  Client,
+  CrmOpportunity,
+  CrmActivity,
+  CompanySubscription,
+  SubscriptionPlanId,
+  PaymentMethodInfo,
+  SubscriptionInvoice,
+  PlatformSettings
 } from '../types';
 
 import * as companyModule from './store/company';
@@ -31,6 +39,7 @@ import * as reportModule from './store/report';
 interface StoreState {
   isDemoMode: boolean;
   theme: 'light' | 'dark';
+  uiStyle?: 'neumorphic' | 'standard';
   viewPreference: 'cards' | 'list';
   currentUser: User | null;
   companies: Company[];
@@ -47,6 +56,11 @@ interface StoreState {
   timeLogs: TimeLog[];
   complianceDocuments: ComplianceDocument[];
   notifications: NotificationItem[];
+  clients: Client[];
+  crmOpportunities: CrmOpportunity[];
+  crmActivities: CrmActivity[];
+  subscription: CompanySubscription;
+  platformSettings: PlatformSettings;
 }
 
 const PROD_STORAGE_KEY = 'obraservice_prod_v1';
@@ -105,6 +119,17 @@ function getSeedState(): StoreState {
       id: 'usr_sub_levante',
       name: 'Elena Ramos',
       email: 'elena.ramos@estructuraslevante.es',
+      role: 'SUBCONTRACTOR_USER',
+      companyId: 'comp_levante',
+      companyName: 'Estructuras Levante S.L.',
+      active: true,
+      assignedProjectIds: ['proj_metro'],
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'usr_worker',
+      name: 'David Gómez',
+      email: 'david.gomez@estructuraslevante.es',
       role: 'SUBCONTRACTOR_USER',
       companyId: 'comp_levante',
       companyName: 'Estructuras Levante S.L.',
@@ -208,6 +233,7 @@ function getSeedState(): StoreState {
   return {
     isDemoMode: false,
     theme: 'light',
+    uiStyle: 'neumorphic',
     viewPreference: 'cards',
     currentUser: null,
     companies: seedCompanies,
@@ -252,7 +278,276 @@ function getSeedState(): StoreState {
         createdAt: new Date().toISOString()
       }
     ],
-    notifications: []
+    notifications: [],
+    clients: [
+      {
+        id: 'cli_metrovacesa',
+        companyId: 'comp_norte',
+        name: 'Metrovacesa Promociones Inmobiliarias S.A.',
+        tradeName: 'Metrovacesa',
+        taxId: 'A-85123992',
+        clientType: 'PROMOTOR',
+        contactPerson: 'Rodrigo Santamaría',
+        contactEmail: 'r.santamaria@metrovacesa.com',
+        contactPhone: '+34 91 598 70 00',
+        address: 'Calle Quintanavides 13, Parque Vía Norte',
+        city: 'Madrid',
+        creditRating: 'A+',
+        paymentTermsDays: 60,
+        status: 'ACTIVE',
+        totalBilled: 1250000,
+        pendingAmount: 145000,
+        assignedProjectIds: ['proj_metro'],
+        portalAccessEnabled: true,
+        portalAccessCode: 'PORTAL-METRO-2026',
+        createdAt: '2026-01-10T10:00:00Z',
+        updatedAt: '2026-09-20T14:30:00Z'
+      },
+      {
+        id: 'cli_aedas',
+        companyId: 'comp_norte',
+        name: 'Aedas Homes Opco S.L.U.',
+        tradeName: 'Aedas Homes',
+        taxId: 'B-87819445',
+        clientType: 'PROMOTOR',
+        contactPerson: 'Lucía Fernández De la Vega',
+        contactEmail: 'lucia.fernandez@aedashomes.com',
+        contactPhone: '+34 91 838 88 00',
+        address: 'Paseo de la Castellana 130',
+        city: 'Madrid',
+        creditRating: 'A+',
+        paymentTermsDays: 45,
+        status: 'ACTIVE',
+        totalBilled: 890000,
+        pendingAmount: 92400,
+        assignedProjectIds: [],
+        portalAccessEnabled: true,
+        portalAccessCode: 'PORTAL-AEDAS-992',
+        createdAt: '2026-02-15T09:00:00Z',
+        updatedAt: '2026-09-18T11:15:00Z'
+      },
+      {
+        id: 'cli_cam_fomento',
+        companyId: 'comp_norte',
+        name: 'Consejería de Transportes e Infraestructuras - CAM',
+        tradeName: 'Comunidad de Madrid',
+        taxId: 'S-2833001E',
+        clientType: 'ADMINISTRACION_PUBLICA',
+        contactPerson: 'Ignacio Barroso (Ingeniero Jefe Demarcación)',
+        contactEmail: 'licitaciones.obras@madrid.org',
+        contactPhone: '+34 91 580 30 00',
+        address: 'Calle Maudes 17',
+        city: 'Madrid',
+        creditRating: 'A+',
+        paymentTermsDays: 90,
+        status: 'ACTIVE',
+        totalBilled: 4500000,
+        pendingAmount: 320000,
+        assignedProjectIds: ['proj_metro'],
+        portalAccessEnabled: true,
+        portalAccessCode: 'PORTAL-CAM-INFRA',
+        createdAt: '2025-11-20T08:30:00Z',
+        updatedAt: '2026-09-22T16:00:00Z'
+      },
+      {
+        id: 'cli_prologis',
+        companyId: 'comp_norte',
+        name: 'Prologis Spain Logistics Park S.L.',
+        tradeName: 'Prologis España',
+        taxId: 'B-62881903',
+        clientType: 'INDUSTRIAL',
+        contactPerson: 'Marc Soler Pujol',
+        contactEmail: 'msoler@prologis.com',
+        contactPhone: '+34 93 410 70 80',
+        address: 'Av. Diagonal 605',
+        city: 'Barcelona',
+        creditRating: 'A',
+        paymentTermsDays: 30,
+        status: 'LEAD',
+        totalBilled: 0,
+        pendingAmount: 0,
+        assignedProjectIds: [],
+        portalAccessEnabled: false,
+        portalAccessCode: 'PORTAL-PLG-001',
+        createdAt: '2026-08-01T12:00:00Z',
+        updatedAt: '2026-09-24T10:00:00Z'
+      }
+    ],
+    crmOpportunities: [
+      {
+        id: 'opp_1',
+        code: 'OPP-2026-0042',
+        companyId: 'comp_norte',
+        clientId: 'cli_metrovacesa',
+        clientName: 'Metrovacesa Promociones Inmobiliarias S.A.',
+        title: 'Residencial Mirador del Pardo - 64 Viviendas y Urbanización',
+        value: 3450000,
+        stage: 'NEGOTIATION',
+        probability: 80,
+        expectedClosingDate: '2026-10-15',
+        projectType: 'Residencial',
+        assignedTo: 'Carlos Mendoza',
+        notes: 'Reunión final de fijación de precios y plazo de entrega con el director técnico.',
+        createdAt: '2026-08-10T09:00:00Z',
+        updatedAt: '2026-09-25T11:00:00Z'
+      },
+      {
+        id: 'opp_2',
+        code: 'OPP-2026-0043',
+        companyId: 'comp_norte',
+        clientId: 'cli_cam_fomento',
+        clientName: 'Comunidad de Madrid',
+        title: 'Licitación Fase II: Acondicionamiento Túnel e Instalaciones M-30',
+        value: 5200000,
+        stage: 'PROPOSAL_SENT',
+        probability: 60,
+        expectedClosingDate: '2026-11-01',
+        projectType: 'Civil',
+        assignedTo: 'Carlos Mendoza',
+        notes: 'Pliego presentado con solvencia técnica acreditada y garantía provisional.',
+        createdAt: '2026-09-01T10:00:00Z',
+        updatedAt: '2026-09-20T17:00:00Z'
+      },
+      {
+        id: 'opp_3',
+        code: 'OPP-2026-0044',
+        companyId: 'comp_norte',
+        clientId: 'cli_aedas',
+        clientName: 'Aedas Homes Opco S.L.U.',
+        title: 'Promoción Célere Alcores - Cimentación y Estructura Hormigón',
+        value: 1680000,
+        stage: 'STUDY',
+        probability: 40,
+        expectedClosingDate: '2026-10-30',
+        projectType: 'Residencial',
+        assignedTo: 'Javier Ortiz',
+        notes: 'Revisando mediciones de ferralla y encofrado con el departamento de presupuestos.',
+        createdAt: '2026-09-12T14:00:00Z',
+        updatedAt: '2026-09-24T16:30:00Z'
+      },
+      {
+        id: 'opp_4',
+        code: 'OPP-2026-0045',
+        companyId: 'comp_norte',
+        clientId: 'cli_prologis',
+        clientName: 'Prologis España',
+        title: 'Plataforma Logística Cross-Docking 28.000m² Coslada',
+        value: 2900000,
+        stage: 'PROSPECT',
+        probability: 25,
+        expectedClosingDate: '2026-12-15',
+        projectType: 'Industrial',
+        assignedTo: 'Carlos Mendoza',
+        notes: 'Contacto comercial inicial tras registro en demo CRM Pro Max.',
+        createdAt: '2026-09-21T08:00:00Z',
+        updatedAt: '2026-09-21T08:00:00Z'
+      },
+      {
+        id: 'opp_5',
+        code: 'OPP-2026-0038',
+        companyId: 'comp_norte',
+        clientId: 'cli_cam_fomento',
+        clientName: 'Comunidad de Madrid',
+        title: 'Ampliación Metro Línea 5 - Estación Gran Vía (Adjudicada)',
+        value: 4500000,
+        stage: 'WON',
+        probability: 100,
+        expectedClosingDate: '2026-08-01',
+        projectType: 'Civil',
+        assignedTo: 'Carlos Mendoza',
+        notes: 'Obra en ejecución activa actualmente.',
+        createdAt: '2026-05-10T10:00:00Z',
+        updatedAt: '2026-08-01T12:00:00Z'
+      }
+    ],
+    crmActivities: [
+      {
+        id: 'act_1',
+        companyId: 'comp_norte',
+        clientId: 'cli_metrovacesa',
+        clientName: 'Metrovacesa Promociones Inmobiliarias S.A.',
+        type: 'MEETING',
+        title: 'Reunión de coordinación técnica de proyecto',
+        description: 'Se revisaron los planos de estructura y el calendario de replanteo con el arquitecto jefe.',
+        date: '2026-09-25T11:00:00Z',
+        performedBy: 'Carlos Mendoza',
+        createdAt: '2026-09-25T12:00:00Z'
+      },
+      {
+        id: 'act_2',
+        companyId: 'comp_norte',
+        clientId: 'cli_aedas',
+        clientName: 'Aedas Homes Opco S.L.U.',
+        type: 'SITE_VISIT',
+        title: 'Visita técnica al terreno',
+        description: 'Inspección de accesos para camiones hormigonera y punto de acometida eléctrica provisional.',
+        date: '2026-09-23T16:00:00Z',
+        performedBy: 'Javier Ortiz',
+        createdAt: '2026-09-23T18:00:00Z'
+      },
+      {
+        id: 'act_3',
+        companyId: 'comp_norte',
+        clientId: 'cli_prologis',
+        clientName: 'Prologis España',
+        type: 'CALL',
+        title: 'Llamada de cualificación de requerimientos',
+        description: 'El cliente requiere solera de alta planimetría (TR-34 FM2) y 12 muelles de carga.',
+        date: '2026-09-22T10:30:00Z',
+        performedBy: 'Carlos Mendoza',
+        createdAt: '2026-09-22T11:00:00Z'
+      }
+    ],
+    subscription: {
+      planId: 'promax',
+      billingInterval: 'annual',
+      status: 'ACTIVE',
+      currentPeriodEnd: '2027-09-15',
+      cancelAtPeriodEnd: false,
+      paymentMethod: {
+        type: 'CARD',
+        brand: 'Visa',
+        last4: '4242',
+        holderName: 'Construcciones Norte S.L.',
+        expiryDate: '12/28'
+      },
+      invoices: [
+        {
+          id: 'INV-OBS-2026-001',
+          date: '2026-09-15',
+          amount: 1430,
+          taxAmount: 300.30,
+          planName: 'CRM Pro Max Integrable (Suscripción Anual -20%)',
+          billingInterval: 'annual',
+          status: 'PAID'
+        },
+        {
+          id: 'INV-OBS-2025-001',
+          date: '2025-09-15',
+          amount: 1430,
+          taxAmount: 300.30,
+          planName: 'CRM Pro Max Integrable (Suscripción Anual -20%)',
+          billingInterval: 'annual',
+          status: 'PAID'
+        }
+      ]
+    },
+    platformSettings: {
+      announcementBanner: {
+        enabled: true,
+        message: '⚡ ObraService CRM Pro Max v3.4: Sincronización bidireccional con SAP, Sage y Microsoft Dynamics activa.',
+        type: 'info'
+      },
+      features: {
+        enablePublicRegistration: true,
+        enablePaymentGatewaySandbox: true,
+        enableOcrScanning: true,
+        enableGpsGeofencing: true,
+        maintenanceMode: false
+      },
+      supportContactEmail: 'soporte@obraservice.pro',
+      lastUpdated: new Date().toISOString()
+    }
   };
 }
 
@@ -302,6 +597,7 @@ function loadInitialProductionState(): StoreState {
   return {
     isDemoMode: false,
     theme: 'light',
+    uiStyle: 'neumorphic',
     viewPreference: 'cards',
     currentUser: null,
     companies: [],
@@ -318,6 +614,40 @@ function loadInitialProductionState(): StoreState {
     timeLogs: [],
     complianceDocuments: [],
     notifications: [],
+    clients: [],
+    crmOpportunities: [],
+    crmActivities: [],
+    subscription: {
+      planId: 'promax',
+      billingInterval: 'monthly',
+      status: 'ACTIVE',
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+      cancelAtPeriodEnd: false,
+      paymentMethod: {
+        type: 'CARD',
+        brand: 'Visa',
+        last4: '4242',
+        holderName: 'Constructora S.L.',
+        expiryDate: '12/28'
+      },
+      invoices: []
+    },
+    platformSettings: {
+      announcementBanner: {
+        enabled: true,
+        message: '⚡ ObraService CRM Pro Max v3.4: Sincronización bidireccional con SAP, Sage y Dynamics activa.',
+        type: 'info'
+      },
+      features: {
+        enablePublicRegistration: true,
+        enablePaymentGatewaySandbox: true,
+        enableOcrScanning: true,
+        enableGpsGeofencing: true,
+        maintenanceMode: false
+      },
+      supportContactEmail: 'soporte@obraservice.pro',
+      lastUpdated: new Date().toISOString()
+    }
   };
 }
 
@@ -327,25 +657,32 @@ function loadInitialDemoState(): StoreState {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.users && parsed.users.length > 0) {
+        const seed = getSeedState();
         return {
           isDemoMode: true,
           theme: parsed.theme || 'light',
+          uiStyle: parsed.uiStyle || 'neumorphic',
           viewPreference: parsed.viewPreference === 'list' ? 'list' : 'cards',
-          currentUser: parsed.currentUser || null,
-          companies: parsed.companies || [],
-          users: parsed.users || [],
-          projects: parsed.projects || [],
-          workers: parsed.workers || [],
-          machinery: parsed.machinery || [],
-          reports: parsed.reports || [],
-          deliveryNotes: parsed.deliveryNotes || [],
-          auditEvents: parsed.auditEvents || [],
-          invitations: parsed.invitations || [],
-          messages: parsed.messages || [],
+          currentUser: parsed.currentUser || seed.users.find(u => u.role === 'MAIN_CONTRACTOR_ADMIN') || seed.users[0],
+          companies: parsed.companies || seed.companies,
+          users: parsed.users || seed.users,
+          projects: parsed.projects || seed.projects,
+          workers: parsed.workers || seed.workers,
+          machinery: parsed.machinery || seed.machinery,
+          reports: parsed.reports || seed.reports,
+          deliveryNotes: parsed.deliveryNotes || seed.deliveryNotes,
+          auditEvents: parsed.auditEvents || seed.auditEvents,
+          invitations: parsed.invitations || seed.invitations,
+          messages: parsed.messages || seed.messages,
           syncError: parsed.syncError || null,
-          timeLogs: parsed.timeLogs || [],
-          complianceDocuments: parsed.complianceDocuments || [],
-          notifications: parsed.notifications || [],
+          timeLogs: parsed.timeLogs || seed.timeLogs,
+          complianceDocuments: parsed.complianceDocuments || seed.complianceDocuments,
+          notifications: parsed.notifications || seed.notifications,
+          clients: parsed.clients || seed.clients,
+          crmOpportunities: parsed.crmOpportunities || seed.crmOpportunities,
+          crmActivities: parsed.crmActivities || seed.crmActivities,
+          subscription: parsed.subscription || seed.subscription,
+          platformSettings: parsed.platformSettings || seed.platformSettings
         };
       }
     }
@@ -355,6 +692,7 @@ function loadInitialDemoState(): StoreState {
 
   const seed = getSeedState();
   seed.isDemoMode = true;
+  seed.currentUser = seed.users.find(u => u.role === 'MAIN_CONTRACTOR_ADMIN') || seed.users[0];
   return seed;
 }
 
@@ -365,7 +703,21 @@ class ObraStore {
   private listeners = new Set<Listener>();
 
   constructor() {
-    this.state = loadInitialProductionState(); 
+    const savedProd = localStorage.getItem(PROD_STORAGE_KEY);
+    if (savedProd) {
+      try {
+        const parsed = JSON.parse(savedProd);
+        if (parsed.currentUser) {
+          this.state = parsed;
+          this.checkComplianceDocumentExpirations();
+          return;
+        }
+      } catch (e) {
+        console.error('Error parsing production storage', e);
+      }
+    }
+    // Default to fully loaded working demo state with active projects, reports and workers
+    this.state = loadInitialDemoState(); 
     this.checkComplianceDocumentExpirations();
   }
 
@@ -376,11 +728,12 @@ class ObraStore {
     };
   }
 
-  private notify() {
+  public notify() {
     const storageKey = this.state.isDemoMode ? DEMO_STORAGE_KEY : PROD_STORAGE_KEY;
     try {
       localStorage.setItem(storageKey, JSON.stringify({
         theme: this.state.theme,
+        uiStyle: this.state.uiStyle || 'neumorphic',
         viewPreference: this.state.viewPreference,
         currentUser: this.state.currentUser,
         companies: this.state.companies,
@@ -394,6 +747,11 @@ class ObraStore {
         invitations: this.state.invitations,
         messages: this.state.messages,
         notifications: this.state.notifications || [],
+        clients: this.state.clients || [],
+        crmOpportunities: this.state.crmOpportunities || [],
+        crmActivities: this.state.crmActivities || [],
+        subscription: this.state.subscription,
+        platformSettings: this.state.platformSettings
       }));
     } catch (e) {
       console.error('Error saving data to localStorage', e);
@@ -403,8 +761,9 @@ class ObraStore {
 
     // Apply strict database-style filtering
     const cid = this.state.currentUser?.companyId;
+    const isSuper = this.state.currentUser?.isSuperAdmin || this.state.currentUser?.role === 'SUPER_ADMIN';
     
-    if (cid) {
+    if (cid || isSuper) {
       const projects = this.state.projects || [];
       const companies = this.state.companies || [];
       const users = this.state.users || [];
@@ -414,42 +773,59 @@ class ObraStore {
       const deliveryNotes = this.state.deliveryNotes || [];
       const auditEvents = this.state.auditEvents || [];
 
-      const myProjects = projects.filter(p => 
-        p.companyId === cid || (p.assignedSubcontractorIds || []).includes(cid)
-      );
-      const myProjectIds = myProjects.map(p => p.id);
-      
-      const assignedSubIds = projects
-        .filter(p => p.companyId === cid)
-        .flatMap(p => p.assignedSubcontractorIds || []);
+      if (isSuper) {
+        snapshot.companies = companies;
+        snapshot.users = users;
+        snapshot.projects = projects;
+        snapshot.workers = workers;
+        snapshot.machinery = machinery;
+        snapshot.reports = reports;
+        snapshot.deliveryNotes = deliveryNotes;
+        snapshot.auditEvents = auditEvents;
+        snapshot.clients = this.state.clients || [];
+        snapshot.crmOpportunities = this.state.crmOpportunities || [];
+        snapshot.crmActivities = this.state.crmActivities || [];
+      } else {
+        const myProjects = projects.filter(p => 
+          p.companyId === cid || (cid ? (p.assignedSubcontractorIds || []).includes(cid) : false)
+        );
+        const myProjectIds = myProjects.map(p => p.id);
+        
+        const assignedSubIds = projects
+          .filter(p => p.companyId === cid)
+          .flatMap(p => p.assignedSubcontractorIds || []);
 
-      snapshot.companies = companies.filter(c => 
-        c.id === cid || assignedSubIds.includes(c.id) || myProjects.some(p => p.companyId === c.id)
-      );
-      snapshot.users = users.filter(u => 
-        u.companyId === cid || assignedSubIds.includes(u.companyId)
-      );
-      snapshot.projects = myProjects;
-      snapshot.workers = workers.filter(w => 
-        w.companyId === cid || assignedSubIds.includes(w.companyId)
-      );
-      snapshot.machinery = machinery.filter(m => 
-        m.companyId === cid || assignedSubIds.includes(m.companyId)
-      );
-      snapshot.reports = reports.filter(r => 
-        myProjectIds.includes(r.projectId)
-      );
-      snapshot.deliveryNotes = deliveryNotes.filter(n => 
-        n.subcontractorCompanyId === cid || n.mainContractorCompanyId === cid || assignedSubIds.includes(n.subcontractorCompanyId)
-      );
-      snapshot.auditEvents = auditEvents.filter(e => {
-        if (myProjectIds.includes(e.recordId)) return true;
-        const w = workers.find(wrk => wrk.id === e.recordId);
-        if (w && (w.companyId === cid || assignedSubIds.includes(w.companyId))) return true;
-        const m = machinery.find(mac => mac.id === e.recordId);
-        if (m && (m.companyId === cid || assignedSubIds.includes(m.companyId))) return true;
-        return e.actorCompanyName === this.state.currentUser?.companyName || assignedSubIds.includes(e.actorCompanyId || '');
-      });
+        snapshot.companies = companies.filter(c => 
+          c.id === cid || assignedSubIds.includes(c.id) || myProjects.some(p => p.companyId === c.id)
+        );
+        snapshot.users = users.filter(u => 
+          u.companyId === cid || assignedSubIds.includes(u.companyId)
+        );
+        snapshot.projects = myProjects;
+        snapshot.workers = workers.filter(w => 
+          w.companyId === cid || assignedSubIds.includes(w.companyId)
+        );
+        snapshot.machinery = machinery.filter(m => 
+          m.companyId === cid || assignedSubIds.includes(m.companyId)
+        );
+        snapshot.reports = reports.filter(r => 
+          myProjectIds.includes(r.projectId)
+        );
+        snapshot.deliveryNotes = deliveryNotes.filter(n => 
+          n.subcontractorCompanyId === cid || n.mainContractorCompanyId === cid || assignedSubIds.includes(n.subcontractorCompanyId)
+        );
+        snapshot.auditEvents = auditEvents.filter(e => {
+          if (myProjectIds.includes(e.recordId)) return true;
+          const w = workers.find(wrk => wrk.id === e.recordId);
+          if (w && (w.companyId === cid || assignedSubIds.includes(w.companyId))) return true;
+          const m = machinery.find(mac => mac.id === e.recordId);
+          if (m && (m.companyId === cid || assignedSubIds.includes(m.companyId))) return true;
+          return e.actorCompanyName === this.state.currentUser?.companyName || assignedSubIds.includes(e.actorCompanyId || '');
+        });
+        snapshot.clients = (this.state.clients || []).filter(c => c.companyId === cid);
+        snapshot.crmOpportunities = (this.state.crmOpportunities || []).filter(o => o.companyId === cid);
+        snapshot.crmActivities = (this.state.crmActivities || []).filter(a => a.companyId === cid);
+      }
     } else {
       // If no company context is selected, hide all operational data
       snapshot.projects = [];
@@ -458,6 +834,9 @@ class ObraStore {
       snapshot.reports = [];
       snapshot.deliveryNotes = [];
       snapshot.auditEvents = [];
+      snapshot.clients = [];
+      snapshot.crmOpportunities = [];
+      snapshot.crmActivities = [];
     }
 
     this.listeners.forEach(fn => fn(snapshot));
@@ -469,8 +848,17 @@ class ObraStore {
 
   // --- Environment & Demo Mode Management ---
 
-  public enterDemoMode() {
+  public enterDemoMode(targetRole?: UserRole) {
     this.state = loadInitialDemoState();
+    this.state.isDemoMode = true;
+    if (targetRole) {
+      const user = this.state.users.find(u => u.role === targetRole && u.active);
+      if (user) {
+        this.state.currentUser = user;
+      }
+    } else if (!this.state.currentUser) {
+      this.state.currentUser = this.state.users.find(u => u.role === 'MAIN_CONTRACTOR_ADMIN') || this.state.users[0];
+    }
     this.notify();
   }
 
@@ -485,6 +873,16 @@ class ObraStore {
 
   public toggleTheme() {
     this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
+    this.notify();
+  }
+
+  public toggleUiStyle() {
+    this.state.uiStyle = this.state.uiStyle === 'standard' ? 'neumorphic' : 'standard';
+    this.notify();
+  }
+
+  public setUiStyle(style: 'neumorphic' | 'standard') {
+    this.state.uiStyle = style;
     this.notify();
   }
 
@@ -1091,7 +1489,7 @@ class ObraStore {
 
   // --- Audit Logging ---
 
-  private logAuditEvent(params: {
+  public logAuditEvent(params: {
     affectedEntity: AuditEvent['affectedEntity'];
     recordId: string;
     recordCode?: string;
@@ -1235,6 +1633,21 @@ class ObraStore {
     });
 
     this.dispatchSync('timeLog', log);
+    this.notify();
+  }
+
+  public postChatMessage(msg: ChatMessage) {
+    if (!this.state.messages) {
+      this.state.messages = [];
+    }
+    this.state.messages.push(msg);
+    this.dispatchSync('message', msg);
+    this.notify();
+  }
+
+  public syncRemoteMessages(messages: ChatMessage[]) {
+    if (this.state.isDemoMode) return;
+    this.state.messages = messages;
     this.notify();
   }
 
@@ -1815,6 +2228,250 @@ class ObraStore {
       reportsCount: newReports.length,
       deliveryNotesCount: newDeliveryNotes.length,
     };
+  }
+
+  // --- CRM PRO MAX CLIENT OPERATIONS ---
+
+  public addClient(clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): { success: boolean; client?: Client; error?: string } {
+    if (!clientData.name || !clientData.taxId) {
+      return { success: false, error: 'La Razón Social y el CIF/NIF son obligatorios' };
+    }
+
+    const currentCompanyId = this.state.currentUser?.companyId || 'comp_norte';
+    const newClient: Client = {
+      ...clientData,
+      id: `cli_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      companyId: currentCompanyId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      portalAccessCode: clientData.portalAccessCode || `PORTAL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      assignedProjectIds: clientData.assignedProjectIds || []
+    };
+
+    if (!this.state.clients) {
+      this.state.clients = [];
+    }
+
+    this.state.clients = [newClient, ...this.state.clients];
+    this.logAuditEvent({
+      affectedEntity: 'Company',
+      recordId: newClient.id,
+      operation: 'COMPANY_CREATED',
+      details: `Nuevo cliente CRM registrado: ${newClient.name} (${newClient.taxId})`
+    });
+
+    this.notify();
+    return { success: true, client: newClient };
+  }
+
+  public updateClient(id: string, updates: Partial<Client>): { success: boolean; error?: string } {
+    if (!this.state.clients) return { success: false, error: 'No hay clientes registrados' };
+
+    const idx = this.state.clients.findIndex(c => c.id === id);
+    if (idx === -1) return { success: false, error: 'Cliente no encontrado' };
+
+    this.state.clients[idx] = {
+      ...this.state.clients[idx],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+
+    this.notify();
+    return { success: true };
+  }
+
+  public deleteClient(id: string): { success: boolean; error?: string } {
+    if (!this.state.clients) return { success: false, error: 'No hay clientes' };
+
+    const client = this.state.clients.find(c => c.id === id);
+    if (!client) return { success: false, error: 'Cliente no encontrado' };
+
+    this.state.clients = this.state.clients.filter(c => c.id !== id);
+    this.notify();
+    return { success: true };
+  }
+
+  // --- CRM OPPORTUNITIES (PIPELINE) ---
+
+  public addCrmOpportunity(oppData: Omit<CrmOpportunity, 'id' | 'code' | 'createdAt' | 'updatedAt'>): { success: boolean; opportunity?: CrmOpportunity; error?: string } {
+    if (!oppData.title || !oppData.clientId) {
+      return { success: false, error: 'Título y Cliente son obligatorios' };
+    }
+
+    const currentCompanyId = this.state.currentUser?.companyId || 'comp_norte';
+    const year = new Date().getFullYear();
+    const code = `OPP-${year}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const newOpp: CrmOpportunity = {
+      ...oppData,
+      id: `opp_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      code,
+      companyId: currentCompanyId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (!this.state.crmOpportunities) {
+      this.state.crmOpportunities = [];
+    }
+
+    this.state.crmOpportunities = [newOpp, ...this.state.crmOpportunities];
+    this.notify();
+    return { success: true, opportunity: newOpp };
+  }
+
+  public updateCrmOpportunity(id: string, updates: Partial<CrmOpportunity>): { success: boolean; error?: string } {
+    if (!this.state.crmOpportunities) return { success: false, error: 'No hay oportunidades' };
+
+    const idx = this.state.crmOpportunities.findIndex(o => o.id === id);
+    if (idx === -1) return { success: false, error: 'Oportunidad no encontrada' };
+
+    this.state.crmOpportunities[idx] = {
+      ...this.state.crmOpportunities[idx],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+
+    this.notify();
+    return { success: true };
+  }
+
+  public updateCrmOpportunityStage(id: string, stage: CrmOpportunity['stage']): { success: boolean; error?: string } {
+    return this.updateCrmOpportunity(id, { 
+      stage,
+      probability: stage === 'WON' ? 100 : stage === 'LOST' ? 0 : stage === 'NEGOTIATION' ? 80 : stage === 'PROPOSAL_SENT' ? 60 : 40 
+    });
+  }
+
+  public deleteCrmOpportunity(id: string): { success: boolean; error?: string } {
+    if (!this.state.crmOpportunities) return { success: false, error: 'No hay oportunidades' };
+
+    this.state.crmOpportunities = this.state.crmOpportunities.filter(o => o.id !== id);
+    this.notify();
+    return { success: true };
+  }
+
+  // --- CRM ACTIVITIES ---
+
+  public addCrmActivity(actData: Omit<CrmActivity, 'id' | 'createdAt'>): { success: boolean; activity?: CrmActivity } {
+    const currentCompanyId = this.state.currentUser?.companyId || 'comp_norte';
+    const newAct: CrmActivity = {
+      ...actData,
+      id: `act_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      companyId: currentCompanyId,
+      createdAt: new Date().toISOString()
+    };
+
+    if (!this.state.crmActivities) {
+      this.state.crmActivities = [];
+    }
+
+    this.state.crmActivities = [newAct, ...this.state.crmActivities];
+    this.notify();
+    return { success: true, activity: newAct };
+  }
+
+  // --- PAYMENT & SUBSCRIPTION ENGINE ---
+
+  public processSubscriptionPayment(data: {
+    planId: SubscriptionPlanId;
+    billingInterval: 'monthly' | 'annual';
+    paymentMethod: PaymentMethodInfo;
+    fiscalData?: {
+      companyName: string;
+      taxId: string;
+      address: string;
+      city: string;
+      postalCode: string;
+    };
+  }): { success: boolean; invoice: SubscriptionInvoice } {
+    const prices: Record<SubscriptionPlanId, { monthly: number; annual: number; name: string }> = {
+      starter: { monthly: 49, annual: 470, name: 'CRM Starter' },
+      promax: { monthly: 149, annual: 1430, name: 'CRM Pro Max Integrable' },
+      enterprise: { monthly: 399, annual: 3830, name: 'Enterprise Construction Suite' }
+    };
+
+    const planInfo = prices[data.planId] || prices.promax;
+    const amount = data.billingInterval === 'annual' ? planInfo.annual : planInfo.monthly;
+    const taxAmount = +(amount * 0.21).toFixed(2);
+
+    const invoiceId = `INV-OBS-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newInvoice: SubscriptionInvoice = {
+      id: invoiceId,
+      date: new Date().toISOString().split('T')[0],
+      amount,
+      taxAmount,
+      planName: `${planInfo.name} (${data.billingInterval === 'annual' ? 'Anual -20%' : 'Mensual'})`,
+      billingInterval: data.billingInterval,
+      status: 'PAID'
+    };
+
+    const nextPeriod = new Date();
+    if (data.billingInterval === 'annual') {
+      nextPeriod.setFullYear(nextPeriod.getFullYear() + 1);
+    } else {
+      nextPeriod.setMonth(nextPeriod.getMonth() + 1);
+    }
+
+    this.state.subscription = {
+      planId: data.planId,
+      billingInterval: data.billingInterval,
+      status: 'ACTIVE',
+      currentPeriodEnd: nextPeriod.toISOString().split('T')[0],
+      cancelAtPeriodEnd: false,
+      paymentMethod: data.paymentMethod,
+      invoices: [newInvoice, ...(this.state.subscription?.invoices || [])]
+    };
+
+    // If company exists, also update its subscriptionStatus
+    const currentCompany = this.state.companies.find(c => c.id === this.state.currentUser?.companyId);
+    if (currentCompany) {
+      currentCompany.subscriptionStatus = 'Active';
+    }
+
+    this.logAuditEvent({
+      affectedEntity: 'Company',
+      recordId: currentCompany?.id || 'comp_norte',
+      operation: 'COMPANY_CREATED',
+      details: `Pago de suscripción completado con éxito: ${planInfo.name} (${amount}€ + IVA). Factura emitida: ${invoiceId}`
+    });
+
+    this.notify();
+    return { success: true, invoice: newInvoice };
+  }
+
+  public cancelSubscription(): boolean {
+    if (!this.state.subscription) return false;
+    this.state.subscription.cancelAtPeriodEnd = true;
+    this.notify();
+    return true;
+  }
+
+  public resumeSubscription(): boolean {
+    if (!this.state.subscription) return false;
+    this.state.subscription.cancelAtPeriodEnd = false;
+    this.notify();
+    return true;
+  }
+
+  // --- WEB / PLATFORM ADMINISTRATION ---
+
+  public updatePlatformSettings(settings: Partial<PlatformSettings>): boolean {
+    this.state.platformSettings = {
+      ...this.state.platformSettings,
+      ...settings,
+      lastUpdated: new Date().toISOString()
+    };
+    this.notify();
+    return true;
+  }
+
+  public setCompanyPlan(companyId: string, planId: SubscriptionPlanId): boolean {
+    const comp = this.state.companies.find(c => c.id === companyId);
+    if (!comp) return false;
+    comp.subscriptionStatus = 'Active';
+    this.notify();
+    return true;
   }
 }
 

@@ -43,15 +43,43 @@ const grantRoleSchema = z.object({
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT || 8080);
+  const NODE_ENV = process.env.NODE_ENV || 'development';
+
+  console.log('--- STARTING OBRASERVICE PRO BACKEND ---');
+  console.log(`[Config] Port: ${PORT}`);
+  console.log(`[Config] Environment: ${NODE_ENV}`);
+  console.log(`[Config] Firebase Project: ${process.env.FIREBASE_PROJECT_ID || 'NOT_SET (Check config file)'}`);
+  console.log(`[Config] DB Status: ${process.env.SQL_HOST ? 'SQL_HOST SET' : (process.env.DATABASE_URL ? 'DATABASE_URL SET' : 'NOT_SET')}`);
+
+  if (NODE_ENV === 'production') {
+    const distExists = path.join(process.cwd(), 'dist');
+    console.log(`[Config] Production Dist Path: ${distExists}`);
+
+    // If SQL_HOST is not set, we might be using DATABASE_URL or we might not have SQL yet.
+    // However, if the app *requires* DB to function, we should check it.
+    // Let's be a bit more permissive with Firebase as it has a fallback in src/services/firebase-admin.ts
+    const requiredVars = ['SQL_HOST']; // Database is usually required for this app
+    const missing = requiredVars.filter(v => !process.env[v] && !process.env.DATABASE_URL);
+    
+    if (missing.length > 0) {
+      console.warn(`[Warning] Missing database configuration (SQL_HOST or DATABASE_URL).`);
+      // console.error(`[FATAL] Missing required production environment variables: ${missing.join(', ')}`);
+      // process.exit(1);
+    }
+  }
 
   // Trust proxy for Cloud Run ingress / reverse proxies
   app.set('trust proxy', 1);
 
-  // Helmet Security Headers (CSP, HSTS, X-Content-Type-Options, Frame-Ancestors)
+  // Helmet Security Headers (Configured for AI Studio iFrame preview and Cloud Run)
   app.use(
     helmet({
-      contentSecurityPolicy: {
+      frameguard: false, // Crucial: Allow embedding inside AI Studio iFrame
+      crossOriginOpenerPolicy: false,
+      crossOriginResourcePolicy: false,
+      crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://apis.google.com", "https://maps.googleapis.com"],
@@ -60,9 +88,9 @@ async function startServer() {
           imgSrc: ["'self'", "data:", "https:", "blob:"],
           connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseio.com", "https://*.cloudfunctions.net"],
           frameSrc: ["'self'", "https://*.firebaseapp.com", "https://accounts.google.com"],
+          frameAncestors: ["'self'", "https://*.google.com", "https://*.run.app", "http://localhost:*", "https://localhost:*"],
         },
-      },
-      crossOriginEmbedderPolicy: false,
+      } : false,
     })
   );
 
@@ -366,6 +394,16 @@ Comentarios: "${report.comments || 'Ninguno'}"`;
     }
   });
 
+  // Health Check Endpoint
+  app.get('/api/health', (req, res) => {
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV,
+      uptime: process.uptime()
+    });
+  });
+
   // API 404 Handler
   app.all('/api/*', (req, res) => {
     res.status(404).json({ error: 'Endpoint de API no encontrado', code: 'NOT_FOUND' });
@@ -396,7 +434,8 @@ Comentarios: "${report.comments || 'Ninguno'}"`;
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`ObraService Pro server running securely on http://0.0.0.0:${PORT}`);
+    console.log(`[Success] ObraService Pro server listening on http://0.0.0.0:${PORT}`);
+    console.log(`[Success] Health Check: http://0.0.0.0:${PORT}/api/health`);
   });
 }
 

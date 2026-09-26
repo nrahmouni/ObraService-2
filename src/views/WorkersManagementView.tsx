@@ -12,7 +12,13 @@ import {
   FolderKanban,
   Plus,
   X,
-  Sparkles
+  Sparkles,
+  Phone,
+  Fingerprint,
+  MoreVertical,
+  Activity,
+  Briefcase,
+  LayoutGrid
 } from 'lucide-react';
 import { obraStore } from '../services/store';
 import { AppState, Worker, WorkerCategory } from '../types';
@@ -95,7 +101,7 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
         assignedProjectIds,
         active: isActive,
       });
-      toast.success(`Operario "${name}" actualizado con éxito.`);
+      toast.success('Ficha actualizada');
     } else {
       obraStore.addWorker({
         name: name.trim(),
@@ -108,7 +114,7 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
         active: isActive,
         assignedProjectIds,
       });
-      toast.success(`Operario "${name}" registrado en plantilla.`);
+      toast.success('Alta registrada');
     }
 
     setIsModalOpen(false);
@@ -116,7 +122,7 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
 
   const handleToggleStatus = (worker: Worker) => {
     obraStore.updateWorker(worker.id, { active: !worker.active });
-    toast.success(`Estado de ${worker.name} cambiado a ${!worker.active ? 'Activo' : 'Inactivo'}`);
+    toast.success(`Estado de ${worker.name} actualizado`);
   };
 
   const filteredWorkers = workers.filter(w => {
@@ -128,271 +134,275 @@ export const WorkersManagementView: React.FC<WorkersManagementViewProps> = ({ st
   });
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-wider">
-            <HardHat className="w-3.5 h-3.5" />
-            <span>Gestión de Plantillas y Cuadrillas</span>
-          </div>
-          <h1 className="text-2xl font-black tracking-tight">Control de Operarios y Personal de Campo</h1>
-          <p className="text-xs text-slate-400">Matriculación, asignación de obras y estado de actividad de la fuerza laboral.</p>
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
+      {/* View Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div>
+           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-[10px] font-black text-brand-accent uppercase tracking-widest mb-3">
+              <HardHat className="w-3.5 h-3.5" />
+              Gestión de Fuerza Laboral
+           </div>
+           <h1 className="text-3xl font-display font-black text-white tracking-tight uppercase leading-none">Matrícula de Operarios</h1>
+           <p className="text-brand-muted font-medium mt-2">Control centralizado de plantillas propias y subcontratadas.</p>
         </div>
-
         <button
           onClick={() => handleOpenModal()}
-          className="px-5 py-3.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-950/40 transition-all cursor-pointer active:scale-95 border border-amber-500/30"
+          className="btn-primary h-14 px-8 shadow-xl shadow-brand-accent/20"
         >
-          <UserPlus className="w-4 h-4" />
-          <span>Alta Nuevo Operario</span>
+          <UserPlus className="w-5 h-5 mr-2" />
+          Alta de Operario
         </button>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-3">
+      <div className="bg-brand-surface border border-brand-border p-3 rounded-[2rem] flex flex-col lg:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre o NIF/CIF..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-amber-500"
-          />
+           <Search className="w-4 h-4 text-brand-muted absolute left-4 top-1/2 -translate-y-1/2" />
+           <input
+             type="text"
+             placeholder="Buscar por nombre, DNI o especialidad..."
+             value={searchQuery}
+             onChange={(e) => setSearchQuery(e.target.value)}
+             className="w-full h-12 pl-11 pr-4 bg-brand-bg border border-brand-border rounded-2xl text-xs font-medium focus:outline-none focus:border-brand-accent transition-all"
+           />
         </div>
-
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <select
-            value={selectedCompanyFilter}
-            onChange={(e) => setSelectedCompanyFilter(e.target.value)}
-            className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
-          >
-            <option value="ALL">Todas las Empresas</option>
-            {companies.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedProjectFilter}
-            onChange={(e) => setSelectedProjectFilter(e.target.value)}
-            className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
-          >
-            <option value="ALL">Todas las Obras</option>
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+           <select
+             value={selectedCompanyFilter}
+             onChange={(e) => setSelectedCompanyFilter(e.target.value)}
+             className="h-12 px-4 bg-brand-bg border border-brand-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-brand-accent transition-all min-w-[180px]"
+           >
+             <option value="ALL">Todas las Empresas</option>
+             {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+           </select>
+           <select
+             value={selectedProjectFilter}
+             onChange={(e) => setSelectedProjectFilter(e.target.value)}
+             className="h-12 px-4 bg-brand-bg border border-brand-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-white focus:outline-none focus:border-brand-accent transition-all min-w-[180px]"
+           >
+             <option value="ALL">Todas las Obras</option>
+             {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+           </select>
         </div>
       </div>
 
       {/* Workers Linear List */}
-      <div className="flex flex-col space-y-3">
+      <div className="space-y-3">
         {filteredWorkers.map(w => {
           const comp = companies.find(c => c.id === w.companyId);
           const assignedProjects = projects.filter(p => w.assignedProjectIds?.includes(p.id));
 
           return (
-            <div key={w.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between space-y-4 hover:border-amber-500/50 transition-colors">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 font-black text-sm">
-                      {w.name.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-slate-900">{w.name}</h3>
-                      <div className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">{w.category || 'Oficial'}</div>
-                    </div>
+            <div key={w.id} className="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 group hover:border-brand-accent/30 transition-all">
+               <div className="flex items-center gap-5 min-w-0">
+                  <div className="w-14 h-14 rounded-2xl bg-brand-surface border border-brand-border flex items-center justify-center text-brand-muted font-black text-xl group-hover:bg-brand-accent/10 group-hover:text-brand-accent transition-all shrink-0">
+                     {w.name.charAt(0)}
                   </div>
-
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    w.active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-500 border border-slate-200'
-                  }`}>
-                    {w.active ? 'Activo' : 'Inactivo'}
-                  </span>
-                </div>
-
-                <div className="text-xs space-y-1 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between text-slate-500">
-                    <span>Empresa:</span>
-                    <span className="font-bold text-slate-800">{comp?.name || w.companyNameSnapshot || 'Subcontrata'}</span>
-                  </div>
-                  {w.taxId && (
-                    <div className="flex items-center justify-between text-slate-500">
-                      <span>DNI/NIE:</span>
-                      <span className="font-mono font-medium text-slate-700">{w.taxId}</span>
-                    </div>
-                  )}
-                  {w.phone && (
-                    <div className="flex items-center justify-between text-slate-500">
-                      <span>Teléfono:</span>
-                      <span className="font-mono font-medium text-slate-700">{w.phone}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-slate-100">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1.5">Obras Asignadas ({assignedProjects.length})</span>
-                  <div className="flex flex-wrap gap-1">
-                    {assignedProjects.length > 0 ? (
-                      assignedProjects.map(p => (
-                        <span key={p.id} className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-[10px] font-bold text-slate-700 truncate max-w-[150px]">
-                          {p.name}
+                  <div className="min-w-0">
+                     <div className="flex items-center gap-3">
+                        <h3 className="text-base font-black text-white uppercase tracking-tight truncate">{w.name}</h3>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                          w.active ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-brand-surface text-brand-muted border border-brand-border'
+                        }`}>
+                          {w.active ? 'Activo' : 'Baja'}
                         </span>
-                      ))
-                    ) : (
-                      <span className="text-[10px] text-slate-400 italic">Sin obras asignadas</span>
-                    )}
+                     </div>
+                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black text-brand-accent uppercase tracking-widest">
+                           <Activity className="w-3.5 h-3.5" />
+                           {w.category || 'Oficial'}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-brand-muted uppercase tracking-tight">
+                           <Building2 className="w-3.5 h-3.5" />
+                           {comp?.name || 'Empresa Externa'}
+                        </div>
+                        {w.taxId && (
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono font-medium text-brand-muted">
+                             <Fingerprint className="w-3.5 h-3.5" />
+                             {w.taxId}
+                          </div>
+                        )}
+                     </div>
                   </div>
-                </div>
-              </div>
+               </div>
 
-              <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
-                <button
-                  onClick={() => handleOpenModal(w)}
-                  className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Edit2 className="w-3.5 h-3.5" /> Editar
-                </button>
-                <button
-                  onClick={() => handleToggleStatus(w)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                    w.active ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                  }`}
-                >
-                  {w.active ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                </button>
-              </div>
+               <div className="flex flex-wrap items-center gap-6">
+                  <div className="hidden xl:flex flex-col items-end gap-1">
+                     <span className="text-[9px] font-black text-brand-muted uppercase tracking-[0.2em]">Asignación Proyectos</span>
+                     <div className="flex -space-x-2">
+                        {assignedProjects.length > 0 ? (
+                          assignedProjects.slice(0, 3).map((p, i) => (
+                            <div key={p.id} className="w-6 h-6 rounded-full bg-brand-surface border-2 border-brand-bg flex items-center justify-center text-[8px] font-black text-white uppercase" title={p.name}>
+                               {p.name.charAt(0)}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-brand-muted font-bold italic">Sin Obra</span>
+                        )}
+                        {assignedProjects.length > 3 && (
+                          <div className="w-6 h-6 rounded-full bg-brand-accent border-2 border-brand-bg flex items-center justify-center text-[8px] font-black text-white">
+                             +{assignedProjects.length - 3}
+                          </div>
+                        )}
+                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                     <button
+                       onClick={() => handleOpenModal(w)}
+                       className="w-12 h-12 rounded-xl bg-brand-surface border border-brand-border flex items-center justify-center text-brand-muted hover:text-white hover:border-brand-accent transition-all"
+                     >
+                       <Edit2 className="w-5 h-5" />
+                     </button>
+                     <button
+                       onClick={() => handleToggleStatus(w)}
+                       className={`w-12 h-12 rounded-xl border flex items-center justify-center transition-all ${
+                         w.active ? 'bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white'
+                       }`}
+                     >
+                       {w.active ? <XCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                     </button>
+                  </div>
+               </div>
             </div>
           );
         })}
+
+        {filteredWorkers.length === 0 && (
+          <div className="p-24 bg-brand-surface border border-brand-border border-dashed rounded-[3rem] text-center space-y-4">
+             <div className="w-20 h-20 rounded-full bg-brand-bg border border-brand-border flex items-center justify-center mx-auto text-brand-muted">
+                <Users className="w-10 h-10" />
+             </div>
+             <div className="space-y-1">
+                <h3 className="text-xl font-display font-black text-white uppercase tracking-tight">Sin Operarios Registrados</h3>
+                <p className="text-sm text-brand-muted font-medium">No se han encontrado operarios que coincidan con los filtros seleccionados.</p>
+             </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Add / Edit Worker */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
-                  <HardHat className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-bg/95 backdrop-blur-md p-6 overflow-y-auto">
+          <div className="card max-w-2xl w-full p-0 shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+            <div className="p-8 border-b border-brand-border flex items-center justify-between bg-brand-surface">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-accent/10 text-brand-accent flex items-center justify-center">
+                  <HardHat className="w-6 h-6" />
                 </div>
-                <h2 className="text-base font-black text-slate-900">
-                  {editingWorker ? 'Editar Ficha de Operario' : 'Alta de Nuevo Operario'}
-                </h2>
+                <div>
+                   <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">
+                     {editingWorker ? 'Editar Ficha Operativa' : 'Alta de Nuevo Operario'}
+                   </h2>
+                   <p className="text-xs text-brand-muted font-medium mt-1">Configuración técnica de personal.</p>
+                </div>
               </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg bg-slate-100"
-              >
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 rounded-full hover:bg-brand-bg flex items-center justify-center text-brand-muted transition-all">
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveWorker} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Nombre y Apellidos *</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Ej: Manuel García"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500"
-                />
+            <form onSubmit={handleSaveWorker} className="p-10 space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest ml-1">Nombre Completo *</label>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ej: Manuel García"
+                      className="input h-14"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest ml-1">DNI / NIE / CIF</label>
+                    <input
+                      type="text"
+                      value={taxId}
+                      onChange={(e) => setTaxId(e.target.value.toUpperCase())}
+                      placeholder="12345678Z"
+                      className="input h-14 font-mono font-bold"
+                    />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest ml-1">Teléfono Móvil</label>
+                    <div className="relative">
+                       <Phone className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-brand-muted" />
+                       <input
+                         type="tel"
+                         value={phone}
+                         onChange={(e) => setPhone(e.target.value)}
+                         placeholder="600 000 000"
+                         className="input h-14 pl-12"
+                       />
+                    </div>
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest ml-1">Especialidad Profesional</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as WorkerCategory)}
+                      className="input h-14 uppercase font-black text-[10px] tracking-widest"
+                    >
+                      <option value="Encargado General">Encargado General</option>
+                      <option value="Jefe de Equipo">Jefe de Equipo</option>
+                      <option value="Oficial 1ª">Oficial 1ª</option>
+                      <option value="Oficial 2ª">Oficial 2ª</option>
+                      <option value="Peón Especialista">Peón Especialista</option>
+                      <option value="Peón Ordinario">Peón Ordinario</option>
+                      <option value="Maquinista">Maquinista</option>
+                    </select>
+                 </div>
               </div>
 
-              <div className="flex flex-col space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">DNI / NIE</label>
-                  <input
-                    type="text"
-                    value={taxId}
-                    onChange={(e) => setTaxId(e.target.value)}
-                    placeholder="12345678Z"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Teléfono Movil</label>
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="600000000"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+              <div className="space-y-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest ml-1">Empresa Pagadora</label>
+                    <select
+                      value={companyId}
+                      onChange={(e) => setCompanyId(e.target.value)}
+                      className="input h-14 font-bold"
+                    >
+                      {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                 </div>
+
+                 <div className="space-y-3">
+                    <label className="text-[10px] font-black text-brand-muted uppercase tracking-widest ml-1 block">Habilitación en Obras Activas</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-brand-surface rounded-[2rem] border border-brand-border max-h-48 overflow-y-auto">
+                      {projects.map(p => {
+                        const isAssigned = assignedProjectIds.includes(p.id);
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => handleToggleProjectAssignment(p.id)}
+                            className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-tight cursor-pointer flex items-center justify-between border transition-all ${
+                              isAssigned ? 'bg-brand-accent/10 border-brand-accent text-white' : 'bg-brand-bg border-brand-border text-brand-muted hover:border-brand-accent/30'
+                            }`}
+                          >
+                            <span className="truncate max-w-[140px]">{p.name}</span>
+                            {isAssigned && <CheckCircle2 className="w-4 h-4 text-brand-accent" />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                 </div>
               </div>
 
-              <div className="flex flex-col space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Categoría Profesional</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as WorkerCategory)}
-                    className="w-full px-3.5 py-2.5 bg-[#18181B] border border-[#27272A] text-white rounded-xl text-xs font-bold focus:outline-none focus:border-[#EA580C] [&>option]:bg-[#18181B] [&>option]:text-white"
-                  >
-                    <option value="Encargado General">Encargado General</option>
-                    <option value="Jefe de Equipo">Jefe de Equipo</option>
-                    <option value="Oficial 1ª">Oficial 1ª</option>
-                    <option value="Oficial 2ª">Oficial 2ª</option>
-                    <option value="Peón Especialista">Peón Especialista</option>
-                    <option value="Peón Ordinario">Peón Ordinario</option>
-                    <option value="Maquinista">Maquinista</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">Empresa de Pertenencia</label>
-                  <select
-                    value={companyId}
-                    onChange={(e) => setCompanyId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#18181B] border border-[#27272A] text-white rounded-xl text-xs font-bold focus:outline-none focus:border-[#EA580C] [&>option]:bg-[#18181B] [&>option]:text-white"
-                  >
-                    {companies.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">Asignación a Obras Activas</label>
-                <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 bg-slate-50 rounded-xl border border-slate-200">
-                  {projects.map(p => {
-                    const isAssigned = assignedProjectIds.includes(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => handleToggleProjectAssignment(p.id)}
-                        className={`p-2 rounded-lg text-xs font-bold cursor-pointer flex items-center justify-between transition-colors ${
-                          isAssigned ? 'bg-amber-500/10 text-amber-700 border border-amber-500/30' : 'bg-white text-slate-600 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span className="truncate">{p.name}</span>
-                        {isAssigned && <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+              <div className="pt-8 flex items-center justify-end gap-4 border-t border-brand-border">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs cursor-pointer hover:bg-slate-200"
+                  className="btn-secondary h-14 px-8"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-amber-600 text-white font-black rounded-xl text-xs uppercase tracking-wider hover:bg-amber-500 cursor-pointer shadow-md"
+                  className="btn-primary h-14 px-12 text-sm shadow-xl shadow-brand-accent/20"
                 >
-                  {editingWorker ? 'Guardar Cambios' : 'Registrar Operario'}
+                  {editingWorker ? 'Guardar Cambios' : 'Confirmar Alta'}
                 </button>
               </div>
             </form>

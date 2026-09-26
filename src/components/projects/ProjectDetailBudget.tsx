@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, FileSpreadsheet, HardHat, Users, Radio } from 'lucide-react';
+import { Clock, FileSpreadsheet, HardHat, Users, Radio, BarChart3, TrendingUp } from 'lucide-react';
 import { Project } from '../../types';
 import { ClockInButton } from '../ClockInButton';
 
@@ -20,49 +20,71 @@ export const ProjectDetailBudget: React.FC<ProjectDetailBudgetProps> = ({
   stats,
 }) => {
   return (
-    <div className="space-y-4 font-sans">
-      {/* GPS Geofence Presence Controls: Simple single card */}
-      <div className="p-4 sm:p-5 bg-[#0B101D] border border-white/15 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="space-y-1 text-center sm:text-left">
-          <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-black uppercase tracking-wider text-[#FF6600]">
-            <Radio className="w-4 h-4 animate-pulse" />
-            <span>Control de Presencia GPS</span>
+    <div className="space-y-6">
+      {/* Metrics Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="card p-5 group transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div className="p-2 rounded-xl bg-brand-bg border border-brand-border group-hover:bg-brand-surface-hover transition-colors">
+              <FileSpreadsheet className="w-5 h-5 text-brand-accent" />
+            </div>
+            <div className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Partes Diarios</div>
           </div>
-          <p className="text-xs text-slate-300">
-            Valida fichajes dentro del perímetro de {selectedProject.validationRadiusMeters || 250} metros.
-          </p>
+          <div className="mt-4 flex items-baseline justify-between">
+            <div className="text-2xl font-black text-white tabular-nums">{reportCount}</div>
+            <div className="text-[10px] font-bold text-brand-muted">Total emitidos</div>
+          </div>
         </div>
-        <div className="w-full sm:w-auto shrink-0">
-          <ClockInButton project={selectedProject} variant="full" />
+
+        <div className="card p-5 group transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div className="p-2 rounded-xl bg-brand-bg border border-brand-border group-hover:bg-brand-surface-hover transition-colors">
+              <Clock className="w-5 h-5 text-blue-500" />
+            </div>
+            <div className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Horas de Trabajo</div>
+          </div>
+          <div className="mt-4 flex items-baseline justify-between">
+            <div className="text-2xl font-black text-white tabular-nums">{stats.hours}h</div>
+            <div className="text-[10px] font-bold text-blue-500 flex items-center gap-1">
+               <TrendingUp className="w-3 h-3" />
+               <span>Acumulado</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="card p-5 group transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div className="p-2 rounded-xl bg-brand-bg border border-brand-border group-hover:bg-brand-surface-hover transition-colors">
+              <BarChart3 className="w-5 h-5 text-amber-500" />
+            </div>
+            <div className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Consumo Ejecución</div>
+          </div>
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between">
+               <div className="text-2xl font-black text-white tabular-nums">{stats.progressPct}%</div>
+            </div>
+            <div className="w-full h-1.5 bg-brand-bg border border-brand-border rounded-full overflow-hidden">
+               <div className="h-full bg-amber-500 rounded-full" style={{ width: `${stats.progressPct}%` }} />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Operational Stats: 3 direct metrics without financial/budget data */}
-      <div className="flex flex-col space-y-2">
-        <div className="p-4 bg-[#0B101D] rounded-2xl border border-white/10 flex items-center justify-between sm:flex-col sm:items-start">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-            <FileSpreadsheet className="w-4 h-4 text-[#FF6600]" />
-            <span>Partes Emitidos</span>
+      {/* Control Presencia Card */}
+      <div className="card p-6 bg-brand-accent/5 border-brand-accent/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-brand-accent flex items-center justify-center text-white shrink-0">
+            <Radio className="w-6 h-6 animate-pulse" />
           </div>
-          <div className="text-2xl font-black text-white mt-1">{reportCount}</div>
+          <div>
+            <h3 className="text-base font-bold text-white">Validación de Presencia GPS</h3>
+            <p className="text-xs text-brand-muted font-medium mt-1">
+              Fichaje habilitado en un radio de <span className="text-brand-accent font-bold">{selectedProject.validationRadiusMeters || 250}m</span> desde el centro de obra.
+            </p>
+          </div>
         </div>
-
-        <div className="p-4 bg-[#0B101D] rounded-2xl border border-white/10 flex items-center justify-between sm:flex-col sm:items-start">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-            <Clock className="w-4 h-4 text-amber-400" />
-            <span>Horas en Obra</span>
-          </div>
-          <div className="text-2xl font-black text-amber-400 mt-1">{stats.hours} h</div>
-        </div>
-
-        <div className="p-4 bg-[#0B101D] rounded-2xl border border-white/10 flex items-center justify-between sm:flex-col sm:items-start">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-            <Users className="w-4 h-4 text-blue-400" />
-            <span>Subcontratas</span>
-          </div>
-          <div className="text-2xl font-black text-white mt-1">
-            {(selectedProject.assignedSubcontractorIds || []).length}
-          </div>
+        <div className="shrink-0 w-full md:w-auto">
+          <ClockInButton project={selectedProject} variant="full" />
         </div>
       </div>
     </div>

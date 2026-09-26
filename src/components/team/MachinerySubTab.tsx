@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Truck, Plus, Trash2, Edit2, RefreshCw } from 'lucide-react';
+import { Truck, Plus, Trash2, Edit2, RefreshCw, Box, Activity, Building2, Tag, Wrench, X } from 'lucide-react';
 import { AppState, Machinery } from '../../types';
 import { obraStore } from '../../services/store';
 import { Modal } from '../ui/Modal';
 import { toast } from 'react-hot-toast';
+import { Badge } from '../ui/Badge';
 
 interface MachinerySubTabProps {
   state: AppState;
@@ -53,7 +54,7 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
     setFormError('');
 
     if (!macName.trim() || macName.trim().length < 2) {
-      setFormError('La identificación o modelo de la máquina es obligatoria.');
+      setFormError('Identificación obligatoria.');
       return;
     }
 
@@ -66,7 +67,7 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
           type: macType,
           companyId
         });
-        toast.success(`Maquinaria "${macName}" actualizada.`);
+        toast.success(`Actualizada: ${macName}`);
       } else {
         obraStore.createMachinery({
           name: macName.trim(),
@@ -74,7 +75,7 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
           companyId,
           active: true
         });
-        toast.success(`Maquinaria "${macName}" registrada.`);
+        toast.success(`Registrada: ${macName}`);
       }
       setModalOpen(false);
       setIsSaving(false);
@@ -82,65 +83,91 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`¿Estás seguro de que deseas retirar la máquina "${name}"?`)) {
+    if (confirm(`¿Retirar máquina "${name}"?`)) {
       const res = obraStore.deleteMachinery(id);
       if (res) {
-        toast.success(`Maquinaria "${name}" retirada.`);
+        toast.success(`Máquina retirada.`);
       } else {
-        toast.error("No se pudo dar de baja.");
+        toast.error("Error al procesar baja.");
       }
     }
   };
 
   return (
-    <div className="space-y-4 font-sans text-slate-300">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <span className="text-xs font-black uppercase tracking-widest text-slate-400">
-          Maquinaria Pesada y Medios Auxiliares ({list.length})
-        </span>
-
+    <div className="space-y-6 animate-in fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-black text-brand-muted uppercase tracking-[0.2em]">Registro de Maquinaria</h2>
+        
         {isAdmin && (
-          <button
-            onClick={handleOpenCreate}
-            className="self-start sm:self-auto bg-brand-accent hover:bg-brand-accent/90 text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Registrar Maquinaria</span>
+          <button onClick={handleOpenCreate} className="btn-primary h-10 px-6 bg-blue-600 hover:bg-blue-700 shadow-blue-900/20">
+            <Plus className="w-4 h-4" />
+            <span>Registrar Equipo</span>
           </button>
         )}
       </div>
 
-      <div className="flex flex-col space-y-3">
+      {/* Machinery Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {list.map(mac => {
           const company = state.companies.find(c => c.id === mac.companyId);
           return (
-            <div key={mac.id} className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-brand-accent/40 transition-all shadow-xl group">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-400 group-hover:text-brand-accent transition-colors">
-                    <Truck className="w-4 h-4" />
+            <div key={mac.id} className="card group hover:border-blue-500/40 transition-all duration-300">
+              <div className="p-5 space-y-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                      <Truck className="w-6 h-6" />
+                    </div>
+                    <div className="max-w-[140px]">
+                      <div className="text-sm font-black text-white uppercase tracking-tight group-hover:text-blue-500 transition-colors truncate">
+                        {mac.name}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-brand-muted uppercase">
+                        <Tag className="w-3 h-3 text-blue-500" />
+                        <span>{mac.type}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
-                    mac.active ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' : 'bg-slate-950 border-slate-800 text-slate-400'
-                  }`}>
-                    {mac.active ? 'OPERATIVA' : 'BAJA'}
-                  </span>
+                  <Badge status={mac.active ? 'Active' : 'Paused'} className="text-[9px] px-2 py-0.5 rounded uppercase font-black" />
                 </div>
-                <h3 className="text-sm font-black text-slate-200 uppercase tracking-tight line-clamp-1">{mac.name}</h3>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">{mac.type}</p>
-              </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between">
-                <span className="text-[9px] font-bold text-slate-400 uppercase truncate max-w-[120px]">
-                  {company ? company.name : 'Externa'}
-                </span>
+                <div className="pt-4 border-t border-brand-border/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                     <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
+                        <Building2 className="w-3 h-3 text-blue-500" />
+                        Propietario
+                     </div>
+                     <div className="text-[10px] font-black text-white uppercase truncate max-w-[120px]">
+                        {company ? company.name : 'Externo'}
+                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                     <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
+                        <Activity className="w-3 h-3 text-blue-500" />
+                        Estado Uso
+                     </div>
+                     <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                        Operativa
+                     </div>
+                  </div>
+                </div>
+
                 {isAdmin && (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => handleOpenEdit(mac)} className="p-1 rounded bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-400 cursor-pointer">
-                      <Edit2 className="w-3 h-3" />
+                  <div className="pt-2 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => handleOpenEdit(mac)}
+                      className="w-9 h-9 rounded-xl bg-brand-surface border border-brand-border text-brand-muted hover:text-blue-500 hover:border-blue-500 transition-all flex items-center justify-center"
+                      title="Editar"
+                    >
+                      <Edit2 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(mac.id, mac.name)} className="p-1 rounded bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 cursor-pointer">
-                      <Trash2 className="w-3 h-3" />
+                    <button
+                      onClick={() => handleDelete(mac.id, mac.name)}
+                      className="w-9 h-9 rounded-xl bg-brand-surface border border-brand-border text-brand-muted hover:text-rose-500 hover:border-rose-500 transition-all flex items-center justify-center"
+                      title="Retirar"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -148,38 +175,48 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
             </div>
           );
         })}
+
+        {list.length === 0 && (
+          <div className="md:col-span-2 lg:col-span-3 card p-16 text-center flex flex-col items-center gap-4 border-dashed border-brand-border">
+            <div className="w-20 h-20 rounded-3xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-muted opacity-30">
+              <Wrench className="w-10 h-10" />
+            </div>
+            <p className="text-sm font-bold text-brand-muted uppercase tracking-widest">Sin maquinaria registrada</p>
+          </div>
+        )}
       </div>
 
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingMac ? 'Editar Maquinaria' : 'Homologar Maquinaria Pesada'}
+        title={editingMac ? 'Editar Maquinaria' : 'Homologar Maquinaria'}
       >
-        <form onSubmit={handleSave} className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-5 p-2">
           {formError && (
-            <div className="p-3 bg-rose-950/40 border border-rose-900 rounded-lg text-xs font-bold text-rose-400 uppercase">
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
+              <X className="w-4 h-4" />
               {formError}
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Identificación o Modelo</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Modelo / Identificación</label>
             <input
               type="text"
               required
               value={macName}
               onChange={(e) => setMacName(e.target.value)}
-              placeholder="Ej. Excavadora Caterpillar 320"
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 uppercase"
+              placeholder="Excavadora Caterpillar 320"
+              className="input uppercase"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Clasificación de Maquinaria</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Tipo de Equipo</label>
             <select
               value={macType}
               onChange={(e) => setMacType(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 uppercase"
+              className="select"
             >
               <option value="Excavadora">Excavadora</option>
               <option value="Grúa Torre / Móvil">Grúa Torre / Móvil</option>
@@ -190,12 +227,12 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Propietario Legal</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Empresa Propietaria</label>
             <select
               value={macCompanyId}
               onChange={(e) => setMacCompanyId(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 uppercase"
+              className="select"
             >
               {state.companies.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -206,9 +243,9 @@ export const MachinerySubTab: React.FC<MachinerySubTabProps> = ({ state, searchQ
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full py-3 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
+            className="btn-primary w-full h-12 bg-blue-600 hover:bg-blue-700 shadow-blue-900/20 mt-4"
           >
-            {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : editingMac ? 'Guardar Cambios' : 'Registrar Maquinaria'}
+            {isSaving ? <RefreshCw className="w-5 h-5 animate-spin" /> : editingMac ? 'Guardar Cambios' : 'Confirmar Registro'}
           </button>
         </form>
       </Modal>

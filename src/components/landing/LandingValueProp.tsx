@@ -1,89 +1,91 @@
 import React from 'react';
-import { MapPin, WifiOff, ShieldAlert, CheckCircle2, FileSpreadsheet, Lock, Radio } from 'lucide-react';
+import { MapPin, WifiOff, ShieldAlert, CheckCircle2, Zap, Lock, Smartphone } from 'lucide-react';
 
 export const LandingValueProp: React.FC = () => {
   const pillars = [
     {
       icon: MapPin,
-      tag: 'Geocerca Perimetral',
-      title: 'Geolocalización Real en Tajo',
-      description: 'Cálculo de distancia Haversine en metros para verificar con precisión milimétrica la presencia de capataces y operarios dentro del radio perimetral autorizado de la obra.',
-      stat: 'Cero fichajes fraudulentos',
-      badgeColor: 'bg-[#FF6600]/10 text-[#FF6600] border-[#FF6600]/20'
+      tag: 'Geolocalización',
+      title: 'Geocerca de Precisión',
+      description: 'Validación por GPS milimétrico. Asegura que los partes de trabajo se emitan realmente desde el tajo autorizado, eliminando el fraude en el fichaje.',
+      stat: 'Cero fichajes fuera de obra',
+      color: 'text-brand-accent'
     },
     {
       icon: WifiOff,
-      tag: 'Offline-First Engine',
-      title: 'Continuidad en Sótanos y Zanjas',
-      description: 'Emisión fluida de partes de jornada sin cobertura. Toda la cuadrilla, horas y firmas se encolan de forma segura y se sincronizan instantáneamente al recuperar conectividad.',
-      stat: 'Persistencia garantizada',
-      badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+      tag: 'Offline-First',
+      title: 'Trabajo sin Conexión',
+      description: 'Diseñado para sótanos y zonas remotas. La app encola los datos de forma segura y los sincroniza automáticamente al recuperar cobertura.',
+      stat: '100% disponibilidad en tajo',
+      color: 'text-blue-500'
     },
     {
       icon: ShieldAlert,
-      tag: 'Bloqueo Preventivo PRL',
-      title: 'Auditoría Legal y Libro de Subcontratación',
-      description: 'Control estricto de REA, seguros de RC, reconocimientos médicos y formación PRL. Bloqueo preventivo de subcontratas con documentación caducada según Ley 32/2006.',
-      stat: '100% Inmutable y Auditado',
-      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+      tag: 'Cumplimiento',
+      title: 'Seguridad Jurídica PRL',
+      description: 'Control estricto de documentación de subcontratas. Bloqueo preventivo de acceso si el REA o los seguros están caducados.',
+      stat: 'Conforme Ley 32/2006',
+      color: 'text-emerald-500'
+    },
+    {
+      icon: Zap,
+      tag: 'Agilidad',
+      title: 'Partes en 30 Segundos',
+      description: 'Interfaz optimizada para operarios. Menos tiempo escribiendo, más tiempo ejecutando. Automatiza el envío a oficina técnica.',
+      stat: 'Ahorro de 12h/semana por jefe',
+      color: 'text-amber-500'
     }
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 bg-[#070B14] border-t border-white/5">
-      <div className="max-w-5xl mx-auto space-y-12">
+    <section className="py-24 bg-brand-bg border-t border-brand-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-16">
         
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-[#FF6600]">
-            Arquitectura de Grado Industrial
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Diseñado para la Realidad del Sector Construcción
+        <div className="text-center space-y-4">
+          <h2 className="text-3xl sm:text-5xl font-display font-black text-white tracking-tight">
+            Diseñado para la <span className="text-brand-accent">Realidad</span> de la Obra
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-            Desde el barro del tajo hasta la mesa de la dirección facultativa y el departamento de compras.
+          <p className="text-brand-muted max-w-2xl mx-auto font-medium">
+            No es un software genérico de gestión. Es una herramienta forjada en el barro para constructores que necesitan control real y datos inmutables.
           </p>
         </div>
 
-        {/* 3 Industrial Cards */}
-        <div className="flex flex-col space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {pillars.map((item, idx) => {
             const Icon = item.icon;
             return (
               <div 
                 key={idx}
-                className="bg-[#0B101D] border border-white/10 hover:border-white/20 p-6 sm:p-7 rounded-3xl space-y-4 flex flex-col justify-between transition-all group"
+                className="card group hover:border-brand-accent/50 transition-all duration-300 flex flex-col justify-between"
               >
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-[#070B14] border border-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Icon className="w-6 h-6 text-[#FF6600]" />
+                    <div className="w-12 h-12 rounded-2xl bg-brand-bg flex items-center justify-center border border-brand-border group-hover:bg-brand-accent transition-colors">
+                      <Icon className={`w-6 h-6 ${item.color} group-hover:text-white transition-colors`} />
                     </div>
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${item.badgeColor}`}>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-brand-muted">
                       {item.tag}
                     </span>
                   </div>
 
-                  <h3 className="text-lg font-black text-white tracking-tight leading-snug">
-                    {item.title}
-                  </h3>
-
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    {item.description}
-                  </p>
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-bold text-white tracking-tight">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-brand-muted leading-relaxed font-medium">
+                      {item.description}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-[11px] font-bold text-slate-300">
-                  <span className="text-emerald-400 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    {item.stat}
-                  </span>
+                <div className="pt-6 mt-6 border-t border-brand-border flex items-center gap-2 text-[10px] font-black uppercase text-brand-accent">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{item.stat}</span>
                 </div>
               </div>
             );
           })}
         </div>
-
       </div>
     </section>
   );

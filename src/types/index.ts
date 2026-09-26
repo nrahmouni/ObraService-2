@@ -468,9 +468,155 @@ export interface ComplianceDocument {
   createdAt: string;
 }
 
+// --- CRM PRO MAX DOMAIN MODELS ---
+
+export type ClientType = 
+  | 'PROMOTOR' 
+  | 'CONSTRUCTORA' 
+  | 'ADMINISTRACION_PUBLICA' 
+  | 'PARTICULAR' 
+  | 'INDUSTRIAL';
+
+export type CreditRating = 'A+' | 'A' | 'B+' | 'B' | 'C';
+
+export interface Client {
+  id: string;
+  companyId: string; // Tenant
+  name: string;
+  tradeName?: string;
+  taxId: string; // CIF / NIF
+  clientType: ClientType;
+  contactPerson: string;
+  contactEmail: string;
+  contactPhone: string;
+  address: string;
+  city: string;
+  creditRating: CreditRating;
+  paymentTermsDays: number;
+  status: 'ACTIVE' | 'LEAD' | 'INACTIVE';
+  totalBilled: number;
+  pendingAmount: number;
+  assignedProjectIds: string[];
+  notes?: string;
+  portalAccessEnabled: boolean;
+  portalAccessCode: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type OpportunityStage = 
+  | 'PROSPECT' 
+  | 'STUDY' 
+  | 'PROPOSAL_SENT' 
+  | 'NEGOTIATION' 
+  | 'WON' 
+  | 'LOST';
+
+export interface CrmOpportunity {
+  id: string;
+  code: string; // OPP-2026-XXXX
+  companyId: string;
+  clientId: string;
+  clientName: string;
+  title: string;
+  value: number; // Value in Euros
+  stage: OpportunityStage;
+  probability: number; // 0 to 100%
+  expectedClosingDate: string;
+  projectType: string;
+  assignedTo: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmActivity {
+  id: string;
+  companyId: string;
+  clientId: string;
+  clientName?: string;
+  opportunityId?: string;
+  type: 'CALL' | 'MEETING' | 'EMAIL' | 'SITE_VISIT' | 'PROPOSAL';
+  title: string;
+  description: string;
+  date: string;
+  performedBy: string;
+  createdAt: string;
+}
+
+// --- PAYMENT & SUBSCRIPTION MODELS ---
+
+export type SubscriptionPlanId = 'starter' | 'promax' | 'enterprise';
+
+export interface SubscriptionPlan {
+  id: SubscriptionPlanId;
+  name: string;
+  tagline: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  popular?: boolean;
+  maxProjects: number; // -1 for unlimited
+  maxWorkers: number;  // -1 for unlimited
+  features: string[];
+  hasCrmPro: boolean;
+  hasApiWebhooks: boolean;
+  hasErpSync: boolean;
+  hasPdfCertifications: boolean;
+}
+
+export interface SubscriptionInvoice {
+  id: string; // INV-OBS-YYYY-XXXX
+  date: string;
+  amount: number;
+  taxAmount: number;
+  planName: string;
+  billingInterval: 'monthly' | 'annual';
+  status: 'PAID' | 'PENDING' | 'FAILED';
+  pdfGenerated?: boolean;
+}
+
+export interface PaymentMethodInfo {
+  type: 'CARD' | 'SEPA' | 'TRANSFER';
+  brand?: string; // 'Visa' | 'Mastercard' | 'Amex'
+  last4?: string;
+  holderName?: string;
+  ibanMasked?: string;
+  expiryDate?: string;
+}
+
+export interface CompanySubscription {
+  planId: SubscriptionPlanId;
+  billingInterval: 'monthly' | 'annual';
+  status: 'ACTIVE' | 'TRIAL' | 'PAST_DUE' | 'CANCELLED';
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  paymentMethod: PaymentMethodInfo;
+  invoices: SubscriptionInvoice[];
+}
+
+// --- PLATFORM / WEB ADMIN MODELS ---
+
+export interface PlatformSettings {
+  announcementBanner: {
+    enabled: boolean;
+    message: string;
+    type: 'info' | 'warning' | 'success';
+  };
+  features: {
+    enablePublicRegistration: boolean;
+    enablePaymentGatewaySandbox: boolean;
+    enableOcrScanning: boolean;
+    enableGpsGeofencing: boolean;
+    maintenanceMode: boolean;
+  };
+  supportContactEmail: string;
+  lastUpdated: string;
+}
+
 export interface AppState {
   isDemoMode: boolean;
   theme: 'light' | 'dark';
+  uiStyle?: 'neumorphic' | 'standard';
   viewPreference: 'cards' | 'list';
   currentUser: User | null;
   companies: Company[];
@@ -485,4 +631,9 @@ export interface AppState {
   messages?: ChatMessage[];
   timeLogs?: TimeLog[];
   complianceDocuments?: ComplianceDocument[];
+  clients?: Client[];
+  crmOpportunities?: CrmOpportunity[];
+  crmActivities?: CrmActivity[];
+  subscription?: CompanySubscription;
+  platformSettings?: PlatformSettings;
 }

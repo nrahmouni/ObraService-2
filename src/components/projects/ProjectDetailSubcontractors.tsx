@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Settings, Building2, Link, X } from 'lucide-react';
+import { Users, Settings, Building2, Link, X, CheckCircle2 } from 'lucide-react';
 import { Project, Company } from '../../types';
 import { Modal } from '../ui/Modal';
 
@@ -23,33 +23,32 @@ export const ProjectDetailSubcontractors: React.FC<ProjectDetailSubcontractorsPr
   const currentAssignedIds = selectedProject.assignedSubcontractorIds || [];
 
   return (
-    <div className="pt-6 border-t border-slate-800/60 font-sans">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-          <Users className="w-4 h-4 text-brand-accent" />
-          Empresas y Subcontratas Autorizadas en Obra
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-black text-brand-muted uppercase tracking-[0.2em]">
+          Red Autorizada
         </h3>
         {isAdmin && (
           <button 
             onClick={() => setIsOpen(true)}
-            className="text-xs font-black text-brand-accent hover:text-brand-accent/80 uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+            className="text-[10px] font-black text-brand-accent hover:text-brand-accent/80 uppercase tracking-widest flex items-center gap-1.5 transition-colors"
           >
             <Settings className="w-3.5 h-3.5" />
-            <span>Gestionar Red</span>
+            <span>Gestionar</span>
           </button>
         )}
       </div>
 
-      <div className="flex flex-col space-y-2">
+      <div className="space-y-3">
         {/* Main Contractor */}
-        <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#0F172A] border border-slate-800 flex items-center justify-center text-emerald-500 shadow-sm">
+        <div className="card p-4 border-brand-accent/20 bg-brand-accent/5">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center text-white shrink-0">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-black text-slate-200 uppercase">Empresa Principal</div>
-              <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">CONTRATISTA GENERAL</div>
+              <div className="text-xs font-bold text-white uppercase">Empresa Principal</div>
+              <div className="text-[10px] font-medium text-brand-muted mt-0.5 tracking-wider">CONTRATISTA GENERAL</div>
             </div>
           </div>
         </div>
@@ -58,26 +57,29 @@ export const ProjectDetailSubcontractors: React.FC<ProjectDetailSubcontractorsPr
         {companies
           .filter(c => currentAssignedIds.includes(c.id))
           .map(sub => (
-            <div key={sub.id} className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between group hover:border-brand-accent/40 transition-all">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#0F172A] border border-slate-800 flex items-center justify-center text-slate-400 group-hover:text-brand-accent transition-colors">
+            <div key={sub.id} className="card p-4 hover:border-brand-accent/40 transition-all group">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-muted group-hover:text-brand-accent transition-colors shrink-0">
                   <Link className="w-4 h-4" />
                 </div>
-                <div>
-                  <div className="text-xs font-black text-slate-200 uppercase truncate max-w-[150px]">{sub.name}</div>
-                  <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{sub.taxId} • SUBCONTRATA</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-bold text-white uppercase truncate">{sub.name}</div>
+                  <div className="text-[10px] font-medium text-brand-muted mt-0.5 tracking-wider truncate">
+                    {sub.taxId} • SUBCONTRATA
+                  </div>
                 </div>
               </div>
             </div>
           ))}
 
         {currentAssignedIds.length === 0 && (
-          <div className="w-full p-3.5 rounded-xl border border-dashed border-slate-800 bg-slate-900/50 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
-            <span>No hay subcontratas asignadas aún a este proyecto.</span>
+          <div className="card p-6 border-dashed border-brand-border flex flex-col items-center text-center gap-3">
+            <Users className="w-8 h-8 text-brand-muted opacity-40" />
+            <p className="text-[11px] font-medium text-brand-muted">No hay subcontratas asignadas.</p>
             {isAdmin && (
               <button
                 onClick={() => setIsOpen(true)}
-                className="text-[10px] font-black text-brand-accent uppercase hover:underline cursor-pointer"
+                className="text-[10px] font-black text-brand-accent uppercase hover:underline"
               >
                 + Asignar ahora
               </button>
@@ -90,13 +92,13 @@ export const ProjectDetailSubcontractors: React.FC<ProjectDetailSubcontractorsPr
       <Modal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="Asignar Subcontratas a la Obra"
+        title="Asignar Subcontratas"
       >
-        <div className="space-y-4 font-sans text-slate-300">
-          <p className="text-xs text-slate-400 font-medium leading-relaxed">
+        <div className="space-y-6">
+          <p className="text-xs text-brand-muted font-medium leading-relaxed">
             Selecciona las empresas autorizadas para realizar tajos en esta obra. Las empresas marcadas recibirán acceso para emitir albaranes y partes diarios.
           </p>
-          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
             {companies
               .filter(c => c.type === 'SUBCONTRACTOR')
               .map(comp => {
@@ -104,34 +106,39 @@ export const ProjectDetailSubcontractors: React.FC<ProjectDetailSubcontractorsPr
                 return (
                   <label 
                     key={comp.id}
-                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
-                      isAssigned ? 'bg-brand-accent/5 border-brand-accent/40' : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                    className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${
+                      isAssigned ? 'bg-brand-accent/5 border-brand-accent/40' : 'bg-brand-bg border-brand-border hover:border-brand-muted'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <input 
-                        type="checkbox"
-                        checked={isAssigned}
-                        onChange={() => {
-                          const next = isAssigned 
-                            ? currentAssignedIds.filter(id => id !== comp.id)
-                            : [...currentAssignedIds, comp.id];
-                          onUpdateAssignments(next);
-                        }}
-                        className="w-4 h-4 rounded border-slate-800 bg-slate-900 text-brand-accent focus:ring-brand-accent cursor-pointer"
-                      />
+                    <div className="flex items-center gap-4">
+                      <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${
+                        isAssigned ? 'bg-brand-accent border-brand-accent' : 'bg-brand-bg border-brand-border'
+                      }`}>
+                        {isAssigned && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                        <input 
+                          type="checkbox"
+                          checked={isAssigned}
+                          onChange={() => {
+                            const next = isAssigned 
+                              ? currentAssignedIds.filter(id => id !== comp.id)
+                              : [...currentAssignedIds, comp.id];
+                            onUpdateAssignments(next);
+                          }}
+                          className="sr-only"
+                        />
+                      </div>
                       <div>
-                        <span className="text-xs font-black text-slate-200 uppercase block">{comp.name}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{comp.address}</span>
+                        <span className="text-xs font-bold text-white uppercase block">{comp.name}</span>
+                        <span className="text-[10px] text-brand-muted font-medium mt-0.5 tracking-wider">{comp.taxId}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">{comp.taxId}</span>
                   </label>
                 );
               })}
             {companies.filter(c => c.type === 'SUBCONTRACTOR').length === 0 && (
-              <div className="text-center py-6 text-xs text-slate-500 uppercase font-black tracking-wider">
-                No hay empresas subcontratadas dadas de alta. Ve a Equipo &gt; Subcontratas para crearlas.
+              <div className="text-center py-10">
+                <Users className="w-10 h-10 text-brand-muted opacity-20 mx-auto mb-4" />
+                <p className="text-xs text-brand-muted font-medium">No hay subcontratas registradas.</p>
               </div>
             )}
           </div>

@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
-import { obraStore } from '../services/store';
 import { Project, AppState } from '../types';
-import { Building2, MapPin, Navigation, Info, Search } from 'lucide-react';
+import { Building2, MapPin, Navigation, Info, Search, X, Activity, Globe, Compass, Layers, ArrowRight } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 
 interface MapViewProps {
@@ -15,7 +14,7 @@ export const MapView: React.FC<MapViewProps> = ({ state }) => {
   const map = useMap();
 
   const projectsWithLocation = useMemo(() => {
-    return state.projects.filter(p => (p.latitude || p.location.lat) && (p.longitude || p.location.lng));
+    return (state.projects || []).filter(p => (p.latitude || p.location?.lat) && (p.longitude || p.location?.lng));
   }, [state.projects]);
 
   const filteredProjects = useMemo(() => {
@@ -41,116 +40,15 @@ export const MapView: React.FC<MapViewProps> = ({ state }) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-8rem)] bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-xl relative">
-      {/* Sidebar / Floating Controls */}
-      <div className="absolute top-4 left-4 z-10 w-80 max-h-[calc(100%-2rem)] flex flex-col gap-4 pointer-events-none">
-        {/* Search Box */}
-        <div className="bg-white/90 backdrop-blur-xl p-3 rounded-2xl border border-slate-200 shadow-2xl pointer-events-auto">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar obra..."
-              className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-100 bg-slate-50 text-xs font-medium focus:ring-2 focus:ring-[#FF6600]/20 focus:border-[#FF6600] outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Project Details Card */}
-        {selectedProject && (
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-2xl pointer-events-auto animate-in slide-in-from-left-4 duration-300">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-[#FF6600]" />
-              </div>
-              <button 
-                onClick={() => setSelectedProjectId(null)}
-                className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedProject.code}</div>
-                <h3 className="text-xl font-black text-slate-900 leading-tight uppercase tracking-tighter">
-                  {selectedProject.name}
-                </h3>
-              </div>
-
-              <Badge status={selectedProject.status} />
-
-              <div className="space-y-3 pt-4 border-t border-slate-100">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-[#FF6600] mt-0.5" />
-                  <div className="text-[11px] font-bold text-slate-600 uppercase leading-relaxed">
-                    {selectedProject.address || selectedProject.location.address}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Navigation className="w-4 h-4 text-slate-400" />
-                  <div className="text-[11px] font-bold text-slate-500 uppercase">
-                    R: {selectedProject.validationRadiusMeters}m
-                  </div>
-                </div>
-              </div>
-
-              <button className="w-full py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                <Info className="w-3 h-3" />
-                Ver Panel de Control
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Project List Mini (Filtered) */}
-        {!selectedProject && filteredProjects.length > 0 && (
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-2xl pointer-events-auto overflow-hidden flex flex-col max-h-96">
-            <div className="p-3 border-b border-slate-100 bg-slate-50/50">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                Centros Detectados ({filteredProjects.length})
-              </span>
-            </div>
-            <div className="overflow-y-auto divide-y divide-slate-100">
-              {filteredProjects.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => handleMarkerClick(p)}
-                  className="w-full p-4 text-left hover:bg-white transition-colors flex items-center gap-3 group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-orange-50 flex items-center justify-center transition-colors">
-                    <Building2 className="w-4 h-4 text-slate-400 group-hover:text-[#FF6600]" />
-                  </div>
-                  <div className="overflow-hidden">
-                    <div className="text-[11px] font-black text-slate-800 uppercase truncate leading-tight">
-                      {p.name}
-                    </div>
-                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate">
-                      {p.address || p.location.address}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
+    <div className="relative h-[calc(100dvh-12rem)] sm:h-[calc(100vh-14rem)] min-h-[450px] bg-brand-bg rounded-2xl sm:rounded-[2.5rem] overflow-hidden border border-brand-border shadow-2xl animate-in fade-in duration-700">
       {/* Map Viewport */}
-      <div className="flex-1">
+      <div className="absolute inset-0 z-0">
         <Map
           defaultCenter={{ lat: 40.4168, lng: -3.7038 }}
           defaultZoom={6}
           mapId="DEMO_MAP_ID"
           internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-          mapTypeControl={false}
-          streetViewControl={false}
-          fullscreenControl={false}
+          disableDefaultUI={true}
         >
           {projectsWithLocation.map(p => (
             <AdvancedMarker
@@ -161,25 +59,152 @@ export const MapView: React.FC<MapViewProps> = ({ state }) => {
               }}
               onClick={() => handleMarkerClick(p)}
             >
-              <Pin 
-                background={p.status === 'Active' ? '#FF6600' : '#64748b'} 
-                glyphColor={'#fff'} 
-                borderColor={'#fff'} 
-              />
+              <div className="group relative">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center border-2 border-white shadow-lg transition-transform group-hover:scale-125 ${
+                  p.status === 'Active' ? 'bg-brand-accent' : 'bg-brand-muted'
+                }`}>
+                  <Building2 className="w-4 h-4 text-white" />
+                </div>
+                {/* Tooltip on marker hover */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-brand-bg border border-brand-border px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-2xl z-50">
+                  <span className="text-[10px] font-black text-white uppercase tracking-tighter">{p.name}</span>
+                </div>
+              </div>
             </AdvancedMarker>
           ))}
         </Map>
       </div>
 
-      {/* Map Legend (Bottom Right) */}
-      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-xl p-3 rounded-2xl border border-slate-200 shadow-xl flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#FF6600]" />
-          <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Activo</span>
+      {/* Floating Controls Layer */}
+      <div className="absolute inset-0 pointer-events-none p-3 sm:p-6 flex flex-col items-start gap-3 sm:gap-4 overflow-hidden">
+        {/* Search Bar */}
+        <div className="w-[calc(100%-3.5rem)] sm:w-80 bg-brand-bg/85 backdrop-blur-xl p-2 sm:p-3 rounded-xl sm:rounded-[1.5rem] border border-brand-border shadow-2xl pointer-events-auto">
+          <div className="relative group">
+            <Search className="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-brand-accent transition-colors" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Localizar proyecto..."
+              className="w-full h-9 sm:h-10 pl-9 sm:pl-10 pr-4 rounded-lg sm:rounded-xl border border-brand-border bg-brand-surface text-xs font-bold text-white focus:border-brand-accent outline-none transition-all"
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-slate-400" />
-          <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Inactivo</span>
+
+        {/* Selected Project Card */}
+        {selectedProject && (
+          <div className="w-full max-w-sm sm:w-80 bg-brand-bg/95 backdrop-blur-xl border border-brand-border rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 shadow-2xl pointer-events-auto animate-in slide-in-from-left-8 duration-500 overflow-hidden relative">
+            {/* Visual background hint */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 rounded-full blur-3xl -mr-16 -mt-16" />
+
+            <div className="flex items-start justify-between relative z-10 mb-4 sm:mb-6">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent">
+                <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <button 
+                onClick={() => setSelectedProjectId(null)}
+                className="w-8 h-8 rounded-lg bg-brand-surface border border-brand-border flex items-center justify-center text-brand-muted hover:text-white transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 sm:space-y-4 relative z-10">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                   <div className="px-1.5 py-0.5 rounded bg-brand-surface border border-brand-border text-[8px] font-black text-brand-accent uppercase tracking-widest">
+                      {selectedProject.code}
+                   </div>
+                   <div className={`w-1.5 h-1.5 rounded-full ${selectedProject.status === 'Active' ? 'bg-emerald-500' : 'bg-brand-muted'}`} />
+                </div>
+                <h3 className="text-lg sm:text-xl font-display font-black text-white uppercase tracking-tight leading-none">
+                  {selectedProject.name}
+                </h3>
+              </div>
+
+              <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t border-brand-border">
+                <div className="flex items-start gap-2.5">
+                  <MapPin className="w-4 h-4 text-brand-accent shrink-0 mt-0.5" />
+                  <p className="text-[11px] font-medium text-brand-muted leading-relaxed">
+                    {selectedProject.address || selectedProject.location?.address}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Navigation className="w-4 h-4 text-brand-muted" />
+                  <span className="text-[10px] font-bold text-white uppercase tracking-widest">
+                    Radio: <span className="text-brand-accent ml-1">{selectedProject.validationRadiusMeters}m</span>
+                  </span>
+                </div>
+              </div>
+
+              <button className="btn-primary w-full h-11 sm:h-12 rounded-xl sm:rounded-2xl mt-2 group justify-center text-xs uppercase tracking-wider">
+                Gestionar Proyecto
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Quick List (only when no project selected) */}
+        {!selectedProject && filteredProjects.length > 0 && (
+          <div className="w-[calc(100%-3.5rem)] sm:w-80 bg-brand-bg/90 backdrop-blur-xl border border-brand-border rounded-xl sm:rounded-[2rem] shadow-2xl pointer-events-auto overflow-hidden flex flex-col max-h-[16rem] sm:max-h-[24rem]">
+            <div className="p-3 sm:p-4 border-b border-brand-border bg-brand-surface/50 flex items-center justify-between">
+              <span className="text-[10px] font-black text-brand-muted uppercase tracking-[0.2em]">
+                Resultados ({filteredProjects.length})
+              </span>
+              <Compass className="w-4 h-4 text-brand-accent" />
+            </div>
+            <div className="overflow-y-auto no-scrollbar">
+              {filteredProjects.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => handleMarkerClick(p)}
+                  className="w-full p-3 sm:p-4 text-left hover:bg-brand-surface transition-all flex items-center gap-3 sm:gap-4 group border-b border-brand-border/50 last:border-0"
+                >
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-brand-surface border border-brand-border flex items-center justify-center group-hover:border-brand-accent/50 transition-all shrink-0">
+                    <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-brand-muted group-hover:text-brand-accent" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-black text-white uppercase tracking-tight truncate leading-none mb-1">
+                      {p.name}
+                    </div>
+                    <div className="text-[9px] font-bold text-brand-muted uppercase tracking-tighter truncate">
+                      {p.address || p.location?.address}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Map Actions (Top Right) */}
+      <div className="absolute top-3 right-3 sm:top-6 sm:right-6 flex flex-col gap-1.5 sm:gap-2 pointer-events-auto">
+         {[
+           { icon: Layers, label: 'Capas' },
+           { icon: Globe, label: 'Satélite' },
+           { icon: Activity, label: 'Tráfico' }
+         ].map(item => (
+           <button 
+             key={item.label}
+             className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-brand-bg/85 backdrop-blur-xl border border-brand-border flex items-center justify-center text-brand-muted hover:text-brand-accent hover:border-brand-accent/30 transition-all shadow-xl"
+             title={item.label}
+           >
+             <item.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+           </button>
+         ))}
+      </div>
+
+      {/* Map Legend (Bottom Right - desktop only or compact on mobile) */}
+      <div className="hidden sm:flex absolute bottom-6 right-6 bg-brand-bg/90 backdrop-blur-xl px-4 py-3 rounded-2xl border border-brand-border shadow-2xl items-center gap-6">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2 h-2 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(255,102,0,0.5)]" />
+          <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Activo</span>
+        </div>
+        <div className="flex items-center gap-2.5 text-brand-muted opacity-50">
+          <div className="w-2 h-2 rounded-full bg-white" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Inactivo</span>
         </div>
       </div>
     </div>

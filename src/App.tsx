@@ -41,6 +41,17 @@ export default function App() {
     }
   }, [appState.theme]);
 
+  // Neumorphic Soft UI
+  useEffect(() => {
+    if (appState.uiStyle !== 'standard') {
+      document.documentElement.classList.add('theme-neumorphic');
+      document.body.classList.add('theme-neumorphic');
+    } else {
+      document.documentElement.classList.remove('theme-neumorphic');
+      document.body.classList.remove('theme-neumorphic');
+    }
+  }, [appState.uiStyle]);
+
   return (
     <AppDataProvider companyId={currentUser?.companyId}>
       <ScrollToTop />
@@ -71,6 +82,14 @@ export default function App() {
               <Navigate to="/mobile/dashboard" replace /> : 
               <Navigate to="/admin/dashboard" replace />
           ) : <LoginView />
+        } />
+
+        {/* Instant Demo Entry */}
+        <Route path="/demo" element={
+          (() => {
+            obraStore.enterDemoMode();
+            return <Navigate to="/admin/dashboard" replace />;
+          })()
         } />
 
         {/* Invite Acceptance */}
@@ -116,8 +135,8 @@ export default function App() {
               onOpenJoinCode={() => navigate('/invitation')}
               onDemoAccess={() => {
                 obraStore.enterDemoMode();
-                toast.success('Entorno Demo de ObraService activado con éxito.');
-                navigate('/login');
+                toast.success('🚀 Entorno Demo CRM Pro Max activado. Has iniciado sesión como Director General.');
+                navigate('/admin/dashboard');
               }}
             />
           )

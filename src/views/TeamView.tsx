@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Truck, Building2, Mail, Search, List } from 'lucide-react';
+import { Users, Truck, Building2, Mail, Search, List, UserCheck, Wrench, ShieldCheck, UserPlus } from 'lucide-react';
 import { AppState } from '../types';
 
 // Subtab Components
@@ -19,74 +19,41 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
 
   if (!currentUser) return null;
 
+  const metrics = [
+    { label: 'Operarios', value: state.workers?.length || 0, icon: UserCheck, color: 'text-brand-accent', bg: 'bg-brand-accent/10' },
+    { label: 'Maquinaria', value: state.machinery?.length || 0, icon: Truck, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'Subcontratas', value: state.companies?.filter(c => c.type === 'SUBCONTRACTOR').length || 0, icon: Building2, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Pendientes', value: state.invitations?.filter(i => i.status === 'Pending').length || 0, icon: UserPlus, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  ];
+
   return (
-    <div className="space-y-6 font-sans animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* View Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <span className="text-[10px] font-black text-brand-accent uppercase tracking-widest block">
-            Recursos y Personal de Obra
-          </span>
-          <h1 className="text-2xl font-black uppercase tracking-tight text-slate-100 font-display mt-0.5">
-            Gestión de Equipos
-          </h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight uppercase">Equipos y Recursos</h1>
+          <p className="text-xs sm:text-sm text-brand-muted font-medium mt-1">Gestión centralizada de personal propio, subcontratas y maquinaria.</p>
         </div>
       </div>
 
-      {/* Metrics KPI Row */}
-      <div className="flex flex-col space-y-2">
-        <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 flex items-center gap-3.5">
-          <div className="p-3 bg-brand-accent/10 text-brand-accent rounded-xl border border-brand-accent/10 shrink-0">
-            <Users className="w-5 h-5 stroke-[2.5]" />
-          </div>
-          <div>
-            <div className="text-xl font-black text-slate-100 leading-none">
-              {state.workers?.length || 0}
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {metrics.map((m, i) => (
+          <div key={i} className="card p-3.5 sm:p-5 flex items-center gap-3 sm:gap-4 group hover:border-brand-accent/30 transition-all">
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${m.bg} ${m.color} flex items-center justify-center border border-current/10 shrink-0 group-hover:scale-110 transition-transform`}>
+              <m.icon className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Operarios Registrados</div>
-          </div>
-        </div>
-
-        <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 flex items-center gap-3.5">
-          <div className="p-3 bg-brand-accent/10 text-brand-accent rounded-xl border border-brand-accent/10 shrink-0">
-            <Truck className="w-5 h-5 stroke-[2.5]" />
-          </div>
-          <div>
-            <div className="text-xl font-black text-slate-100 leading-none">
-              {state.machinery?.length || 0}
+            <div>
+              <div className="text-xl sm:text-2xl font-display font-black text-white leading-none">{m.value}</div>
+              <div className="text-[9px] sm:text-[10px] font-black text-brand-muted uppercase tracking-wider sm:tracking-widest mt-1">{m.label}</div>
             </div>
-            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Máquinas Activas</div>
           </div>
-        </div>
-
-        <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 flex items-center gap-3.5">
-          <div className="p-3 bg-brand-accent/10 text-brand-accent rounded-xl border border-brand-accent/10 shrink-0">
-            <Building2 className="w-5 h-5 stroke-[2.5]" />
-          </div>
-          <div>
-            <div className="text-xl font-black text-slate-100 leading-none">
-              {state.companies?.filter(c => c.type === 'SUBCONTRACTOR').length || 0}
-            </div>
-            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Empresas en Red</div>
-          </div>
-        </div>
-
-        <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 flex items-center gap-3.5">
-          <div className="p-3 bg-brand-accent/10 text-brand-accent rounded-xl border border-brand-accent/10 shrink-0">
-            <Mail className="w-5 h-5 stroke-[2.5]" />
-          </div>
-          <div>
-            <div className="text-xl font-black text-slate-100 leading-none">
-              {state.invitations?.filter(i => i.status === 'Pending').length || 0}
-            </div>
-            <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mt-1">Invitaciones Activas</div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Filter and Tab Section */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-[#0F172A] p-3 rounded-xl border border-slate-800">
-        <div className="flex items-center gap-4 overflow-x-auto pb-1 md:pb-0 shrink-0 scrollbar-none">
+      {/* Tab Navigation & Search */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+        <div className="flex items-center gap-1 p-1 bg-brand-surface border border-brand-border rounded-xl sm:rounded-2xl w-full sm:w-fit overflow-x-auto no-scrollbar">
           {(['workers', 'machinery', 'users', 'companies'] as const).map(tab => (
             <button
               key={tab}
@@ -94,32 +61,40 @@ export const TeamView: React.FC<TeamViewProps> = ({ state }) => {
                 setActiveSubTab(tab);
                 setSearchQuery('');
               }}
-              className={`pb-0 text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 rounded-lg sm:rounded-xl text-[10px] font-black uppercase tracking-wider sm:tracking-widest min-h-[40px] transition-all whitespace-nowrap ${
                 activeSubTab === tab 
-                  ? 'text-brand-accent font-black' 
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' 
+                  : 'text-brand-muted hover:text-white hover:bg-brand-bg'
               }`}
             >
-              {tab === 'workers' ? 'Operarios' : tab === 'machinery' ? 'Maquinaria' : tab === 'users' ? 'Usuarios' : 'Subcontratas'}
+              {tab === 'workers' ? <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : 
+               tab === 'machinery' ? <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : 
+               tab === 'users' ? <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : 
+               <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+              <span>
+                {tab === 'workers' ? 'Operarios' : 
+                 tab === 'machinery' ? 'Maquinaria' : 
+                 tab === 'users' ? 'Usuarios App' : 
+                 'Subcontratas'}
+              </span>
             </button>
           ))}
         </div>
 
-        {/* Global Tab Search Input */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative max-w-md w-full">
+          <Search className="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="BUSCAR EN ESTA PESTAÑA..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-200 focus:outline-none focus:border-brand-accent"
+            placeholder={`Buscar en ${activeSubTab === 'workers' ? 'operarios' : activeSubTab === 'machinery' ? 'máquinas' : activeSubTab === 'users' ? 'usuarios' : 'empresas'}...`}
+            className="input-field pl-10 h-11 text-xs"
           />
         </div>
       </div>
 
-      {/* Render Active Subtab Content */}
-      <div className="space-y-4">
+      {/* Content Area */}
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         {activeSubTab === 'workers' && <WorkersSubTab state={state} searchQuery={searchQuery} />}
         {activeSubTab === 'users' && <UsersSubTab state={state} searchQuery={searchQuery} />}
         {activeSubTab === 'companies' && <CompaniesSubTab state={state} searchQuery={searchQuery} />}

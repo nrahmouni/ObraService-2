@@ -1,6 +1,6 @@
 import React from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { MainLayout, TabKey } from './MainLayout';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { AuthenticatedLayout } from './layout/AuthenticatedLayout';
 import { DashboardView } from '../views/DashboardView';
 import { DailyReportsView } from '../views/DailyReportsView';
 import { DeliveryNotesView } from '../views/DeliveryNotesView';
@@ -16,6 +16,8 @@ import { ProfileView } from '../views/ProfileView';
 import { DailyReportWizard } from '../views/DailyReportWizard';
 import { NotFoundView } from '../views/NotFoundView';
 import { BillingView } from '../views/BillingView';
+import { ClientsCrmView } from '../views/ClientsCrmView';
+import { WebAdminView } from '../views/WebAdminView';
 import { AppState } from '../types';
 import { obraStore } from '../services/store';
 
@@ -25,41 +27,29 @@ interface AdminShellProps {
 
 export const AdminShell: React.FC<AdminShellProps> = ({ state }) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   if (!state.currentUser) {
     return <Navigate to="/login" replace />;
   }
 
-  // Determine current active tab based on path suffix
-  const pathParts = location.pathname.split('/');
-  // Match path parts, default to dashboard
-  const subRoute = pathParts[2] || 'dashboard';
-  const currentTab = subRoute as TabKey;
-
-  const handleSelectTab = (tab: TabKey) => {
-    navigate(`/admin/${tab}`);
-  };
-
   const currentUser = state.currentUser;
 
   return (
-    <MainLayout
-      currentTab={currentTab}
-      onSelectTab={handleSelectTab}
+    <AuthenticatedLayout
       currentUser={currentUser}
-      isDemoMode={state.isDemoMode}
-      onExitDemoToProduction={() => obraStore.exitDemoMode()}
+      state={state}
     >
       <Routes>
         <Route path="/" element={<Navigate to="dashboard" replace />} />
         <Route path="/dashboard" element={
           <DashboardView 
             state={state} 
-            onNavigate={(t) => handleSelectTab(t as any)} 
+            onNavigate={(t) => navigate(`/admin/${t}`)} 
             onOpenNewReport={() => navigate('/admin/reports/nuevo')} 
           />
         } />
+        <Route path="/clients" element={<ClientsCrmView state={state} />} />
+        <Route path="/crm" element={<Navigate to="/admin/clients" replace />} />
         <Route path="/reports" element={
           <DailyReportsView 
             state={state} 
@@ -71,7 +61,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({ state }) => {
         } />
         <Route path="/delivery_notes" element={<DeliveryNotesView state={state} />} />
         <Route path="/projects" element={
-          <ProjectsView state={state} onNavigate={(t) => handleSelectTab(t as any)} />
+          <ProjectsView state={state} onNavigate={(t) => navigate(`/admin/${t}`)} />
         } />
         <Route path="/map" element={<MapView state={state} />} />
         <Route path="/team" element={<TeamView state={state} />} />
@@ -82,9 +72,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({ state }) => {
         <Route path="/docs" element={<DocsView state={state} />} />
         <Route path="/profile" element={<ProfileView state={state} />} />
         <Route path="/billing" element={<BillingView state={state} />} />
+        <Route path="/web-admin" element={<WebAdminView state={state} />} />
+        <Route path="/master" element={<Navigate to="/admin/web-admin" replace />} />
         <Route path="*" element={<NotFoundView />} />
       </Routes>
-    </MainLayout>
+    </AuthenticatedLayout>
   );
 };
 

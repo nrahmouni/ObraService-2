@@ -135,9 +135,9 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col max-w-md mx-auto shadow-2xl border-x border-slate-900">
+    <div className="min-h-[100dvh] bg-slate-950 text-white flex flex-col max-w-md mx-auto shadow-2xl border-x border-slate-900">
       {/* Header */}
-      <div className="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between shrink-0">
+      <div className="bg-slate-900 border-b border-slate-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] flex items-center justify-between shrink-0">
         <button 
           onClick={() => {
             if (step > 1) setStep(step - 1);
@@ -163,7 +163,7 @@ export const DailyReportWizard: React.FC<DailyReportWizardProps> = ({ state }) =
       </div>
 
       {/* Content */}
-      <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
+      <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between space-y-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         {step === 1 && (
           <div className="space-y-5 animate-in fade-in duration-200">
             <div>

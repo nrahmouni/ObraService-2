@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppState } from '../types';
-import { TabKey } from '../components/MainLayout';
+import { TabKey } from '../components/layout/AuthenticatedLayout';
 import { MobileLanding } from '../components/MobileLanding';
 import { AdminDashboard } from '../components/dashboard/AdminDashboard';
 import { ManagerDashboard } from '../components/dashboard/ManagerDashboard';

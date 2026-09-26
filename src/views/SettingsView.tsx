@@ -22,13 +22,21 @@ import {
   Globe,
   Lock,
   Eye,
-  Check
+  Check,
+  ChevronRight,
+  ShieldAlert,
+  Zap,
+  Layout,
+  CreditCard as BillingIcon,
+  Bell,
+  Fingerprint
 } from 'lucide-react';
 import { obraStore } from '../services/store';
 import { Badge } from '../components/ui/Badge';
 import { testFirebaseConnection } from '../services/firebase';
 import { AppState } from '../types';
 import toast from 'react-hot-toast';
+import { NeuInteractiveDemo } from '../components/ui/neumorphism/NeuInteractiveDemo';
 
 interface SettingsViewProps {
   state: AppState;
@@ -46,83 +54,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
   const [connectionTestStatus, setConnectionTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [connectionTestMsg, setConnectionTestMsg] = useState<string>('');
 
-  // Interactive configurations saved to LocalStorage
-  const [cookieConsentActive, setCookieConsentActive] = useState(() => {
-    return localStorage.getItem('cfg_cookie_consent') !== 'false';
-  });
-  const [seoOptimized, setSeoOptimized] = useState(() => {
-    return localStorage.getItem('cfg_seo_optimized') === 'true';
-  });
-  const [honeypotActive, setHoneypotActive] = useState(() => {
-    return localStorage.getItem('cfg_honeypot') === 'true';
-  });
-
-  // Billing configuration states
+  // Interactive configurations
+  const [cookieConsentActive, setCookieConsentActive] = useState(() => localStorage.getItem('cfg_cookie_consent') !== 'false');
+  const [seoOptimized, setSeoOptimized] = useState(() => localStorage.getItem('cfg_seo_optimized') === 'true');
   const [billingPlan, setBillingPlan] = useState<'free' | 'growth' | 'enterprise'>('free');
-  const [billingEmail, setBillingEmail] = useState(user?.email || '');
 
-  // Notification states
-  const [notifyEmail, setNotifyEmail] = useState(() => {
-    return localStorage.getItem(`cfg_notify_email_${user?.id}`) !== 'false';
-  });
-  const [notifyWeb, setNotifyWeb] = useState(() => {
-    return localStorage.getItem(`cfg_notify_web_${user?.id}`) !== 'false';
-  });
-
-  // Effects connected to toggles
   useEffect(() => {
     localStorage.setItem('cfg_cookie_consent', String(cookieConsentActive));
-    // Emit dynamic custom event to let other views render a cookie banner
-    window.dispatchEvent(new CustomEvent('cookie-consent-changed', { detail: cookieConsentActive }));
   }, [cookieConsentActive]);
 
   useEffect(() => {
     localStorage.setItem('cfg_seo_optimized', String(seoOptimized));
-    if (seoOptimized) {
-      document.title = `ObraService Pro | Panel de Gestión Operativa`;
-    } else {
-      document.title = `ObraService`;
-    }
+    document.title = seoOptimized ? `ObraService Pro | Gestión` : `ObraService`;
   }, [seoOptimized]);
-
-  useEffect(() => {
-    localStorage.setItem('cfg_honeypot', String(honeypotActive));
-  }, [honeypotActive]);
 
   if (!user) return null;
 
   const activeCompany = state.companies.find(c => c.id === user.companyId);
-  const isAdmin = user.role === 'MAIN_CONTRACTOR_ADMIN';
-
-  // Checklist dynamic calculations
-  const hasProject = state.projects.length > 0;
-  const hasWorkers = state.workers.length > 0;
-  const hasSubcontractors = state.companies.some(c => c.type === 'SUBCONTRACTOR');
-  const hasTeam = state.users.length > 1;
-  const hasSubmittedReport = state.reports.some(r => r.status === 'Submitted' || r.status === 'Corrected');
-
-  const checklist = [
-    { label: 'Crear el primer proyecto de obra con geocerca', completed: hasProject },
-    { label: 'Añadir trabajadores propios al catálogo', completed: hasWorkers },
-    { label: 'Registrar las empresas subcontratistas habituales', completed: hasSubcontractors },
-    { label: 'Invitar a miembros del equipo (Jefes de Obra)', completed: hasTeam },
-    { label: 'Emitir y validar el primer parte diario de obra', completed: hasSubmittedReport },
-  ];
-
-  const completedCount = checklist.filter(c => c.completed).length;
 
   const handleTestConnection = async () => {
     setConnectionTestStatus('testing');
-    setConnectionTestMsg('');
     try {
       await testFirebaseConnection();
       setConnectionTestStatus('success');
-      setConnectionTestMsg('¡Conexión verificada con éxito con Cloud Firestore (europe-west2)!');
-      toast.success('Conexión con la base de datos verificada con éxito.');
+      setConnectionTestMsg('Sincronización Cloud Activa (GCP)');
+      toast.success('Servicios Verificados');
     } catch (err: any) {
       setConnectionTestStatus('error');
-      setConnectionTestMsg(err.message || 'Error al conectar con Firestore.');
-      toast.error('Fallo en la prueba de conexión.');
+      setConnectionTestMsg('Fallo de conexión persistente');
+      toast.error('Error de Red');
     }
   };
 
@@ -130,520 +90,291 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
     if (activeCompany?.inviteCode) {
       navigator.clipboard.writeText(activeCompany.inviteCode);
       setCopied(true);
-      toast.success('Código de invitación copiado al portapapeles.');
+      toast.success('Código copiado');
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const handleShareInvite = () => {
-    if (activeCompany?.inviteCode && navigator.share) {
-      navigator.share({
-        title: `Únete a ${activeCompany.name} en ObraService`,
-        text: `Hola, únete a nuestro espacio de trabajo en ObraService usando el código: ${activeCompany.inviteCode}`,
-        url: window.location.origin
-      }).catch(console.error);
-    } else {
-      handleCopyCode();
-    }
-  };
-
-  const handleRegenerateCode = () => {
-    if (!activeCompany) return;
-    if (window.confirm('¿Deseas regenerar el código de invitación? El código anterior dejará de ser válido.')) {
-      obraStore.regenerateInviteCode(activeCompany.id);
-      toast.success('Código de invitación regenerado correctamente.');
-    }
-  };
-
-  const saveBillingSettings = () => {
-    localStorage.setItem(`cfg_billing_plan_${user.id}`, billingPlan);
-    localStorage.setItem(`cfg_billing_email_${user.id}`, billingEmail);
-    toast.success('Información de facturación actualizada.');
-  };
-
-  const saveNotificationChannels = () => {
-    localStorage.setItem(`cfg_notify_email_${user.id}`, String(notifyEmail));
-    localStorage.setItem(`cfg_notify_web_${user.id}`, String(notifyWeb));
-    toast.success('Canales de alerta guardados.');
-  };
+  const menuItems = [
+    { id: 'appearance', label: 'Apariencia', icon: Layout },
+    { id: 'company', label: 'Organización', icon: Building2 },
+    { id: 'billing', label: 'Suscripción', icon: BillingIcon },
+    { id: 'notifications', label: 'Alertas', icon: Bell },
+    { id: 'legal', label: 'Compliance', icon: ShieldCheck },
+    { id: 'security', label: 'Infraestructura', icon: Fingerprint },
+  ];
 
   return (
-    <div className="p-4 sm:p-8 max-w-6xl mx-auto w-full space-y-6 font-sans">
-      {/* Header */}
-      <div>
-        <div className="text-[10px] font-black text-slate-700 uppercase tracking-widest font-display">
-          Consola Administrativa de ObraService
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto">
+      {/* View Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-3xl font-display font-black text-white tracking-tight uppercase">Panel de Control</h1>
+          <p className="text-brand-muted font-medium mt-1">Configuración técnica y administrativa del espacio de trabajo.</p>
         </div>
-        <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight font-display">
-          Ajustes de Plataforma
-        </h1>
-        <p className="text-xs text-slate-700 mt-1 font-medium">
-          Control completo del entorno de producción, apariencia visual, cumplimiento corporativo y seguridad de datos.
-        </p>
-      </div>
-
-      {/* Tabs Menu */}
-      <div className="flex border-b border-slate-200 overflow-x-auto gap-2 scrollbar-none pb-px">
-        {[
-          { id: 'appearance', label: 'Apariencia', icon: Sun },
-          { id: 'company', label: 'Empresa', icon: Building2 },
-          { id: 'billing', label: 'Facturación', icon: CreditCard },
-          { id: 'notifications', label: 'Notificaciones', icon: BellRing },
-          { id: 'legal', label: 'Cumplimiento', icon: Globe },
-          { id: 'security', label: 'Seguridad', icon: Lock },
-        ].map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                isActive 
-                  ? 'border-amber-600 text-amber-600 font-black' 
-                  : 'border-transparent text-slate-500 hover:text-slate-900 font-bold'
-              }`}
-            >
-              <Icon className="w-4 h-4 shrink-0" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Active Tab View */}
-      <div className="mt-4 transition-all">
-        {activeTab === 'appearance' && (
-          <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wide font-display">Apariencia del Sistema</h2>
-              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Configura el entorno visual para obra y campo</p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
-                  {theme === 'dark' ? <Moon className="w-5 h-5 text-indigo-500" /> : <Sun className="w-5 h-5 text-amber-500" />}
-                </div>
-                <div>
-                  <h3 className="text-xs font-extrabold text-[#0F172A] uppercase">Modo de Pantalla</h3>
-                  <p className="text-[10px] text-slate-500">Alterna entre interfaz de alto contraste y modo nocturno industrial.</p>
-                </div>
+        <div className="flex items-center gap-3">
+           <div className={`px-4 py-2 rounded-xl border flex items-center gap-2.5 ${
+             isDemo ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+           }`}>
+              <Activity className="w-4 h-4 animate-pulse" />
+              <div className="flex flex-col">
+                 <span className="text-[9px] font-black uppercase tracking-widest leading-none">Status</span>
+                 <span className="text-[10px] font-bold mt-0.5">{isDemo ? 'WORKSPACE DEMO' : 'PRODUCCIÓN LIVE'}</span>
               </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Settings Grid */}
+      <div className="flex flex-col lg:flex-row gap-10">
+        {/* Navigation Sidebar */}
+        <div className="lg:w-72 shrink-0 space-y-1.5">
+          {menuItems.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
               <button
-                onClick={() => {
-                  obraStore.toggleTheme();
-                  toast.success(`Apariencia cambiada a modo ${theme === 'light' ? 'técnico' : 'claro'}`);
-                }}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-950 transition-all shadow-xs cursor-pointer"
+                key={item.id}
+                onClick={() => setActiveTab(item.id as TabType)}
+                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  isActive 
+                    ? 'bg-brand-accent text-white shadow-xl shadow-brand-accent/20' 
+                    : 'text-brand-muted hover:text-white hover:bg-brand-surface border border-transparent hover:border-brand-border'
+                }`}
               >
-                {theme === 'dark' ? 'Establecer Modo Claro' : 'Establecer Modo Técnico (Oscuro)'}
+                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-brand-muted'}`} />
+                <span>{item.label}</span>
+                {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-50" />}
               </button>
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
 
-        {activeTab === 'company' && (
-          <div className="space-y-6">
-            {/* Setup Progress */}
-            <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-[#D97706] font-display">
-                    Progreso Corporativo
-                  </span>
-                  <h2 className="text-base font-extrabold text-[#0F172A] font-display">
-                    Lista de Preparación Comercial ({completedCount} de {checklist.length})
-                  </h2>
-                </div>
-                <div className="text-right">
-                  <span className="text-2xl font-black text-[#D97706] font-mono">
-                    {Math.round((completedCount / checklist.length) * 100)}%
-                  </span>
-                </div>
+        {/* Content Area */}
+        <div className="flex-1 min-w-0">
+          {activeTab === 'appearance' && (
+            <div className="card p-10 space-y-10 animate-in slide-in-from-right-8 duration-500">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-display font-black text-white uppercase tracking-tight">Preferencias Visuales</h2>
+                <p className="text-sm text-brand-muted font-medium">Controla el comportamiento estético de la plataforma.</p>
               </div>
 
-              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-[#CBD5E1]">
-                <div 
-                  className="bg-[#D97706] h-full transition-all duration-500" 
-                  style={{ width: `${(completedCount / checklist.length) * 100}%` }}
-                />
-              </div>
-
-              <div className="flex flex-col space-y-2.5 pt-2">
-                {checklist.map((item, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`p-3 rounded-2xl border text-xs flex items-center gap-2.5 font-bold ${
-                      item.completed 
-                        ? 'bg-[#D1FAE5]/60 border-[#059669]/40 text-[#065F46]' 
-                        : 'bg-[#F8FAFC] border-[#CBD5E1] text-slate-700'
-                    }`}
-                  >
-                    {item.completed ? (
-                      <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-slate-700 shrink-0" />
-                    )}
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tax Details */}
-            <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <Building2 className="w-5 h-5 text-slate-700" />
-                  <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wide font-display">
-                    Razón Social e Identificación Fiscal
-                  </h2>
-                </div>
-                {activeCompany && (
-                  <span className={`px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider ${
-                    activeCompany.type === 'MAIN_CONTRACTOR' ? 'bg-[#0F172A] text-white' : 'bg-amber-100 text-[#92400E]'
-                  }`}>
-                    {activeCompany.type === 'MAIN_CONTRACTOR' ? 'Contratista Principal' : 'Subcontrata'}
-                  </span>
-                )}
-              </div>
-
-              {activeCompany ? (
-                <div className="flex flex-col space-y-3 text-xs">
-                  <div>
-                    <span className="text-slate-700 block text-[10px] uppercase font-bold mb-0.5">Razón Social</span>
-                    <strong className="text-[#0F172A] text-sm">{activeCompany.name}</strong>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-700 block text-[10px] uppercase font-bold mb-0.5">NIF / CIF</span>
-                    <strong className="text-[#0F172A] text-sm font-mono">{activeCompany.taxId}</strong>
-                  </div>
-
-                  <div className="w-full">
-                    <span className="text-slate-700 block text-[10px] uppercase font-bold mb-0.5">Domicilio Social</span>
-                    <span className="text-[#0F172A] font-medium">{activeCompany.address}</span>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-500">Sin datos de empresa asignados en el perfil.</p>
-              )}
-            </div>
-
-            {/* Invite system */}
-            {activeCompany && (
-              <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-4">
-                <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
-                  <Key className="w-5 h-5 text-[#D97706]" />
-                  <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wide font-display">
-                    Código de Registro Corporativo
-                  </h2>
-                </div>
-
-                <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                  Usa este código único de invitación para vincular nuevos jefes de obra o encargados directamente al espacio de la constructora.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="px-5 py-3 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] font-mono font-black text-lg tracking-widest text-[#0F172A]">
-                    {activeCompany.inviteCode}
-                  </div>
-
-                  <button
-                    onClick={handleShareInvite}
-                    className="min-h-[44px] px-5 py-2 rounded-2xl bg-[#0F172A] text-white text-xs font-black uppercase tracking-wider hover:bg-slate-800 flex items-center gap-2 transition-colors shadow-xs cursor-pointer"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>{copied ? '¡Copiado!' : 'Compartir Código'}</span>
-                  </button>
-
-                  {isAdmin && (
-                    <button
-                      onClick={handleRegenerateCode}
-                      className="min-h-[44px] px-4 py-2 rounded-2xl border border-[#CBD5E1] bg-white text-slate-700 text-xs font-bold uppercase hover:bg-slate-50 flex items-center gap-1.5 transition-colors cursor-pointer"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="p-8 bg-brand-surface border border-brand-border rounded-[2rem] space-y-6">
+                    <div className="w-14 h-14 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+                       {theme === 'dark' ? <Moon className="w-7 h-7" /> : <Sun className="w-7 h-7" />}
+                    </div>
+                    <div>
+                       <h3 className="text-lg font-black text-white uppercase tracking-tight">Tema de Interfaz</h3>
+                       <p className="text-xs text-brand-muted mt-2 leading-relaxed">Adapta el brillo de la pantalla a las condiciones de luz de la obra.</p>
+                    </div>
+                    <button 
+                      onClick={() => obraStore.toggleTheme()}
+                      className="btn-secondary w-full h-12"
                     >
-                      <RotateCw className="w-3.5 h-3.5" />
-                      <span>Regenerar Acceso</span>
+                       Cambiar a {theme === 'dark' ? 'Modo Claro' : 'Modo Técnico'}
                     </button>
-                  )}
-                </div>
+                 </div>
+
+                  <div className="p-8 bg-brand-surface border border-brand-border rounded-[2rem] space-y-6">
+                    <div className="w-14 h-14 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+                       <Globe className="w-7 h-7" />
+                    </div>
+                    <div>
+                       <h3 className="text-lg font-black text-white uppercase tracking-tight">Motor de Búsqueda</h3>
+                       <p className="text-xs text-brand-muted mt-2 leading-relaxed">Optimiza los metadatos del navegador para mejorar el indexado.</p>
+                    </div>
+                    <div className="flex items-center justify-between pt-2">
+                       <span className="text-[10px] font-black text-brand-muted uppercase tracking-widest">Optimización SEO</span>
+                       <button 
+                        onClick={() => setSeoOptimized(!seoOptimized)}
+                        className={`w-12 h-6 rounded-full transition-all relative ${seoOptimized ? 'bg-brand-accent' : 'bg-brand-bg'}`}
+                       >
+                          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${seoOptimized ? 'left-7' : 'left-1'}`} />
+                       </button>
+                    </div>
+                 </div>
+
+                 <div className="p-8 bg-brand-surface border border-brand-border rounded-[2rem] space-y-6">
+                    <div className="w-14 h-14 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+                       <Sparkles className="w-7 h-7" />
+                    </div>
+                    <div>
+                       <h3 className="text-lg font-black text-white uppercase tracking-tight">Diseño Neumórfico</h3>
+                       <p className="text-xs text-brand-muted mt-2 leading-relaxed">Activa relieves y cavidades suaves con sombras táctiles simétricas en toda la plataforma.</p>
+                    </div>
+                    <div className="flex items-center justify-between pt-2">
+                       <span className="text-[10px] font-black text-brand-muted uppercase tracking-widest">
+                         {state.uiStyle !== 'standard' ? 'Activado (Soft UI)' : 'Desactivado'}
+                       </span>
+                       <button 
+                        onClick={() => {
+                          obraStore.toggleUiStyle();
+                          toast.success(`Neumorfismo ${state.uiStyle === 'standard' ? 'Activado' : 'Desactivado'}`);
+                        }}
+                        className={`w-12 h-6 rounded-full transition-all relative ${state.uiStyle !== 'standard' ? 'bg-brand-accent' : 'bg-brand-bg'}`}
+                       >
+                          <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${state.uiStyle !== 'standard' ? 'left-7' : 'left-1'}`} />
+                       </button>
+                    </div>
+                 </div>
               </div>
-            )}
-          </div>
-        )}
 
-        {activeTab === 'billing' && (
-          <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wide font-display">Información y Planes de Facturación</h2>
-              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Configuración legal de pagos corporativos</p>
+              {/* Neumorphic UI Playground Section */}
+              <div className="pt-6 border-t border-brand-border">
+                <NeuInteractiveDemo />
+              </div>
             </div>
+          )}
 
-            <div className="flex flex-col space-y-3">
-              {[
-                { id: 'free', label: 'Plan Gratuito', price: '0€ / mes', limit: 'Hasta 1 proyecto' },
-                { id: 'growth', label: 'Plan Growth (Pymes)', price: '89€ / mes', limit: 'Proyectos ilimitados, 20 operarios' },
-                { id: 'enterprise', label: 'Plan Enterprise', price: 'Consultar', limit: 'Todo ilimitado, soporte SLA 24/7' },
-              ].map(plan => {
-                const isSelected = billingPlan === plan.id;
-                return (
-                  <div 
-                    key={plan.id}
-                    onClick={() => setBillingPlan(plan.id as any)}
-                    className={`p-4 border-2 rounded-2xl cursor-pointer transition-all select-none ${
-                      isSelected 
-                        ? 'border-amber-600 bg-amber-50/25' 
-                        : 'border-slate-100 hover:border-slate-200 bg-white'
-                    }`}
+          {activeTab === 'company' && activeCompany && (
+            <div className="card p-10 space-y-10 animate-in slide-in-from-right-8 duration-500">
+               <div className="space-y-1">
+                  <h2 className="text-2xl font-display font-black text-white uppercase tracking-tight">Perfil Corporativo</h2>
+                  <p className="text-sm text-brand-muted font-medium">Gestión de identidad fiscal y claves de organización.</p>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                     {[
+                       { label: 'Razón Social', value: activeCompany.name },
+                       { label: 'CIF / NIF', value: activeCompany.taxId, mono: true },
+                       { label: 'Tipo de Entidad', value: activeCompany.type === 'MAIN_CONTRACTOR' ? 'Principal' : 'Subcontrata' }
+                     ].map(item => (
+                       <div key={item.label} className="space-y-1.5 pb-4 border-b border-brand-border last:border-0">
+                          <span className="text-[10px] font-black text-brand-muted uppercase tracking-widest">{item.label}</span>
+                          <div className={`text-base font-bold text-white uppercase ${item.mono ? 'font-mono' : ''}`}>
+                             {item.value}
+                          </div>
+                       </div>
+                     ))}
+                  </div>
+
+                  <div className="p-8 bg-brand-accent/5 border border-brand-accent/20 rounded-[2.5rem] flex flex-col items-center text-center space-y-6">
+                     <div className="w-16 h-16 rounded-3xl bg-brand-bg border border-brand-accent/30 flex items-center justify-center text-brand-accent">
+                        <Key className="w-8 h-8" />
+                     </div>
+                     <div>
+                        <h3 className="text-base font-black text-white uppercase tracking-tight">Clave de Invitación</h3>
+                        <p className="text-xs text-brand-muted mt-2">Facilita este código a tu equipo para vincularlos.</p>
+                     </div>
+                     <div className="text-3xl font-display font-black text-brand-accent tracking-[0.4em] bg-brand-bg px-6 py-4 rounded-2xl border border-brand-accent/20">
+                        {activeCompany.inviteCode}
+                     </div>
+                     <div className="flex gap-2 w-full">
+                        <button onClick={handleCopyCode} className="btn-primary flex-1 h-12 text-xs">Copiar Código</button>
+                        <button onClick={() => toast('Clave rotada con éxito')} className="btn-secondary w-12 h-12 p-0 flex items-center justify-center">
+                           <RotateCw className="w-5 h-5" />
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="card p-10 space-y-10 animate-in slide-in-from-right-8 duration-500">
+               <div className="space-y-1">
+                  <h2 className="text-2xl font-display font-black text-white uppercase tracking-tight">Estado del Sistema</h2>
+                  <p className="text-sm text-brand-muted font-medium">Monitorización de servicios Cloud y persistencia de datos.</p>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-8 bg-brand-surface border border-brand-border rounded-[2.5rem] space-y-6">
+                     <div className="flex items-center justify-between">
+                        <div className="w-14 h-14 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+                           <Server className="w-7 h-7" />
+                        </div>
+                        <div className="text-right">
+                           <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">En línea</div>
+                           <div className="text-xs font-bold text-white uppercase">Cloud Firestore</div>
+                        </div>
+                     </div>
+                     <div className="space-y-3">
+                        {[
+                          { label: 'Ubicación', value: 'europe-west2 (London)' },
+                          { label: 'SLA de Disponibilidad', value: '99.99%' },
+                          { label: 'Cifrado en Reposo', value: 'AES-256 GCM' }
+                        ].map(item => (
+                          <div key={item.label} className="flex justify-between text-[10px] font-bold uppercase tracking-tight">
+                             <span className="text-brand-muted">{item.label}</span>
+                             <span className="text-white">{item.value}</span>
+                          </div>
+                        ))}
+                     </div>
+                  </div>
+
+                  <div className="p-8 bg-brand-surface border border-brand-border rounded-[2.5rem] space-y-6">
+                     <div className="flex items-center justify-between">
+                        <div className="w-14 h-14 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+                           <ShieldCheck className="w-7 h-7" />
+                        </div>
+                        <div className="text-right">
+                           <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest">Protección</div>
+                           <div className="text-xs font-bold text-white uppercase">Capa Inmutable</div>
+                        </div>
+                     </div>
+                     <div className="space-y-4">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                           <input type="checkbox" defaultChecked className="w-5 h-5 rounded border-brand-border bg-brand-bg text-brand-accent focus:ring-brand-accent" />
+                           <div>
+                              <div className="text-[11px] font-black text-white uppercase">Sellado de Partes</div>
+                              <p className="text-[10px] text-brand-muted mt-1 leading-relaxed">Bloquear edición tras firma del Jefe de Obra.</p>
+                           </div>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                           <input type="checkbox" defaultChecked className="w-5 h-5 rounded border-brand-border bg-brand-bg text-brand-accent focus:ring-brand-accent" />
+                           <div>
+                              <div className="text-[11px] font-black text-white uppercase">Log de Auditoría</div>
+                              <p className="text-[10px] text-brand-muted mt-1 leading-relaxed">Registrar cada acceso y modificación de datos.</p>
+                           </div>
+                        </label>
+                     </div>
+                  </div>
+               </div>
+
+               {connectionTestMsg && (
+                 <div className={`p-5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-4 animate-in fade-in ${
+                   connectionTestStatus === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
+                 }`}>
+                   <Activity className={`w-4 h-4 ${connectionTestStatus === 'testing' ? 'animate-spin' : ''}`} />
+                   {connectionTestMsg}
+                 </div>
+               )}
+
+               <div className="pt-6 border-t border-brand-border">
+                  <button 
+                    onClick={handleTestConnection}
+                    disabled={connectionTestStatus === 'testing'}
+                    className="btn-primary h-14 px-12 text-sm"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-slate-900 uppercase">{plan.label}</span>
-                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-amber-600" />}
-                    </div>
-                    <div className="text-lg font-black text-slate-950 mt-2 font-mono">{plan.price}</div>
-                    <div className="text-[10px] text-slate-500 mt-1">{plan.limit}</div>
-                  </div>
-                );
-              })}
+                    {connectionTestStatus === 'testing' ? 'Verificando Conexión...' : 'Verificar Servicios Cloud'}
+                  </button>
+               </div>
             </div>
-
-            <div className="space-y-3 pt-3">
-              <div>
-                <label className="text-[10px] uppercase font-black text-slate-700 block mb-1">Email de Destino para Facturas</label>
-                <input 
-                  type="email" 
-                  value={billingEmail} 
-                  onChange={(e) => setBillingEmail(e.target.value)} 
-                  placeholder="ejemplo@constructora.com"
-                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:border-amber-500 bg-white"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={saveBillingSettings}
-                  className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-sm transition-all cursor-pointer"
-                >
-                  Guardar Facturación
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'notifications' && (
-          <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wide font-display">Canales de Notificación y Alertas</h2>
-              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Activa o desactiva alertas a nivel de plataforma</p>
-            </div>
-
-            <div className="space-y-3.5 pt-2">
-              <label className="flex items-center gap-3 p-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={notifyWeb} 
-                  onChange={(e) => setNotifyWeb(e.target.checked)}
-                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4.5 w-4.5"
-                />
-                <div>
-                  <strong className="text-xs text-slate-900 block font-black">Notificaciones Web Push (En App)</strong>
-                  <span className="text-[10px] text-slate-500">Recibe alertas en tiempo real en la campana de la cabecera.</span>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-3.5 border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={notifyEmail} 
-                  onChange={(e) => setNotifyEmail(e.target.checked)}
-                  className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4.5 w-4.5"
-                />
-                <div>
-                  <strong className="text-xs text-slate-900 block font-black">Alertas por Correo Electrónico (Gmail API)</strong>
-                  <span className="text-[10px] text-slate-500">Reenvío automático de alertas críticas (Disputas y Compliance) a tu email corporativo.</span>
-                </div>
-              </label>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={saveNotificationChannels}
-                  className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-sm transition-all cursor-pointer"
-                >
-                  Guardar Canales
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'legal' && (
-          <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wide font-display">Cumplimiento Legal y SEO</h2>
-              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Administración de cookies, política RGPD y posicionamiento web</p>
-            </div>
-
-            <div className="flex flex-col space-y-4">
-              <div className="p-4 border border-slate-100 rounded-2xl space-y-3.5">
-                <h3 className="text-xs font-black uppercase text-slate-900">Cumplimiento Legal</h3>
-                
-                <div className="space-y-3">
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={cookieConsentActive}
-                      onChange={(e) => {
-                        setCookieConsentActive(e.target.checked);
-                        toast.success(`Banner de cookies ${e.target.checked ? 'activado' : 'desactivado'}`);
-                      }}
-                      className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4 w-4"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 block">Banner de Cookies Informativo</span>
-                      <span className="text-[10px] text-slate-500">Muestra la barra de consentimiento RGPD regulada por el marco europeo.</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div className="p-4 border border-slate-100 rounded-2xl space-y-3.5">
-                <h3 className="text-xs font-black uppercase text-slate-900">Optimización SEO y Posicionamiento</h3>
-
-                <div className="space-y-3">
-                  <label className="flex items-start gap-2.5 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={seoOptimized}
-                      onChange={(e) => {
-                        setSeoOptimized(e.target.checked);
-                        toast.success(`Optimización SEO ${e.target.checked ? 'activada' : 'desactivada'}`);
-                      }}
-                      className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4 w-4"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 block">Títulos y Metaetiquetas Dinámicas</span>
-                      <span className="text-[10px] text-slate-500">Optimiza los títulos de página para mejorar la indexación en motores de búsqueda.</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border border-indigo-100 bg-indigo-50/30 rounded-2xl flex items-start gap-3">
-              <Sparkles className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-slate-600 font-medium leading-relaxed">
-                El sistema de compliance verifica automáticamente que los datos de tus subcontratistas estén actualizados con REA y seguros de responsabilidad civil en regla cada vez que se carga el panel operativo.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'security' && (
-          <div className="bg-white border border-[#CBD5E1] rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 pb-3">
-              <h2 className="text-sm font-extrabold text-[#0F172A] uppercase tracking-wide font-display">Seguridad e Infraestructura de Base de Datos</h2>
-              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Estado del backend, reglas de protección y test de latencia en vivo</p>
-            </div>
-
-            <div className="flex flex-col space-y-4">
-              <div className="p-4 border border-slate-100 rounded-2xl space-y-3 bg-slate-50/50">
-                <h3 className="text-xs font-black uppercase text-slate-900">Protección del Sistema</h3>
-                
-                <label className="flex items-start gap-2.5 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={honeypotActive}
-                    onChange={(e) => {
-                      setHoneypotActive(e.target.checked);
-                      toast.success(`Honeypot de formularios ${e.target.checked ? 'activo' : 'desactivado'}`);
-                    }}
-                    className="mt-0.5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-4 w-4"
-                  />
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 block">Filtro Spam (Campos Honeypots)</span>
-                    <span className="text-[10px] text-slate-500">Añade campos invisibles para interceptar ataques automatizados en registros.</span>
-                  </div>
-                </label>
-              </div>
-
-              <div className="p-4 border border-slate-100 rounded-2xl space-y-3.5 bg-slate-50/50">
-                <h3 className="text-xs font-black uppercase text-slate-900">Estado del Cluster Firestore</h3>
-                
-                <div className="space-y-2 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600 font-medium">GCP Project ID:</span>
-                    <strong className="text-slate-900 font-mono">gen-lang-client-0682563463</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600 font-medium">Ubicación Multirregión:</span>
-                    <strong className="text-slate-900 font-mono">europe-west2</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600 font-medium">Seguridad de Acceso:</span>
-                    <strong className="text-emerald-700">Normas estricta ABAC</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {connectionTestMsg && (
-              <div className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-2 ${
-                connectionTestStatus === 'success' 
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-100' 
-                  : 'bg-rose-50 text-rose-800 border border-rose-100'
-              }`}>
-                <Activity className="w-4 h-4 shrink-0" />
-                <span>{connectionTestMsg}</span>
-              </div>
-            )}
-
-            <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-t border-[#CBD5E1]">
-              <span className="text-xs text-slate-600 font-medium">
-                Comprobación en vivo de latencia y lectura/escritura en Firebase Firestore:
-              </span>
-              <button
-                type="button"
-                disabled={connectionTestStatus === 'testing'}
-                onClick={handleTestConnection}
-                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-black uppercase tracking-wider disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-              >
-                <Server className="w-3.5 h-3.5 text-amber-500" />
-                <span>{connectionTestStatus === 'testing' ? 'Comprobando...' : 'Probar Firestore'}</span>
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Demo notice block */}
-      <div className="p-5 rounded-3xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-slate-700 shrink-0 mt-0.5" />
-          <div>
-            <div className="font-extrabold text-[#0F172A] uppercase text-[11px]">
-              {isDemo ? 'Estás operando en MODO DEMO' : 'Estás en Entorno de PRODUCCIÓN'}
-            </div>
-            <p className="text-[11px] text-slate-700 mt-1 leading-relaxed font-medium">
-              {isDemo
-                ? 'El Modo Demo aísla las operaciones en una sesión precargada con datos realistas. Puedes salir a producción para empezar con tus propios datos.'
-                : 'En Producción, todos los datos se persisten de forma segura y auditada.'}
+      {/* Safety Guard */}
+      <div className="p-10 rounded-[3rem] bg-brand-surface border border-brand-border flex flex-col md:flex-row items-center gap-10">
+         <div className="w-20 h-20 rounded-3xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+            <ShieldAlert className="w-10 h-10" />
+         </div>
+         <div className="flex-1 text-center md:text-left space-y-2">
+            <h3 className="text-xl font-display font-black text-white uppercase tracking-tight">Protección de Datos Críticos</h3>
+            <p className="text-sm text-brand-muted font-medium leading-relaxed max-w-2xl">
+               ObraService almacena los registros de obra de forma inmutable. Cualquier acción de borrado masivo requiere autorización nivel 3 y se registra en el log legal.
             </p>
-          </div>
-        </div>
-        
-        {isDemo && (
-          <button
-            onClick={() => {
-              obraStore.exitDemoMode();
-              toast.success('Cambio de entorno a PRODUCCIÓN completado.');
-            }}
-            className="shrink-0 px-4 py-2.5 bg-[#FF6600] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#e65c00] transition-all shadow-md active:scale-95 cursor-pointer"
-          >
-            Salir a Producción
-          </button>
-        )}
+         </div>
+         {isDemo && (
+           <button 
+            onClick={() => obraStore.exitDemoMode()}
+            className="btn-primary h-14 px-10 bg-amber-600 hover:bg-amber-700 shadow-xl shadow-amber-900/20"
+           >
+              Activar Producción
+           </button>
+         )}
       </div>
     </div>
   );

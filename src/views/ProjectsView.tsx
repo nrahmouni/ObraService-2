@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Search, Filter, Grid, List as ListIcon } from 'lucide-react';
 import { obraStore } from '../services/store';
 import { Project, ProjectStatus, AppState } from '../types';
 import { ProjectSetupWizard } from '../components/ProjectSetupWizard';
@@ -125,10 +125,10 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* 1. Detail View */}
       {selectedProject ? (
-        <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+        <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
           <ProjectDetailHero
             selectedProject={selectedProject}
             coverUrl={selectedProject.coverImage || DEFAULT_COVERS[0]}
@@ -143,41 +143,41 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
             onDeleteProject={handleDeleteProjectClick}
           />
           
-          <ProjectDetailBudget
-            selectedProject={selectedProject}
-            reportCount={getReportCount(selectedProject.id)}
-            stats={getProjectBudgetStats(selectedProject)}
-          />
-
-          <ProjectDetailSubcontractors
-            selectedProject={selectedProject}
-            companies={state.companies || []}
-            isAdmin={isAdmin}
-            isOpen={subAssignmentOpen}
-            setIsOpen={setSubAssignmentOpen}
-            onUpdateAssignments={handleUpdateAssignments}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <ProjectDetailBudget
+                selectedProject={selectedProject}
+                reportCount={getReportCount(selectedProject.id)}
+                stats={getProjectBudgetStats(selectedProject)}
+              />
+            </div>
+            <div>
+              <ProjectDetailSubcontractors
+                selectedProject={selectedProject}
+                companies={state.companies || []}
+                isAdmin={isAdmin}
+                isOpen={subAssignmentOpen}
+                setIsOpen={setSubAssignmentOpen}
+                onUpdateAssignments={handleUpdateAssignments}
+              />
+            </div>
+          </div>
         </div>
       ) : (
-        /* 2. Standard Gallery / Card List View */
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
+        /* 2. List / Gallery View */
+        <div className="space-y-8">
+          <div className="space-y-4 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-6">
             <div>
-              <span className="text-[10px] font-black text-brand-accent uppercase tracking-widest block">
-                Directorio de Obras
-              </span>
-              <h1 className="text-2xl font-black uppercase tracking-tight text-slate-100 font-display mt-0.5">
-                Proyectos y Obras
-              </h1>
+              <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">Obras y Proyectos</h1>
+              <p className="text-xs sm:text-sm text-brand-muted font-medium mt-0.5">Gestión centralizada de todos tus tajos activos.</p>
             </div>
 
             {isAdmin && (
               <button
                 onClick={() => setWizardOpen(true)}
-                className="bg-brand-accent hover:bg-brand-accent/90 text-white px-5 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg shadow-brand-accent/20 transition-all flex items-center gap-2 cursor-pointer"
-                id="btn-new-project-main"
+                className="btn-primary h-11 sm:h-12 px-6 shadow-lg shadow-brand-accent/20 w-full sm:w-auto justify-center text-xs uppercase tracking-wider"
               >
-                <Plus className="w-4 h-4 stroke-[3]" />
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Nueva Obra</span>
               </button>
             )}

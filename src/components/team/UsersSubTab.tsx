@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { UserPlus, Clock, Copy, ExternalLink, Send, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Clock, Copy, ExternalLink, Send, Sparkles, RefreshCw, CheckCircle2, ShieldCheck, Mail, Shield, ShieldAlert, Key, Globe, Search, X } from 'lucide-react';
 import { AppState, User } from '../../types';
 import { obraStore } from '../../services/store';
-import { Table } from '../ui/Table';
-import { StatusPill } from '../ui/StatusPill';
 import { Modal } from '../ui/Modal';
 import { toast } from 'react-hot-toast';
 import { connectGmailAccount, sendGmailEmail, isGoogleGmailConnected, disconnectGmail, GMAIL_TEMPLATES } from '../../services/gmail';
+import { Badge } from '../ui/Badge';
 
 interface UsersSubTabProps {
   state: AppState;
@@ -33,16 +32,16 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
     const res = await connectGmailAccount();
     if (res.success) {
       setGmailConnected(true);
-      toast.success('¡Gmail conectado correctamente!');
+      toast.success('Gmail conectado.');
     } else {
-      toast.error(res.error || 'No se pudo conectar la cuenta de Google.');
+      toast.error(res.error || 'Error al conectar Google.');
     }
   };
 
   const handleDisconnectGmail = () => {
     disconnectGmail();
     setGmailConnected(false);
-    toast.success('Cuenta de Gmail desconectada');
+    toast.success('Gmail desconectado');
   };
 
   const openInviteModal = () => {
@@ -56,19 +55,15 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
   const handleSendInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail || !inviteEmail.includes('@')) {
-      toast.error('Por favor, indica un correo electrónico de invitación válido.');
-      return;
-    }
-    if (selectedProjectIds.length === 0) {
-      toast.error('Por favor, selecciona al menos una obra a la que tendrá acceso.');
+      toast.error('Email inválido.');
       return;
     }
 
     setIsInviting(true);
     try {
       const activeCompany = state.companies.find(c => c.id === currentUser.companyId);
-      const companyName = activeCompany?.name || currentUser.companyName || 'Constructora Principal';
-      const roleLabel = inviteRole === 'SITE_MANAGER' ? 'Jefe de Obra (Manager)' : 'Operario de Obra (Worker)';
+      const companyName = activeCompany?.name || currentUser.companyName || 'ObraService';
+      const roleLabel = inviteRole === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Operario';
 
       const res = obraStore.createInvitation(
         inviteEmail,
@@ -79,7 +74,7 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
       );
 
       if (!res.success || !res.invitation) {
-        toast.error(res.error || 'Error al generar la invitación.');
+        toast.error(res.error || 'Error al generar invitación.');
         setIsInviting(false);
         return;
       }
@@ -93,7 +88,7 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
         );
         await sendGmailEmail(
           inviteEmail,
-          `[Invitación ObraService] Únete al equipo de ${companyName}`,
+          `[Invitación] Únete a ${companyName} en ObraService`,
           emailBody
         );
       }
@@ -110,11 +105,11 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
         projectNames: assignedNames
       });
 
-      toast.success(gmailConnected ? '¡Invitación enviada por Gmail!' : '¡Invitación y Magic Link generados!');
+      toast.success(gmailConnected ? 'Invitación enviada' : 'Magic Link generado');
       setIsInviting(false);
     } catch (error: any) {
       setIsInviting(false);
-      toast.error(error.message || 'Error al procesar invitación.');
+      toast.error(error.message || 'Error en invitación.');
     }
   };
 
@@ -160,158 +155,233 @@ export const UsersSubTab: React.FC<UsersSubTabProps> = ({ state, searchQuery }) 
   const combined = [...activeRows, ...inviteRows];
 
   return (
-    <div className="space-y-4 font-sans text-slate-300">
-      {/* Pills, Filter and Gmail Connector Card */}
-      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-        <div className="flex flex-wrap items-center gap-1.5">
+    <div className="space-y-6 animate-in fade-in">
+      {/* Filters Toolbar */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+        <div className="flex items-center gap-1 p-1 bg-brand-surface border border-brand-border rounded-xl">
           {(['ALL', 'SITE_MANAGER', 'SUBCONTRACTOR_USER', 'PENDING'] as const).map(role => (
             <button
               key={role}
               onClick={() => setUserFilterRole(role)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-                userFilterRole === role ? 'bg-brand-accent text-white' : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200'
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                userFilterRole === role 
+                  ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' 
+                  : 'text-brand-muted hover:text-white'
               }`}
             >
-              {role === 'ALL' ? 'Todos' : role === 'SITE_MANAGER' ? 'Jefes de Obra' : role === 'SUBCONTRACTOR_USER' ? 'Operarios' : 'Pendientes'}
+              {role === 'ALL' ? 'Todos' : role === 'SITE_MANAGER' ? 'Jefes' : role === 'SUBCONTRACTOR_USER' ? 'Operarios' : 'Pendientes'}
             </button>
           ))}
         </div>
 
-        {/* Gmail Integration Toggle */}
-        <div className="flex items-center gap-3 bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-xs shrink-0">
-          <span className="font-bold text-slate-400">Canal Gmail:</span>
-          {gmailConnected ? (
-            <button onClick={handleDisconnectGmail} className="text-[10px] font-black uppercase text-rose-400 hover:underline cursor-pointer">Desconectar</button>
-          ) : (
-            <button onClick={handleConnectGmail} className="text-[10px] font-black uppercase text-brand-accent hover:underline cursor-pointer">Conectar Cuenta Google</button>
-          )}
+        <div className="flex items-center gap-4">
+           <div className={`px-4 py-2 rounded-xl border flex items-center gap-2.5 transition-all ${
+             gmailConnected 
+               ? 'bg-brand-accent/5 border-brand-accent/20 text-brand-accent' 
+               : 'bg-brand-surface border-brand-border text-brand-muted'
+           }`}>
+              <Mail className={`w-4 h-4 ${gmailConnected ? 'text-brand-accent' : 'text-brand-muted'}`} />
+              <div className="flex flex-col">
+                 <span className="text-[9px] font-black uppercase tracking-widest leading-none">Canal Gmail</span>
+                 <button 
+                   onClick={gmailConnected ? handleDisconnectGmail : handleConnectGmail}
+                   className="text-[10px] font-bold hover:underline text-left mt-0.5"
+                 >
+                   {gmailConnected ? 'Desconectar' : 'Conectar'}
+                 </button>
+              </div>
+           </div>
+
+           <button onClick={openInviteModal} className="btn-primary h-10 px-6">
+              <UserPlus className="w-4 h-4" />
+              <span>Invitar</span>
+           </button>
         </div>
       </div>
 
-      {/* Users Cards List */}
-      <div className="flex flex-col space-y-3 w-full">
+      {/* Users Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {combined.map(row => {
           const assignedProjects = state.projects.filter(p => row.projectIds.includes(p.id));
           return (
-            <div key={row.id} className="bg-[#0F172A] border border-slate-800 rounded-2xl p-4 flex flex-col space-y-3 shadow-lg">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-xs font-black text-slate-300 uppercase">
-                    {row.name[0]}
+            <div key={row.id} className="card group hover:border-brand-accent/40 transition-all duration-300">
+              <div className="p-5 space-y-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent font-display font-black text-lg group-hover:bg-brand-accent group-hover:text-white transition-all uppercase">
+                      {row.name[0]}
+                    </div>
+                    <div>
+                      <div className="text-sm font-black text-white uppercase tracking-tight group-hover:text-brand-accent transition-colors">
+                        {row.name}
+                      </div>
+                      <div className="text-[10px] font-bold text-brand-muted truncate max-w-[150px]">
+                        {row.email}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs font-black text-slate-100 uppercase">{row.name}</div>
-                    <div className="text-[10px] font-bold text-slate-500">{row.email}</div>
+                  {row.isPending ? (
+                    <Badge status="Pending" className="text-[9px] px-2 py-0.5 rounded uppercase font-black">Invitado</Badge>
+                  ) : (
+                    <Badge status={row.active ? 'Active' : 'Paused'} className="text-[9px] px-2 py-0.5 rounded uppercase font-black" />
+                  )}
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-brand-border/50">
+                  <div className="space-y-1">
+                    <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
+                       <Shield className="w-3 h-3 text-brand-accent" />
+                       Rol Autorizado
+                    </div>
+                    <div className="text-[11px] font-bold text-white uppercase">
+                      {row.role === 'MAIN_CONTRACTOR_ADMIN' ? 'Admin' : row.role === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Subcontrata'}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
+                       <Globe className="w-3 h-3 text-brand-accent" />
+                       Alcance de Acceso
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {assignedProjects.length > 0 ? (
+                        assignedProjects.map(p => (
+                          <span key={p.id} className="text-[8px] bg-brand-bg border border-brand-border text-brand-muted font-black px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                            {p.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-white font-bold uppercase">Todas las obras</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                {row.isPending ? (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-black text-amber-400 uppercase tracking-widest bg-amber-950/20 px-2 py-0.5 rounded border border-amber-900">
-                    Invitado
-                  </span>
-                ) : (
-                  <StatusPill status={row.active ? 'Active' : 'Paused'} />
+
+                {row.isPending && (
+                  <div className="pt-2 border-t border-brand-border/50 flex items-center justify-end">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/?invite=${row.code}`);
+                        toast.success('Link copiado');
+                      }}
+                      className="flex items-center gap-2 text-[10px] font-black uppercase text-brand-accent hover:text-white transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar Magic Link</span>
+                    </button>
+                  </div>
                 )}
               </div>
-
-              <div className="flex flex-col space-y-2 text-xs">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Rol de Acceso</span>
-                  <span className="font-bold text-slate-200 uppercase">
-                    {row.role === 'MAIN_CONTRACTOR_ADMIN' ? 'Administrador' : row.role === 'SITE_MANAGER' ? 'Jefe de Obra' : 'Subcontrata'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Proyectos con Acceso</span>
-                  <div className="flex flex-wrap gap-1">
-                    {assignedProjects.length > 0 ? (
-                      assignedProjects.map(p => (
-                        <span key={p.id} className="text-[9px] bg-slate-950 border border-slate-800 text-slate-300 font-bold px-2 py-0.5 rounded-md">
-                          {p.name}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Todas las obras</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {row.isPending && (
-                <div className="pt-2 border-t border-slate-800/60 flex items-center justify-end">
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/?invite=${row.code}`);
-                      toast.success('¡Magic link copiado!');
-                    }}
-                    className="px-3 py-1.5 bg-slate-950 border border-slate-800 text-[10px] font-black uppercase tracking-widest text-brand-accent hover:bg-slate-900 rounded-lg cursor-pointer transition-all flex items-center gap-1.5"
-                  >
-                    <span>Copiar Link de Invitación</span>
-                  </button>
-                </div>
-              )}
             </div>
           );
         })}
+
+        {combined.length === 0 && (
+          <div className="md:col-span-2 lg:col-span-3 card p-16 text-center flex flex-col items-center gap-4 border-dashed border-brand-border">
+            <div className="w-20 h-20 rounded-3xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-muted opacity-30">
+              <ShieldAlert className="w-10 h-10" />
+            </div>
+            <p className="text-sm font-bold text-brand-muted uppercase tracking-widest">Sin usuarios registrados</p>
+          </div>
+        )}
       </div>
 
-      {/* Invite Modal Form */}
+      {/* Invite Modal Overhaul */}
       <Modal
         isOpen={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
-        title={createdInviteResult ? "Invitación Generada" : "Nueva Invitación de Acceso"}
+        title={createdInviteResult ? "Invitación Generada" : "Invitar Colaborador"}
       >
         {createdInviteResult ? (
-          <div className="space-y-4 text-center text-slate-300">
-            <div className="w-12 h-12 rounded-lg bg-emerald-950/40 border border-emerald-900 flex items-center justify-center mx-auto text-emerald-400">
-              <CheckCircle2 className="w-6 h-6 animate-pulse" />
+          <div className="space-y-6 p-4 text-center">
+            <div className="w-20 h-20 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto text-emerald-500">
+              <CheckCircle2 className="w-10 h-10" />
             </div>
             <div>
-              <h3 className="text-xs font-black uppercase text-slate-200">¡Invitación Registrada!</h3>
-              <p className="text-[11px] text-slate-500 mt-1">Comparte este link para el registro automático.</p>
+              <h3 className="text-lg font-display font-black uppercase text-white tracking-tight">¡Invitación Registrada!</h3>
+              <p className="text-xs text-brand-muted mt-1 font-medium">Comparte este enlace para permitir el registro automático.</p>
             </div>
-            <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-left space-y-2 font-mono text-[10px]">
-              <div><strong>Invitado:</strong> {createdInviteResult.email}</div>
-              <div><strong>Enlace:</strong> {createdInviteResult.magicLink}</div>
+            
+            <div className="space-y-4 text-left">
+               <div className="card p-4 bg-brand-bg/50 space-y-3">
+                  <div>
+                    <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-1">Destinatario</div>
+                    <div className="text-sm font-bold text-white truncate">{createdInviteResult.email}</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest mb-1">Enlace de Registro</div>
+                    <div className="flex items-center gap-2">
+                       <code className="text-[10px] bg-brand-bg p-2 rounded border border-brand-border flex-1 truncate text-brand-accent font-mono">
+                         {createdInviteResult.magicLink}
+                       </code>
+                       <button 
+                         onClick={() => {
+                            navigator.clipboard.writeText(createdInviteResult.magicLink);
+                            toast.success('Copiado');
+                         }}
+                         className="p-2 rounded bg-brand-accent text-white"
+                       >
+                         <Copy className="w-4 h-4" />
+                       </button>
+                    </div>
+                  </div>
+               </div>
             </div>
+
             <button
               onClick={() => setInviteModalOpen(false)}
-              className="w-full py-2 bg-brand-accent text-white text-xs font-black uppercase tracking-widest rounded-lg"
+              className="btn-primary w-full h-12"
             >
-              Listo
+              Finalizar Proceso
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSendInvitation} className="space-y-4 text-slate-300">
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">Email del Colaborador</label>
-              <input
-                type="email"
-                required
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="ej: jefe@obra.es"
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200"
-              />
+          <form onSubmit={handleSendInvitation} className="space-y-5 p-2">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Email Profesional</label>
+              <div className="relative">
+                 <Mail className="w-4 h-4 text-brand-muted absolute left-4 top-1/2 -translate-y-1/2" />
+                 <input
+                   type="email"
+                   required
+                   value={inviteEmail}
+                   onChange={(e) => setInviteEmail(e.target.value)}
+                   placeholder="colaborador@constructora.com"
+                   className="input pl-11"
+                 />
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">Rol Autorizado</label>
-              <select
-                value={inviteRole}
-                onChange={(e) => setInviteRole(e.target.value as any)}
-                className="w-full bg-[#18181B] border border-[#27272A] rounded-lg px-3 py-2 text-xs font-bold text-white [&>option]:bg-[#18181B] [&>option]:text-white"
-              >
-                <option value="SITE_MANAGER">Jefe de Obra (SITE MANAGER)</option>
-                <option value="SUBCONTRACTOR_USER">Usuario Subcontrata</option>
-              </select>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Rol de Acceso</label>
+              <div className="relative">
+                 <Key className="w-4 h-4 text-brand-muted absolute left-4 top-1/2 -translate-y-1/2" />
+                 <select
+                   value={inviteRole}
+                   onChange={(e) => setInviteRole(e.target.value as any)}
+                   className="select pl-11"
+                 >
+                   <option value="SITE_MANAGER">Jefe de Obra (Manager)</option>
+                   <option value="SUBCONTRACTOR_USER">Usuario Subcontrata</option>
+                 </select>
+              </div>
+            </div>
+
+            <div className="p-4 bg-brand-accent/5 border border-brand-accent/10 rounded-2xl flex gap-4">
+               <div className="w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center text-brand-accent shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
+               </div>
+               <p className="text-[11px] text-brand-muted font-medium leading-relaxed">
+                 Al invitar, el usuario podrá registrarse sin aprobación manual y accederá a los proyectos seleccionados por defecto.
+               </p>
             </div>
 
             <button
               type="submit"
               disabled={isInviting}
-              className="w-full py-2.5 bg-brand-accent text-white text-xs font-black uppercase tracking-widest rounded-lg flex items-center justify-center gap-2 cursor-pointer"
+              className="btn-primary w-full h-12"
             >
-              {isInviting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Generar Magic Link'}
+              {isInviting ? <RefreshCw className="w-5 h-5 animate-spin" /> : 'Generar Invitación Digital'}
             </button>
           </form>
         )}

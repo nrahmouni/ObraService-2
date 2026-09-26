@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CheckCircle2, AlertTriangle, Printer, FileCheck2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, Printer, FileCheck2, ShieldAlert, Clock, UserCheck, Calendar, MapPin, Lock, FileDown, Building2 } from 'lucide-react';
 import { DeliveryNote, DisputeCategory } from '../../types';
-import { Table } from '../ui/Table';
 import { Modal } from '../ui/Modal';
 import { toast } from 'react-hot-toast';
 import { exportDeliveryNoteToPDF } from '../../utils/deliveryPdf';
 import { obraStore } from '../../services/store';
+import { Badge } from '../ui/Badge';
 
 interface DeliveryNoteDetailProps {
   note: DeliveryNote;
@@ -41,7 +41,7 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
   const handleConfirm = () => {
     const res = obraStore.confirmDeliveryNote(note.id);
     if (res.success) {
-      toast.success('Albarán confirmado y certificado digitalmente.');
+      toast.success('Albarán confirmado y certificado.');
       const updated = obraStore.getState().deliveryNotes.find(n => n.id === note.id);
       if (updated) onRefreshNote(updated);
     } else {
@@ -57,7 +57,7 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
       proposedNormalHours: proposedHours
     });
     if (res.success) {
-      toast.success('Disputa registrada y enviada a revisión.');
+      toast.success('Disputa enviada a revisión.');
       setDisputeOpen(false);
       const updated = obraStore.getState().deliveryNotes.find(n => n.id === note.id);
       if (updated) onRefreshNote(updated);
@@ -75,7 +75,7 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
       adjustedExtraHours: note.extraHours
     });
     if (res.success) {
-      toast.success(`Disputa resuelta como "${resolutionAction}".`);
+      toast.success(`Disputa resuelta.`);
       setResolveOpen(false);
       const updated = obraStore.getState().deliveryNotes.find(n => n.id === note.id);
       if (updated) onRefreshNote(updated);
@@ -85,197 +85,266 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
   };
 
   return (
-    <div className="space-y-6 font-sans text-slate-300">
-      {/* Back button */}
-      <button 
-        onClick={onBack}
-        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-accent transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Volver a Albaranes</span>
-      </button>
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-muted hover:text-brand-accent transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Volver al Listado</span>
+        </button>
 
-      {/* Ticket Container */}
-      <div className="bg-[#0F172A] border border-slate-800 rounded-xl overflow-hidden shadow-xl p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
-          <div>
-            <span className="text-[10px] font-black text-brand-accent uppercase tracking-widest block">Código Albarán</span>
-            <h1 className="text-xl font-black text-slate-200 mt-1">{note.code}</h1>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => exportDeliveryNoteToPDF(note)}
-              className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition-all cursor-pointer flex items-center gap-2"
-              title="Exportar a PDF"
-            >
-              <Printer className="w-4 h-4" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Exportar PDF</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Info Linear Stack */}
-        <div className="flex flex-col space-y-2 bg-[#18181B] p-4 rounded-xl border border-[#27272A]">
-          <div>
-            <span className="text-[9px] font-black text-slate-500 uppercase block">Subcontrata</span>
-            <span className="text-xs font-black text-slate-200 uppercase block mt-1">{note.subcontractorCompanyName}</span>
-          </div>
-          <div>
-            <span className="text-[9px] font-black text-slate-500 uppercase block">Obra de Trabajo</span>
-            <span className="text-xs font-black text-slate-200 uppercase block mt-1">{note.projectNameSnapshot}</span>
-          </div>
-          <div>
-            <span className="text-[9px] font-black text-slate-500 uppercase block">Fecha Jornada</span>
-            <span className="text-xs font-black text-slate-200 uppercase block mt-1">{note.date}</span>
-          </div>
-          <div>
-            <span className="text-[9px] font-black text-slate-500 uppercase block">Suma Horas</span>
-            <span className="text-xs font-black text-brand-accent uppercase block mt-1">{note.totalHours} H</span>
-          </div>
-        </div>
-
-        {/* Worker Hours Breakdown */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Detalle de Cuadrilla Imputada</h3>
-          <div className="flex flex-col space-y-2">
-            {note.workEntries?.map((entry, idx) => (
-              <div key={idx} className="border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col space-y-2 text-xs">
-                <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
-                  <span className="font-black text-slate-100 uppercase">{entry.workerNameSnapshot}</span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">{entry.workerCategorySnapshot}</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] pt-1">
-                  <div className="text-slate-400 font-medium">
-                    Horas: <span className="font-bold text-slate-200">{entry.normalHours}h norm</span> + <span className="font-bold text-slate-200">{entry.extraHours}h ext</span>
-                  </div>
-                  <div className="font-black text-brand-accent font-mono text-xs">
-                    Total: {entry.totalHours} H
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Status Certification Stamps */}
-        <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
-            {note.status === 'Confirmed' ? (
-              <span className="text-emerald-400">✓ CERTIFICADO DIGITALMENTE</span>
-            ) : note.status === 'Disputed' ? (
-              <span className="text-rose-400">⚠️ ALBARÁN DISPUTADO</span>
-            ) : (
-              <span className="text-amber-400">⌛ PENDIENTE DE FIRMA DIGITAL</span>
-            )}
-          </div>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            {note.status === 'Confirmed'
-              ? `Certificado formalmente por el representante subcontrata ${note.confirmationDetails?.confirmedByUserName} el ${new Date(note.confirmationDetails?.confirmedAt || '').toLocaleDateString()}.`
-              : note.status === 'Disputed'
-              ? `El contratista principal ha levantado una disputa por: ${note.disputeRecord?.reason || note.dispute?.reason || ''}. Horas propuestas: ${note.disputeRecord?.proposedNormalHours || note.dispute?.proposedNormalHours || ''} H.`
-              : `Este documento representa el pre-albarán diario y requiere firma inmutable del representante para certificar el tajo.`}
-          </p>
-
-          <div className="pt-2 flex flex-wrap gap-2">
-            {note.status === 'Pending' && isSubcontractor && (
-              <button 
-                onClick={handleConfirm}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest rounded-lg cursor-pointer"
-              >
-                Firma Digital Certificada
-              </button>
-            )}
-
-            {note.status === 'Pending' && (isAdmin || isSiteManager) && (
-              <button 
-                onClick={() => setDisputeOpen(true)}
-                className="px-4 py-2 bg-rose-950/60 border border-rose-900 text-rose-400 hover:bg-rose-900 text-xs font-black uppercase tracking-widest rounded-lg cursor-pointer"
-              >
-                Disputar Horas
-              </button>
-            )}
-
-            {note.status === 'Disputed' && isAdmin && (
-              <button 
-                onClick={() => setResolveOpen(true)}
-                className="px-4 py-2 bg-brand-accent hover:bg-brand-accent/90 text-white text-xs font-black uppercase tracking-widest rounded-lg cursor-pointer"
-              >
-                Resolver Disputa
-              </button>
-            )}
-          </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportDeliveryNoteToPDF(note)}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-brand-surface border border-brand-border text-brand-muted hover:text-white hover:border-brand-accent transition-all"
+            title="Exportar PDF"
+          >
+            <FileDown className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      {/* Disputing Modal */}
-      <Modal isOpen={disputeOpen} onClose={() => setDisputeOpen(false)} title="Levantar Disputa de Horas">
-        <form onSubmit={handleDisputeSubmit} className="space-y-4 text-slate-300">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Motivo de Discrepancia</label>
+      {/* Main Ticket Layout */}
+      <div className="card overflow-hidden border-brand-accent/20 bg-brand-bg/50 backdrop-blur-sm">
+        {/* Ticket Header Banner */}
+        <div className="p-4 sm:p-8 border-b border-brand-border flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 relative overflow-hidden">
+           {/* Background Accent */}
+           <div className="absolute top-0 right-0 w-64 h-64 bg-brand-accent/5 rounded-full blur-3xl -mr-32 -mt-32" />
+           
+           <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-2">
+                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent shrink-0">
+                    <FileCheck2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                 </div>
+                 <div>
+                    <h1 className="text-xl sm:text-2xl font-display font-black text-white uppercase tracking-tight">{note.code}</h1>
+                    <div className="flex items-center gap-2 mt-0.5">
+                       <Badge status={note.status} className="text-[9px] uppercase" />
+                       <span className="text-[10px] font-bold text-brand-muted uppercase">{note.date}</span>
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           <div className="relative z-10 flex flex-col items-start md:items-end gap-0.5 sm:gap-1">
+              <div className="text-[9px] sm:text-[10px] font-black text-brand-muted uppercase tracking-[0.15em] sm:tracking-[0.2em]">Suma Total Certificada</div>
+              <div className="text-3xl sm:text-4xl font-display font-black text-white font-mono tracking-tighter">
+                {note.totalHours}<span className="text-brand-accent text-xl ml-1">H</span>
+              </div>
+           </div>
+        </div>
+
+        <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+           {/* Context Grid */}
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-3 sm:space-y-4">
+                 <div className="space-y-1">
+                    <div className="text-[10px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-2">
+                       <Building2 className="w-3.5 h-3.5 text-brand-accent" />
+                       Subcontratista
+                    </div>
+                    <div className="text-xs sm:text-sm font-black text-white uppercase">{note.subcontractorCompanyName}</div>
+                 </div>
+                 <div className="space-y-1">
+                    <div className="text-[10px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-2">
+                       <MapPin className="w-3.5 h-3.5 text-brand-accent" />
+                       Obra / Proyecto
+                    </div>
+                    <div className="text-xs sm:text-sm font-black text-white uppercase">{note.projectNameSnapshot}</div>
+                 </div>
+              </div>
+
+              <div className="space-y-3 sm:space-y-4 md:text-right">
+                 <div className="space-y-1">
+                    <div className="text-[10px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-2 md:justify-end">
+                       <Calendar className="w-3.5 h-3.5 text-brand-accent" />
+                       Fecha del Tajo
+                    </div>
+                    <div className="text-xs sm:text-sm font-black text-white">{note.date}</div>
+                 </div>
+                 <div className="space-y-1">
+                    <div className="text-[10px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-2 md:justify-end">
+                       <Clock className="w-3.5 h-3.5 text-brand-accent" />
+                       Desglose
+                    </div>
+                    <div className="text-xs sm:text-sm font-black text-white">
+                      {note.normalHours}N + <span className="text-brand-accent">{note.extraHours}E</span>
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           {/* Workers List */}
+           <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-xs font-black text-brand-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-brand-accent" />
+                Cuadrilla Imputada
+              </h3>
+              <div className="card overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-brand-border bg-brand-surface/30">
+                      <th className="px-3 sm:px-6 py-2.5 sm:py-3 text-[9px] sm:text-[10px] font-black text-brand-muted uppercase tracking-wider sm:tracking-widest">Operario / Categoría</th>
+                      <th className="px-3 sm:px-6 py-2.5 sm:py-3 text-[9px] sm:text-[10px] font-black text-brand-muted uppercase tracking-wider sm:tracking-widest text-right">Horas Certificadas</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-brand-border/50">
+                    {note.workEntries?.map((entry, idx) => (
+                      <tr key={idx} className="hover:bg-brand-bg/20 transition-colors">
+                        <td className="px-3 sm:px-6 py-3 sm:py-4">
+                          <div className="text-xs font-bold text-white uppercase">{entry.workerNameSnapshot}</div>
+                          <div className="text-[10px] font-medium text-brand-muted mt-0.5 uppercase tracking-wider">
+                            {entry.workerCategorySnapshot}
+                          </div>
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                           <div className="text-sm font-black text-white font-mono">{entry.totalHours}h</div>
+                           <div className="text-[9px] font-bold text-brand-muted mt-0.5">
+                             {entry.normalHours}N + <span className="text-brand-accent">{entry.extraHours}E</span>
+                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+           </div>
+
+           {/* Status & Certification Alert */}
+           <div className={`card p-4 sm:p-6 border-l-4 ${
+              note.status === 'Confirmed' ? 'border-emerald-500 bg-emerald-500/5' : 
+              note.status === 'Disputed' ? 'border-rose-500 bg-rose-500/5' : 
+              'border-amber-500 bg-amber-500/5'
+           }`}>
+              <div className="flex items-start gap-3 sm:gap-4">
+                 <div className="mt-1 shrink-0">
+                    {note.status === 'Confirmed' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> :
+                     note.status === 'Disputed' ? <AlertTriangle className="w-5 h-5 text-rose-500" /> :
+                     <ShieldAlert className="w-5 h-5 text-amber-500" />}
+                 </div>
+                 <div className="flex-1 space-y-1">
+                    <h4 className="text-xs font-black text-white uppercase tracking-tight">
+                       {note.status === 'Confirmed' ? 'Certificación Digital Completada' :
+                        note.status === 'Disputed' ? 'Albarán bajo Disputa' :
+                        'Pendiente de Validación por el Proveedor'}
+                    </h4>
+                    <p className="text-xs text-brand-muted font-medium leading-relaxed">
+                      {note.status === 'Confirmed'
+                        ? `Albarán firmado electrónicamente por ${note.confirmationDetails?.confirmedByUserName} el ${new Date(note.confirmationDetails?.confirmedAt || '').toLocaleDateString()}. Este registro es ahora inmutable para facturación.`
+                        : note.status === 'Disputed'
+                        ? `Disputa levantada por la dirección de obra. Motivo: ${note.disputeRecord?.reason || note.dispute?.reason || ''}. Auditoría propuesta: ${note.disputeRecord?.proposedNormalHours || note.dispute?.proposedNormalHours || ''}H.`
+                        : `Este pre-albarán requiere la firma digital del representante de la subcontrata para formalizar la producción del día.`}
+                    </p>
+                 </div>
+              </div>
+
+              {/* Action Toolbar */}
+              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                {note.status === 'Pending' && isSubcontractor && (
+                  <button 
+                    onClick={handleConfirm}
+                    className="btn-primary h-11 px-8 bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20 w-full sm:w-auto justify-center"
+                  >
+                    <Lock className="w-4 h-4" />
+                    <span>Firmar Digitalmente</span>
+                  </button>
+                )}
+
+                {note.status === 'Pending' && (isAdmin || isSiteManager) && (
+                  <button 
+                    onClick={() => setDisputeOpen(true)}
+                    className="btn-primary h-11 px-8 bg-rose-600 hover:bg-rose-700 shadow-rose-900/20 w-full sm:w-auto justify-center"
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Levantar Disputa</span>
+                  </button>
+                )}
+
+                {note.status === 'Disputed' && isAdmin && (
+                  <button 
+                    onClick={() => setResolveOpen(true)}
+                    className="btn-primary h-11 px-8 w-full sm:w-auto justify-center"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Resolver Auditoría</span>
+                  </button>
+                )}
+              </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Modals for Dispute and Resolution */}
+      <Modal isOpen={disputeOpen} onClose={() => setDisputeOpen(false)} title="Disputar Horas de Albarán">
+        <form onSubmit={handleDisputeSubmit} className="space-y-5 p-2">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block">Motivo Técnico</label>
             <select
               value={disputeCategory}
               onChange={(e) => setDisputeCategory(e.target.value as DisputeCategory)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200"
+              className="select"
             >
-              <option value="HORAS_INCORRECTAS">Exceso en cómputo de horas</option>
-              <option value="AUSENCIA_FALTA">Ausencia de personal listado</option>
-              <option value="TRABAJO_NO_REALIZADO">Tajo incompleto o deficiente</option>
+              <option value="HORAS_INCORRECTAS">Exceso de jornada reportada</option>
+              <option value="AUSENCIA_FALTA">Operario no presente en tajo</option>
+              <option value="TRABAJO_NO_REALIZADO">Ejecución incompleta o rechazada</option>
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Horas Propuestas de Auditoría</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block">Horas Propuestas (Auditoría)</label>
             <input
               type="number"
               value={proposedHours}
               onChange={(e) => setProposedHours(parseFloat(e.target.value) || 0)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 font-mono"
+              className="input font-mono"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Explicación Detallada</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block">Justificación Detallada</label>
             <textarea
               value={disputeReason}
               onChange={(e) => setDisputeReason(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 h-20"
+              className="input min-h-[100px] py-3"
               required
             />
           </div>
 
-          <button type="submit" className="w-full py-2 bg-rose-600 text-white text-xs font-black uppercase tracking-widest rounded-lg">
-            Registrar Incidencia
+          <button type="submit" className="btn-primary w-full h-12 bg-rose-600 hover:bg-rose-700">
+            Confirmar Disputa
           </button>
         </form>
       </Modal>
 
-      {/* Resolution Modal */}
-      <Modal isOpen={resolveOpen} onClose={() => setResolveOpen(false)} title="Resolución de Disputa">
-        <form onSubmit={handleResolveSubmit} className="space-y-4 text-slate-300">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Acción Final</label>
+      <Modal isOpen={resolveOpen} onClose={() => setResolveOpen(false)} title="Resolución de Auditoría">
+        <form onSubmit={handleResolveSubmit} className="space-y-5 p-2">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block">Acción Final</label>
             <select
               value={resolutionAction}
               onChange={(e) => setResolutionAction(e.target.value as any)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200"
+              className="select"
             >
               <option value="Aceptada">Aceptar albarán con corrección de horas</option>
-              <option value="Rechazada">Rechazar albarán por completo</option>
+              <option value="Rechazada">Desestimar albarán por completo</option>
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Nota de Resolución</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block">Resolución de Facturación</label>
             <textarea
               value={resolutionNote}
               onChange={(e) => setResolutionNote(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 h-20"
+              className="input min-h-[100px] py-3"
               required
             />
           </div>
 
-          <button type="submit" className="w-full py-2 bg-brand-accent text-white text-xs font-black uppercase tracking-widest rounded-lg">
-            Aplicar Resolución
+          <button type="submit" className="btn-primary w-full h-12">
+            Aplicar Resolución Final
           </button>
         </form>
       </Modal>

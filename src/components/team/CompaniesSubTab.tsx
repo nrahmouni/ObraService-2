@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Building2, Plus, Sparkles, RefreshCw } from 'lucide-react';
+import { Building2, Plus, Sparkles, RefreshCw, IdCard, MapPin, Hash, Trash2, Edit2, X } from 'lucide-react';
 import { AppState, Company } from '../../types';
 import { obraStore } from '../../services/store';
-import { Table } from '../ui/Table';
 import { Modal } from '../ui/Modal';
 import { toast } from 'react-hot-toast';
+import { Badge } from '../ui/Badge';
 
 interface CompaniesSubTabProps {
   state: AppState;
@@ -35,11 +35,11 @@ export const CompaniesSubTab: React.FC<CompaniesSubTabProps> = ({ state, searchQ
     setFormError('');
 
     if (!name.trim() || name.trim().length < 3) {
-      setFormError('La razón social de la subcontrata es obligatoria (mínimo 3 caracteres).');
+      setFormError('Nombre inválido.');
       return;
     }
     if (!taxId.trim() || taxId.trim().length < 6) {
-      setFormError('El CIF/NIF de la subcontrata debe ser válido (mínimo 6 caracteres).');
+      setFormError('CIF inválido.');
       return;
     }
 
@@ -52,56 +52,85 @@ export const CompaniesSubTab: React.FC<CompaniesSubTabProps> = ({ state, searchQ
       });
 
       if (res.success) {
-        toast.success(`Empresa "${name.trim()}" dada de alta correctamente.`);
+        toast.success(`Empresa registrada: ${name.trim()}`);
         setModalOpen(false);
         setName('');
         setTaxId('');
         setAddress('');
       } else {
-        setFormError(res.error || 'Error al guardar la empresa.');
+        setFormError(res.error || 'Error al guardar.');
       }
       setIsSaving(false);
     }, 400);
   };
 
   return (
-    <div className="space-y-4 font-sans text-slate-300">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <span className="text-xs font-black uppercase tracking-widest text-slate-400">
-          Empresas Contratistas y Subcontratas Homologadas ({list.length})
-        </span>
-
+    <div className="space-y-6 animate-in fade-in">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-black text-brand-muted uppercase tracking-[0.2em]">Proveedores y Subcontratas</h2>
+        
         {isAdmin && (
-          <button
-            onClick={() => setModalOpen(true)}
-            className="self-start sm:self-auto bg-[#10B981] hover:bg-[#10B981]/90 text-white px-4 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg flex items-center gap-2 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Homologar Subcontrata</span>
+          <button onClick={() => setModalOpen(true)} className="btn-primary h-10 px-6 bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20">
+            <Plus className="w-4 h-4" />
+            <span>Homologar Empresa</span>
           </button>
         )}
       </div>
 
-      {/* Companies Linear List */}
-      <div className="flex flex-col space-y-3">
+      {/* Companies Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {list.map(c => (
-          <div key={c.id} className="bg-[#0F172A] border border-slate-800 rounded-xl p-4 shadow-xl hover:border-brand-accent/30 transition-all group">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 group-hover:text-brand-accent transition-colors">
-                <Building2 className="w-5 h-5" />
+          <div key={c.id} className="card group hover:border-brand-accent/40 transition-all duration-300">
+            <div className="p-5 space-y-5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent group-hover:bg-brand-accent group-hover:text-white transition-all">
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div className="max-w-[140px]">
+                    <div className="text-sm font-black text-white uppercase tracking-tight group-hover:text-brand-accent transition-colors truncate">
+                      {c.name}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-brand-muted uppercase">
+                      <IdCard className="w-3 h-3 text-brand-accent" />
+                      <span>{c.taxId}</span>
+                    </div>
+                  </div>
+                </div>
+                <Badge status={c.type === 'MAIN_CONTRACTOR' ? 'Active' : 'Paused'} className="text-[9px] px-2 py-0.5 rounded uppercase font-black">
+                  {c.type === 'MAIN_CONTRACTOR' ? 'Contratista' : 'Subcontrata'}
+                </Badge>
               </div>
-              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
-                c.type === 'MAIN_CONTRACTOR' 
-                  ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' 
-                  : 'bg-slate-950 border-slate-800 text-slate-400'
-              }`}>
-                {c.type === 'MAIN_CONTRACTOR' ? 'Contratista' : 'Subcontrata'}
-              </span>
-            </div>
-            <h3 className="text-sm font-black text-slate-200 uppercase tracking-tight truncate">{c.name}</h3>
-            <div className="mt-3 space-y-1.5 font-mono text-[10px] text-slate-400">
-              <div><span className="text-slate-600 font-bold">TAX ID:</span> {c.taxId}</div>
-              <div><span className="text-slate-600 font-bold">CÓDIGO:</span> <span className="text-brand-accent font-bold">{c.inviteCode}</span></div>
+
+              <div className="pt-4 border-t border-brand-border/50 space-y-3">
+                <div className="flex items-center justify-between">
+                   <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
+                      <Hash className="w-3 h-3 text-brand-accent" />
+                      Código Acceso
+                   </div>
+                   <div className="text-[10px] font-black text-brand-accent font-mono bg-brand-accent/5 px-2 py-0.5 rounded border border-brand-accent/10">
+                      {c.inviteCode}
+                   </div>
+                </div>
+
+                <div className="space-y-1">
+                   <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
+                      <MapPin className="w-3 h-3 text-brand-accent" />
+                      Sede Social
+                   </div>
+                   <div className="text-[10px] font-medium text-brand-muted truncate uppercase">
+                      {c.address || 'No declarada'}
+                   </div>
+                </div>
+              </div>
+
+              {isAdmin && c.type !== 'MAIN_CONTRACTOR' && (
+                <div className="pt-2 flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button className="w-8 h-8 rounded-lg bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-accent transition-colors flex items-center justify-center">
+                      <Edit2 className="w-3.5 h-3.5" />
+                   </button>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -110,56 +139,57 @@ export const CompaniesSubTab: React.FC<CompaniesSubTabProps> = ({ state, searchQ
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Homologar Nueva Empresa Subcontratista"
+        title="Homologar Subcontrata"
       >
-        <form onSubmit={handleCreate} className="space-y-4">
+        <form onSubmit={handleCreate} className="space-y-5 p-2">
           {formError && (
-            <div className="p-3 bg-rose-950/40 border border-rose-900 rounded-lg text-xs font-bold text-rose-400 uppercase">
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
+              <X className="w-4 h-4" />
               {formError}
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Razón Social</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Razón Social</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej. Estructuras y Forjados S.L."
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 uppercase"
+              placeholder="Estructuras y Forjados S.L."
+              className="input uppercase"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Identificación Fiscal (CIF / NIF)</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">CIF / NIF</label>
             <input
               type="text"
               required
               value={taxId}
               onChange={(e) => setTaxId(e.target.value)}
-              placeholder="Ej. B12345678"
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 uppercase"
+              placeholder="B12345678"
+              className="input font-mono uppercase"
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Domicilio Social</label>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Domicilio Social</label>
             <input
               type="text"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="Ej. Av. de la Innovación 14, Sevilla"
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-bold text-slate-200 uppercase"
+              placeholder="Av. de la Innovación 14, Sevilla"
+              className="input uppercase"
             />
           </div>
 
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full py-3 bg-[#10B981] hover:bg-[#10B981]/90 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
+            className="btn-primary w-full h-12 bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20 mt-4"
           >
-            {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Homologar Empresa'}
+            {isSaving ? <RefreshCw className="w-5 h-5 animate-spin" /> : 'Confirmar Homologación'}
           </button>
         </form>
       </Modal>

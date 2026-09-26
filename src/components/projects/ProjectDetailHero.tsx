@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Users, Building2, MapPin, Trash2, Pause, Play } from 'lucide-react';
+import { ArrowLeft, Users, Building2, MapPin, Trash2, Pause, Play, ChevronLeft } from 'lucide-react';
 import { Project } from '../../types';
 
 interface ProjectDetailHeroProps {
@@ -24,35 +24,37 @@ export const ProjectDetailHero: React.FC<ProjectDetailHeroProps> = ({
   const isActive = selectedProject.status === 'Active';
 
   return (
-    <div className="space-y-4 font-sans">
-      {/* Top Navigation Bar: Clean and direct */}
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Top Breadcrumb & Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-colors cursor-pointer border border-white/10"
+          className="group flex items-center gap-2 text-brand-muted hover:text-white transition-colors"
         >
-          <ArrowLeft className="w-4 h-4 text-[#FF6600]" />
-          <span>Volver a Obras</span>
+          <div className="w-8 h-8 rounded-lg bg-brand-surface border border-brand-border flex items-center justify-center group-hover:border-brand-accent transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-black uppercase tracking-widest">Volver a Obras</span>
         </button>
 
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => onToggleStatus(e, selectedProject)}
-            className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer border ${
+            className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border ${
               isActive
-                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25'
-                : 'bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25'
+                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
             }`}
           >
             {isActive ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>Obra Activa</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5" />
-                <span>Reanudar Obra</span>
+                <Play className="w-3 h-3 fill-current" />
+                <span>Reanudar</span>
               </>
             )}
           </button>
@@ -60,7 +62,7 @@ export const ProjectDetailHero: React.FC<ProjectDetailHeroProps> = ({
           {isAdmin && (
             <button
               onClick={() => onDeleteProject(selectedProject.id, selectedProject.name)}
-              className="p-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition-colors cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 transition-all"
               title="Eliminar Obra"
             >
               <Trash2 className="w-4 h-4" />
@@ -69,50 +71,50 @@ export const ProjectDetailHero: React.FC<ProjectDetailHeroProps> = ({
         </div>
       </div>
 
-      {/* Main Obra Info Card: Linear, high contrast, clean */}
-      <div className="bg-[#0B101D] border border-white/15 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 rounded-lg bg-[#FF6600]/20 text-[#FF6600] font-mono text-xs font-black">
-                {selectedProject.code}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-white/10 text-slate-300 text-xs font-bold">
-                {selectedProject.projectType || 'Edificación'}
-              </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white font-display uppercase tracking-tight mt-2">
-              {selectedProject.name}
-            </h1>
-            {selectedProject.client && (
-              <div className="flex items-center gap-1.5 text-xs text-amber-400 font-bold">
-                <Building2 className="w-3.5 h-3.5 shrink-0" />
-                <span>Cliente: {selectedProject.client}</span>
+      {/* Main Identity Card */}
+      <div className="card overflow-hidden group">
+        <div className="relative h-48 sm:h-64 overflow-hidden">
+          <img 
+            src={coverUrl} 
+            alt={selectedProject.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/40 to-transparent" />
+          
+          <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded bg-brand-accent text-white font-mono text-[10px] font-black uppercase tracking-widest shadow-lg">
+                  {selectedProject.code}
+                </span>
+                <span className="text-white/60 font-medium text-xs">• {selectedProject.projectType || 'Construcción'}</span>
               </div>
+              <h1 className="text-3xl sm:text-5xl font-display font-black text-white tracking-tight uppercase">
+                {selectedProject.name}
+              </h1>
+              <div className="flex items-center gap-4 text-xs font-medium text-brand-muted">
+                 <div className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-brand-accent" />
+                    <span>{selectedProject.address || 'Ubicación no registrada'}</span>
+                 </div>
+                 {selectedProject.client && (
+                    <div className="flex items-center gap-1.5 border-l border-brand-border pl-4">
+                       <Building2 className="w-4 h-4 text-brand-accent" />
+                       <span>Cliente: <span className="text-white">{selectedProject.client}</span></span>
+                    </div>
+                 )}
+              </div>
+            </div>
+
+            {onNavigateToTeam && (
+              <button
+                onClick={onNavigateToTeam}
+                className="btn-primary h-11 px-6 gap-2 shadow-2xl shadow-brand-accent/30"
+              >
+                <Users className="w-4 h-4" />
+                <span>Gestión de Equipo</span>
+              </button>
             )}
-          </div>
-
-          {onNavigateToTeam && (
-            <button
-              onClick={onNavigateToTeam}
-              className="self-start px-3.5 py-2 rounded-xl bg-[#FF6600] hover:bg-[#FF6600]/90 text-white text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-md shadow-orange-950/40 shrink-0"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Subcontratas & Equipo</span>
-            </button>
-          )}
-        </div>
-
-        {/* Location & GPS Info */}
-        <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-300">
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-[#FF6600] shrink-0" />
-            <span className="font-semibold text-slate-200">
-              {selectedProject.address || selectedProject.location?.address || 'Ubicación registrada'}
-            </span>
-          </div>
-          <div className="text-[11px] font-mono text-amber-300/90 font-bold">
-            Radio GPS: {selectedProject.validationRadiusMeters || 250}m
           </div>
         </div>
       </div>

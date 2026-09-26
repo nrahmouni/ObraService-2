@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { ObraServiceLogo } from './ObraServiceLogo';
 import { LandingFooter } from './landing/LandingFooter';
-import { ShieldCheck, ArrowRight, Menu, X, CheckCircle2, Building2, Sparkles } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Menu, X, Sparkles, Smartphone } from 'lucide-react';
+import { PWAInstallButton } from './PWAInstallButton';
 
 export interface PublicOutletContext {
   onOpenLogin: () => void;
@@ -45,57 +46,46 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         { label: 'Contacto Comercial', href: '/empresa/contacto' },
       ],
     },
-    {
-      label: 'Recursos',
-      items: [
-        { label: 'Documentación API', href: '/recursos/api' },
-        { label: 'Guía de Usuario', href: '/recursos/guia' },
-        { label: 'Integraciones ERP', href: '/integrations' },
-      ],
-    },
   ];
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-[#F8FAFC] flex flex-col font-sans selection:bg-[#FF6600] selection:text-white scroll-smooth antialiased">
+    <div className="min-h-screen bg-brand-bg text-brand-text flex flex-col font-body selection:bg-brand-accent selection:text-white scroll-smooth antialiased">
       {/* Top High-Trust Corporate Strip */}
-      <div className="bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] border-b border-white/5 py-1.5 px-4 text-center text-[11px] font-medium text-slate-300">
+      <div className="bg-brand-surface border-b border-brand-border py-2 px-4 text-center">
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 sm:gap-6 flex-wrap">
-          <span className="flex items-center gap-1.5 text-amber-400 font-bold">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#FF6600]" />
-            SaaS B2B para la Construcción e Ingeniería
+          <span className="flex items-center gap-1.5 text-brand-accent font-bold text-xs uppercase tracking-tight">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            SaaS B2B para la Construcción
           </span>
-          <span className="hidden md:inline text-slate-500">•</span>
-          <span className="hidden md:inline text-slate-400">
-            Conforme a la Ley 32/2006 de Subcontratación y Validez de Albaranes Digitales
+          <span className="hidden md:inline text-brand-muted text-xs">•</span>
+          <span className="hidden md:inline text-brand-muted text-xs">
+            Conforme a la Ley 32/2006 de Subcontratación
           </span>
-          <span className="hidden sm:inline text-slate-500">•</span>
-          <span className="text-emerald-400 font-bold flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="hidden sm:inline text-brand-muted text-xs">•</span>
+          <span className="text-emerald-500 font-bold flex items-center gap-1 text-xs uppercase tracking-tight">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             +450 Constructoras Activas
           </span>
         </div>
       </div>
 
       {/* Main Sticky Navigation */}
-      <nav className="border-b border-white/10 bg-[#090D16]/90 backdrop-blur-md sticky top-0 z-50 px-4 sm:px-6 py-3.5">
+      <nav className="border-b border-brand-border bg-brand-bg/80 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="shrink-0 flex items-center gap-3 group">
-            <ObraServiceLogo className="w-32 sm:w-40 md:w-44 h-auto" />
-            <span className="hidden xl:inline-flex text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FF6600]/10 text-[#FF6600] border border-[#FF6600]/20">
-              B2B Enterprise
-            </span>
+          <Link to="/" className="shrink-0 flex items-center gap-3" aria-label="ObraService Pro Home">
+            <ObraServiceLogo className="w-32 sm:w-40 h-auto" />
           </Link>
 
           {/* Desktop Nav Links */}
-          <div className="hidden lg:flex items-center gap-7">
+          <div className="hidden lg:flex items-center gap-8">
             {navLinks.map((item) => (
               item.items ? (
-                <div key={item.label} className="group relative py-2">
-                  <button className="text-[11px] font-black uppercase tracking-widest text-slate-300 group-hover:text-[#FF6600] transition-colors flex items-center gap-1 cursor-pointer">
+                <div key={item.label} className="group relative">
+                  <button className="text-[13px] font-semibold text-brand-muted group-hover:text-brand-text transition-colors flex items-center gap-1 cursor-pointer">
                     {item.label}
                     <svg
-                      className="w-3 h-3 transition-transform group-hover:rotate-180 text-slate-400 group-hover:text-[#FF6600]"
+                      className="w-3 h-3 transition-transform group-hover:rotate-180"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -103,13 +93,13 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                    <div className="bg-[#111726] border border-white/15 rounded-2xl p-3 min-w-[220px] shadow-2xl backdrop-blur-xl">
+                  <div className="absolute top-full left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <div className="bg-brand-surface border border-brand-border rounded-xl p-2 min-w-[200px] shadow-2xl">
                       {item.items.map((subItem) => (
                         <Link
                           key={subItem.href}
                           to={subItem.href}
-                          className="block py-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                          className="block py-2 px-3 text-[13px] font-medium text-brand-muted hover:text-brand-text hover:bg-brand-surface-hover rounded-lg transition-all"
                         >
                           {subItem.label}
                         </Link>
@@ -121,10 +111,10 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
                 <Link
                   key={item.label}
                   to={item.href!}
-                  className={`text-[11px] font-black uppercase tracking-widest transition-colors ${
+                  className={`text-[13px] font-semibold transition-colors ${
                     location.pathname === item.href
-                      ? 'text-[#FF6600]'
-                      : 'text-slate-300 hover:text-[#FF6600]'
+                      ? 'text-brand-accent'
+                      : 'text-brand-muted hover:text-brand-text'
                   }`}
                 >
                   {item.label}
@@ -134,94 +124,91 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           </div>
 
           {/* Action CTAs */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={onDemoAccess}
-              className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-slate-200 hover:text-white bg-white/5 border border-white/15 px-3.5 sm:px-4 py-2 rounded-xl hover:bg-white/10 transition-all cursor-pointer active:scale-95"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Probar Demo</span>
-            </button>
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:block">
+              <PWAInstallButton />
+            </div>
 
             <button
               onClick={onOpenLogin}
-              className="text-xs font-bold text-slate-300 hover:text-white px-3 sm:px-4 py-2 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+              className="hidden sm:block text-[13px] font-semibold text-brand-muted hover:text-brand-text transition-colors cursor-pointer"
             >
               Iniciar Sesión
             </button>
 
             <button
               onClick={() => onOpenRegister()}
-              className="flex items-center gap-1.5 bg-[#FF6600] text-white text-xs font-black uppercase tracking-wider px-4 sm:px-5 py-2.5 rounded-xl hover:bg-[#EA580C] transition-all shadow-lg shadow-orange-950/40 cursor-pointer active:scale-95"
+              className="btn-primary gap-2"
             >
-              <span>Empezar Prueba Gratuita</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span>Prueba Gratis</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
 
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-              aria-label="Abrir menú"
+              className="lg:hidden p-2 rounded-lg text-brand-muted hover:text-brand-text hover:bg-brand-surface-hover transition-colors"
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden mt-3 pt-3 border-t border-white/10 space-y-3 pb-2 animate-in fade-in slide-in-from-top-2">
-            <div className="flex flex-col space-y-2 text-xs font-bold text-slate-300">
+          <div className="lg:hidden mt-4 pt-4 border-t border-brand-border space-y-4 pb-4 animate-in fade-in slide-in-from-top-4">
+            <div className="flex flex-col space-y-1">
               <Link
                 to="/producto/que-agilizamos"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10"
+                className="p-3 rounded-lg hover:bg-brand-surface-hover text-sm font-medium"
               >
                 Qué Agilizamos
               </Link>
               <Link
                 to="/producto/como-funciona"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10"
+                className="p-3 rounded-lg hover:bg-brand-surface-hover text-sm font-medium"
               >
                 Cómo Funciona
               </Link>
               <Link
                 to="/precios"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#FF6600]"
+                className="p-3 rounded-lg hover:bg-brand-surface-hover text-sm font-medium text-brand-accent"
               >
                 Planes y Precios
               </Link>
               <Link
                 to="/producto/seguridad"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10"
+                className="p-3 rounded-lg hover:bg-brand-surface-hover text-sm font-medium"
               >
                 Seguridad Jurídica
               </Link>
             </div>
 
-            <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+            <div className="flex flex-col gap-3 pt-4 border-t border-brand-border">
+              <PWAInstallButton />
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   onDemoAccess();
                 }}
-                className="w-full py-2.5 rounded-xl bg-white/10 text-white text-xs font-bold flex items-center justify-center gap-2"
+                className="btn-secondary w-full gap-2"
               >
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                Explorar Demo Interactiva
+                <Sparkles className="w-4 h-4 text-brand-accent" />
+                Demo Interactiva
               </button>
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  onOpenRegister();
+                  onOpenLogin();
                 }}
-                className="w-full py-3 rounded-xl bg-[#FF6600] text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2"
+                className="btn-secondary w-full"
               >
-                Empezar Prueba Gratuita (14 días)
+                Iniciar Sesión
               </button>
             </div>
           </div>
@@ -233,7 +220,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
         <Outlet context={{ onOpenLogin, onOpenRegister, onDemoAccess }} />
       </main>
 
-      {/* Corporate High-Trust Footer */}
       <LandingFooter />
     </div>
   );

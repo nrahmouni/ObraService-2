@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { FileText, Search, Navigation, AlertCircle } from 'lucide-react';
+import { FileText, Search, Navigation, AlertCircle, Clock, MapPin, ChevronRight, History, Calendar, LayoutGrid, Plus } from 'lucide-react';
 import { AppState, DeliveryNote } from '../types';
 import { DeliveryNoteList } from '../components/delivery/DeliveryNoteList';
 import { DeliveryNoteDetail } from '../components/delivery/DeliveryNoteDetail';
+import { NewDeliveryNoteModal } from '../components/delivery/NewDeliveryNoteModal';
 import { ClockInButton } from '../components/ClockInButton';
-import { Table } from '../components/ui/Table';
-import { StatusPill } from '../components/ui/StatusPill';
 import { obraStore } from '../services/store';
 import { toast } from 'react-hot-toast';
 
@@ -19,6 +18,7 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({ state }) =
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
 
   if (!user) return null;
 
@@ -43,7 +43,7 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({ state }) =
   const handleBatchConfirm = () => {
     const res = obraStore.confirmAllPendingDeliveryNotes();
     if (res.success) {
-      toast.success(`¡${res.count} albaranes confirmados en lote con éxito!`);
+      toast.success(`¡${res.count} albaranes confirmados con éxito!`);
     } else {
       toast.error(res.error || 'Error al certificar lote.');
     }
@@ -56,62 +56,75 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({ state }) =
   ).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   return (
-    <div className="space-y-6 font-sans animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* View Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <span className="text-[10px] font-black text-brand-accent uppercase tracking-widest block">
-            Auditoría de Jornadas y Certificación
-          </span>
-          <h1 className="text-2xl font-black uppercase tracking-tight text-slate-100 font-display mt-0.5">
-            Albaranes y Fichajes
-          </h1>
+          <h1 className="text-3xl font-display font-black text-white tracking-tight uppercase">Control de Tajo</h1>
+          <p className="text-brand-muted font-medium mt-1">Gestión de albaranes de certificación y control de presencia.</p>
         </div>
+        <button
+          onClick={() => setIsNewModalOpen(true)}
+          className="btn-primary h-11 px-5 text-xs font-bold gap-2 shrink-0 self-start sm:self-auto cursor-pointer"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Nuevo Albarán</span>
+        </button>
       </div>
+
+      <NewDeliveryNoteModal
+        state={state}
+        isOpen={isNewModalOpen}
+        onClose={() => setIsNewModalOpen(false)}
+      />
 
       {/* Detail Overlay View */}
       {selectedNote ? (
-        <DeliveryNoteDetail 
-          note={selectedNote} 
-          currentUser={user} 
-          onBack={() => setSelectedNote(null)} 
-          onRefreshNote={(updated) => setSelectedNote(updated)} 
-        />
+        <div className="animate-in slide-in-from-right-4 duration-500">
+          <DeliveryNoteDetail 
+            note={selectedNote} 
+            currentUser={user} 
+            onBack={() => setSelectedNote(null)} 
+            onRefreshNote={(updated) => setSelectedNote(updated)} 
+          />
+        </div>
       ) : (
-        <div className="space-y-6">
-          {/* Subtabs Navigation (Fichajes only visible for Site Managers and Admins) */}
+        <div className="space-y-8">
+          {/* Professional Tab Navigation */}
           {!isSubcontractor && (
-            <div className="flex gap-6 border-b border-slate-800">
+            <div className="flex items-center gap-1 p-1 bg-brand-surface border border-brand-border rounded-2xl self-start w-fit">
               <button
                 onClick={() => { setActiveSubTab('albaranes'); setSearchQuery(''); }}
-                className={`pb-3 text-[10px] font-black uppercase tracking-widest border-b-2 cursor-pointer transition-all ${
-                  activeSubTab === 'albaranes' ? 'border-brand-accent text-brand-accent' : 'border-transparent text-slate-400 hover:text-slate-200'
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  activeSubTab === 'albaranes' ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'text-brand-muted hover:text-white hover:bg-brand-bg'
                 }`}
               >
-                Albaranes de Certificación
+                <FileText className="w-4 h-4" />
+                <span>Albaranes</span>
               </button>
               <button
                 onClick={() => { setActiveSubTab('fichajes'); setSearchQuery(''); }}
-                className={`pb-3 text-[10px] font-black uppercase tracking-widest border-b-2 cursor-pointer transition-all ${
-                  activeSubTab === 'fichajes' ? 'border-brand-accent text-brand-accent' : 'border-transparent text-slate-400 hover:text-slate-200'
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  activeSubTab === 'fichajes' ? 'bg-brand-accent text-white shadow-lg shadow-brand-accent/20' : 'text-brand-muted hover:text-white hover:bg-brand-bg'
                 }`}
               >
-                Presencia y Fichajes de Dirección
+                <History className="w-4 h-4" />
+                <span>Presencia GPS</span>
               </button>
             </div>
           )}
 
           {activeSubTab === 'albaranes' ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Search Toolbar */}
-              <div className="relative max-w-sm">
-                <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="relative max-w-md">
+                <Search className="w-4 h-4 text-brand-muted absolute left-4 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="BUSCAR REFERENCIA, PROYECTO..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-200 focus:outline-none focus:border-brand-accent"
+                  placeholder="BUSCAR REFERENCIA, PROYECTO O EMPRESA..."
+                  className="input pl-11 h-11"
                 />
               </div>
 
@@ -128,49 +141,76 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({ state }) =
               />
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* Clock in Button Component */}
-              <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-6 shadow-xl">
-                <ClockInButton state={state} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Clock in Section */}
+              <div className="lg:col-span-1 space-y-6">
+                <div className="card p-6 space-y-6 border-brand-accent/20 bg-brand-accent/5">
+                  <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 rounded-xl bg-brand-accent flex items-center justify-center text-white">
+                        <Clock className="w-5 h-5" />
+                     </div>
+                     <div>
+                        <h3 className="text-sm font-bold text-white uppercase tracking-tight">Registro de Jornada</h3>
+                        <p className="text-[10px] text-brand-muted font-medium mt-0.5">Control de presencia geovallado.</p>
+                     </div>
+                  </div>
+                  <ClockInButton state={state} />
+                </div>
               </div>
 
-              {/* Logs Historial */}
-              <div className="bg-[#0F172A] border border-slate-800 rounded-xl p-6 shadow-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <Navigation className="w-4 h-4 text-brand-accent" />
-                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-200">
-                    Historial Reciente de Presencia Geovallada
-                  </h3>
+              {/* Logs History Section */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="flex items-center justify-between px-2">
+                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-brand-muted">Últimos Fichajes</h3>
+                   <span className="text-[10px] font-bold text-brand-muted bg-brand-surface px-2 py-0.5 rounded border border-brand-border uppercase">Historial</span>
                 </div>
 
-                <div className="flex flex-col space-y-2.5">
+                <div className="space-y-3">
                   {personalLogs.map(log => (
-                    <div key={log.id} className="border border-slate-800 bg-slate-950/60 rounded-xl p-3 flex flex-col space-y-2 text-xs">
-                      <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/60">
-                        <div>
-                          <span className="text-xs font-black text-slate-100 uppercase block">{log.userNameSnapshot}</span>
-                          <span className="text-[9px] font-bold text-slate-400 uppercase">{log.userRoleSnapshot === 'SUBCONTRACTOR_USER' ? 'Operario' : 'Jefe de Obra'} • {log.projectNameSnapshot}</span>
+                    <div key={log.id} className="card p-4 hover:border-brand-accent/40 transition-all group">
+                      <div className="flex items-center justify-between mb-4 pb-4 border-b border-brand-border/50">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${log.status === 'In' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-brand-bg text-brand-muted'} border border-brand-border`}>
+                            <Navigation className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-white uppercase block">{log.userNameSnapshot}</span>
+                            <span className="text-[10px] font-medium text-brand-muted uppercase tracking-tight">
+                              {log.userRoleSnapshot === 'SUBCONTRACTOR_USER' ? 'Operario' : 'Jefe de Obra'} • {log.projectNameSnapshot}
+                            </span>
+                          </div>
                         </div>
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                        <div className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest border ${
                           log.status === 'In' 
-                            ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800' 
-                            : 'bg-slate-950 border-slate-800 text-slate-400'
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                            : 'bg-brand-bg border-brand-border text-brand-muted'
                         }`}>
                           {log.status === 'In' ? 'ENTRADA' : 'SALIDA'}
-                        </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span className="font-mono text-slate-300">{log.lat.toFixed(5)}, {log.lng.toFixed(5)} ({log.distanceMeters.toFixed(1)}m)</span>
-                        <span className="font-mono font-bold text-slate-200">
-                          {new Date(log.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ({new Date(log.timestamp).toLocaleDateString('es-ES')})
-                        </span>
+                      <div className="flex items-center justify-between text-[10px] font-medium">
+                        <div className="flex items-center gap-1.5 text-brand-muted">
+                           <MapPin className="w-3 h-3 text-brand-accent" />
+                           <span className="font-mono">{log.lat.toFixed(5)}, {log.lng.toFixed(5)} ({log.distanceMeters.toFixed(1)}m)</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-brand-muted">
+                           <div className="flex items-center gap-1.5 border-r border-brand-border pr-3">
+                              <Calendar className="w-3 h-3 text-brand-accent" />
+                              <span>{new Date(log.timestamp).toLocaleDateString('es-ES')}</span>
+                           </div>
+                           <div className="flex items-center gap-1.5">
+                              <Clock className="w-3 h-3 text-brand-accent" />
+                              <span className="font-bold text-white">{new Date(log.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+                           </div>
+                        </div>
                       </div>
                     </div>
                   ))}
 
                   {personalLogs.length === 0 && (
-                    <div className="p-8 text-center bg-[#0F172A] border border-slate-800 rounded-xl text-slate-500 text-xs font-bold uppercase tracking-wider">
-                      No hay registros de presencia recientes
+                    <div className="card p-12 flex flex-col items-center text-center gap-4 border-dashed border-brand-border">
+                      <History className="w-10 h-10 text-brand-muted opacity-20" />
+                      <p className="text-xs font-bold text-brand-muted uppercase tracking-widest">Sin registros recientes</p>
                     </div>
                   )}
                 </div>
