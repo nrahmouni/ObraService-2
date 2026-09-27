@@ -148,17 +148,17 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
 
   const isWorker = currentUser.role === Role.WORKER;
   const isSuperAdmin = currentUser.role === Role.SUPER_ADMIN;
-  const basePath = isWorker ? '/mobile' : '/admin';
+  const basePath = location.pathname.startsWith('/mobile') ? '/mobile' : '/admin';
   const announcement = appState.platformSettings?.announcementBanner;
 
   // Role-aware bottom navigation tabs for mobile
   const getMobileBottomItems = () => {
     if (isSuperAdmin) {
       return [
-        { key: 'web-admin', label: 'Tenants', icon: Crown, path: '/admin/web-admin' },
-        { key: 'clients', label: 'CRM', icon: Briefcase, path: '/admin/clients' },
-        { key: 'team', label: 'Empresas', icon: Building2, path: '/admin/team' },
-        { key: 'audit', label: 'Auditoría', icon: History, path: '/admin/audit' },
+        { key: 'web-admin', label: 'Tenants', icon: Crown, path: `${basePath}/web-admin` },
+        { key: 'clients', label: 'CRM', icon: Briefcase, path: `${basePath}/clients` },
+        { key: 'team', label: 'Empresas', icon: Building2, path: `${basePath}/team` },
+        { key: 'audit', label: 'Auditoría', icon: History, path: `${basePath}/audit` },
       ];
     }
     if (isWorker || currentUser.role === 'SUBCONTRACTOR_USER') {

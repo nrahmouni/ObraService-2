@@ -9,25 +9,24 @@ import { LoginView } from './views/LoginView';
 import { InviteAcceptanceView } from './views/InviteAcceptanceView';
 import { AdminShell } from './components/AdminShell';
 import { MobileShell } from './components/MobileShell';
-import { DailyReportWizard } from './views/DailyReportWizard';
 import { ScrollToTop } from './components/ScrollToTop';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import { PublicEntryView } from './views/PublicEntryView';
 import { MasterDashboardView } from './views/MasterDashboardView';
 import { OnboardingView } from './views/OnboardingView';
 import { NotFoundView } from './views/NotFoundView';
-import { toast } from 'react-hot-toast';
+import { useIsMobile } from './hooks/useIsMobile';
 
-const DemoEntryRedirect: React.FC = () => {
+const DemoEntryRedirect: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const navigate = useNavigate();
   useEffect(() => {
     obraStore.enterDemoMode();
-    navigate('/admin/dashboard', { replace: true });
-  }, [navigate]);
+    navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard', { replace: true });
+  }, [navigate, isMobile]);
   return null;
 };
 
-const RootRouteElement: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+const RootRouteElement: React.FC<{ currentUser: any; isMobile: boolean }> = ({ currentUser, isMobile }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -38,11 +37,10 @@ const RootRouteElement: React.FC<{ currentUser: any }> = ({ currentUser }) => {
   }
 
   if (currentUser) {
-    return currentUser.role === Role.WORKER ? (
-      <Navigate to="/mobile/dashboard" replace />
-    ) : (
-      <Navigate to="/admin/dashboard" replace />
-    );
+    if (currentUser.role === Role.WORKER) {
+      return <Navigate to="/mobile/dashboard" replace />;
+    }
+    return <Navigate to={isMobile ? "/mobile/dashboard" : "/admin/dashboard"} replace />;
   }
 
   return (
@@ -53,7 +51,7 @@ const RootRouteElement: React.FC<{ currentUser: any }> = ({ currentUser }) => {
       onDemoAccess={() => {
         obraStore.enterDemoMode();
         toast.success('🚀 Entorno Demo CRM Pro Max activado. Has iniciado sesión como Director General.');
-        navigate('/admin/dashboard');
+        navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard');
       }}
     />
   );
@@ -62,6 +60,9 @@ const RootRouteElement: React.FC<{ currentUser: any }> = ({ currentUser }) => {
 export default function App() {
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>(obraStore.getState());
+  
+  // Robust media query detection forcing mobile layout under 768px
+  const isMobile = useIsMobile(768);
 
   useEffect(() => {
     initializeFirebaseSync();
@@ -119,14 +120,14 @@ export default function App() {
         {/* Public Login */}
         <Route path="/login" element={
           currentUser ? (
-            currentUser.role === Role.WORKER ? 
+            currentUser.role === Role.WORKER || isMobile ? 
               <Navigate to="/mobile/dashboard" replace /> : 
               <Navigate to="/admin/dashboard" replace />
           ) : <LoginView />
         } />
 
         {/* Instant Demo Entry */}
-        <Route path="/demo" element={<DemoEntryRedirect />} />
+        <Route path="/demo" element={<DemoEntryRedirect isMobile={isMobile} />} />
 
         {/* Invite Acceptance Routes */}
         <Route path="/invitation" element={<InviteAcceptanceView />} />
@@ -135,8 +136,8 @@ export default function App() {
         <Route path="/invite/:code" element={<InviteAcceptanceView />} />
 
         {/* Onboarding & Company Registration */}
-        <Route path="/onboarding" element={<OnboardingView onComplete={() => navigate('/admin/dashboard')} />} />
-        <Route path="/register" element={<OnboardingView onComplete={() => navigate('/admin/dashboard')} />} />
+        <Route path="/onboarding" element={<OnboardingView onComplete={() => navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard')} />} />
+        <Route path="/register" element={<OnboardingView onComplete={() => navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard')} />} />
 
         {/* King Master Admin Panel */}
         <Route path="/admin/master" element={
@@ -146,10 +147,10 @@ export default function App() {
         } />
         <Route path="/master" element={<Navigate to="/admin/master" replace />} />
 
-        {/* Admin / Manager Desktop Experience */}
+        {/* Admin / Manager Experience: Forces MobileShell on viewports < 768px */}
         <Route path="/admin/*" element={
           <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
-            <AdminShell state={appState} />
+            {isMobile ? <MobileShell state={appState} /> : <AdminShell state={appState} />}
           </ProtectedRoute>
         } />
 
@@ -160,8 +161,8 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        {/* Root Route Element with invitation interceptor */}
-        <Route path="/" element={<RootRouteElement currentUser={currentUser} />} />
+        {/* Root Route Element with invitation interceptor and responsive landing */}
+        <Route path="/" element={<RootRouteElement currentUser={currentUser} isMobile={isMobile} />} />
 
         {/* Fallback 404 */}
         <Route path="*" element={<NotFoundView />} />
