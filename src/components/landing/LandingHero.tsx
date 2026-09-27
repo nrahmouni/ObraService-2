@@ -1,92 +1,114 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, ArrowRight, Building2, UserCheck, FileCheck, Radio, CheckCircle2, HardHat, Sparkles } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Sparkles, KeyRound, MapPin, Smartphone, CheckCircle2 } from 'lucide-react';
 
 interface LandingHeroProps {
-  onStart: () => void;
+  onStart: (plan?: string) => void;
   onLogin: () => void;
   onDemo: () => void;
+  onJoinCode: () => void;
 }
 
-export const LandingHero: React.FC<LandingHeroProps> = ({ onStart, onLogin, onDemo }) => {
-  const navigate = useNavigate();
-
+export const LandingHero: React.FC<LandingHeroProps> = ({ 
+  onStart, 
+  onLogin, 
+  onDemo,
+  onJoinCode 
+}) => {
   return (
-    <section className="relative pt-24 sm:pt-32 pb-16 sm:pb-20 overflow-hidden bg-brand-bg">
-      {/* Background Decorative Elements */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-[radial-gradient(circle_at_center,_var(--color-brand-accent)_0%,_transparent_70%)] opacity-[0.03] pointer-events-none" />
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.02] pointer-events-none" />
+    <section className="relative pt-24 sm:pt-32 pb-16 sm:pb-24 overflow-hidden bg-brand-bg">
+      {/* Subtle architectural background pattern */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[640px] bg-[radial-gradient(circle_at_center,_var(--color-brand-accent)_0%,_transparent_65%)] opacity-[0.04] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        <div className="text-center space-y-6 sm:space-y-8">
-          {/* Compliance Badge */}
-          <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-brand-surface border border-brand-border shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700 max-w-full">
+        <div className="text-center space-y-6 sm:space-y-8 max-w-4xl mx-auto">
+          
+          {/* Legal Compliance Badge */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-brand-surface/90 border border-brand-accent/30 shadow-lg backdrop-blur-md">
             <ShieldCheck className="w-4 h-4 text-brand-accent shrink-0" />
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider sm:tracking-widest text-brand-text truncate">
-              Homologado Ley 32/2006 • Seguridad Jurídica Total
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-text">
+              Conforme Ley 32/2006 • Seguridad Jurídica y Control PRL
             </span>
           </div>
 
-          {/* Headline */}
-          <div className="space-y-3 sm:space-y-4 max-w-4xl mx-auto">
-            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-black tracking-tight text-white leading-[1.02] sm:leading-[0.95]">
-              El CRM Pro Max <br />
-              <span className="text-brand-accent italic">Integrable</span> de tu Obra
+          {/* Main Headline */}
+          <div className="space-y-4">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-black tracking-tight text-white leading-[1.08] sm:leading-[1.02]">
+              Partes Diarios, Albaranes <br className="hidden sm:inline" />
+              y Control en Tajo <span className="text-brand-accent">100% Digital</span>
             </h1>
-            <p className="text-base sm:text-xl text-brand-muted max-w-2xl mx-auto leading-relaxed font-medium px-2">
-              Pipeline de licitaciones, captación de promotores, control de subcontratas y albaranes digitales. Conexión nativa con SAP, Sage y Dynamics.
+            <p className="text-sm sm:text-lg md:text-xl text-brand-muted max-w-2xl mx-auto leading-relaxed font-medium px-2">
+              Gestión operativa en tiempo real para constructoras y subcontratas: geocerca GPS, cálculo de horas ordinarias y extras por convenio, y emisión inmutable de albaranes digitales.
             </p>
           </div>
 
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4 max-w-md sm:max-w-none mx-auto">
+          {/* Action CTAs */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-2 max-w-md sm:max-w-none mx-auto">
             <button
               onClick={onDemo}
-              className="btn-primary w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-xs sm:text-sm uppercase tracking-wider gap-2 shadow-2xl shadow-brand-accent/25"
+              className="btn-primary h-12 sm:h-14 px-6 sm:px-8 text-xs sm:text-sm uppercase tracking-wider gap-2 shadow-xl shadow-brand-accent/20 cursor-pointer min-h-[48px] justify-center"
             >
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Probar Demo Pro Max (1 Clic)</span>
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span>Probar Demo Interactiva (1 Clic)</span>
             </button>
-            <button
-              onClick={onStart}
-              className="btn-secondary w-full sm:w-auto h-12 sm:h-14 px-6 sm:px-8 text-xs sm:text-sm uppercase tracking-wider gap-2"
+            
+            <a
+              href="#precios"
+              className="btn-secondary h-12 sm:h-14 px-6 sm:px-8 text-xs sm:text-sm uppercase tracking-wider gap-2 min-h-[48px] justify-center text-center inline-flex items-center"
             >
               <span>Ver Planes & Precios</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-brand-accent" />
+              <ArrowRight className="w-4 h-4 text-brand-accent shrink-0" />
+            </a>
+          </div>
+
+          {/* Invitation Code Quick Link */}
+          <div className="pt-1">
+            <button
+              onClick={onJoinCode}
+              className="inline-flex items-center gap-2 text-xs font-bold text-brand-muted hover:text-white transition-colors cursor-pointer py-1.5 px-3 rounded-lg hover:bg-white/5"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-brand-accent" />
+              <span>¿Has recibido una invitación de obra? <strong className="text-brand-accent underline">Canjear Código</strong></span>
             </button>
           </div>
 
-          {/* Social Proof / Trust */}
-          <div className="pt-6 sm:pt-8 flex flex-col items-center gap-3 sm:gap-4">
-            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-brand-muted">CONFIADO POR LÍDERES DEL SECTOR</p>
-            <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-500">
-              <span className="text-base sm:text-xl font-black text-white italic tracking-tighter">CONSTRUCTORA X</span>
-              <span className="text-base sm:text-xl font-black text-white italic tracking-tighter">EDIFICA PRO</span>
-              <span className="text-base sm:text-xl font-black text-white italic tracking-tighter">CIVIL TECH</span>
-              <span className="text-base sm:text-xl font-black text-white italic tracking-tighter">INFRA ESTRADA</span>
+          {/* Key Feature Highlights Pill Bar */}
+          <div className="pt-4 flex flex-wrap justify-center items-center gap-4 sm:gap-8 text-xs font-bold text-brand-muted">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Sincronización Offline (PWA)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Geolocalización en Tajo</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Validación Multi-Subcontrata</span>
             </div>
           </div>
         </div>
 
-        {/* Product Showcase */}
-        <div className="mt-12 sm:mt-20 relative max-w-6xl mx-auto">
-          <div className="absolute -inset-1 bg-gradient-to-r from-brand-accent/20 via-brand-accent/40 to-brand-accent/20 rounded-2xl sm:rounded-[2.5rem] blur-2xl opacity-20" />
-          <div className="relative bg-brand-surface border border-brand-border rounded-2xl sm:rounded-[2rem] overflow-hidden shadow-2xl aspect-[16/10] sm:aspect-[16/9] lg:aspect-[21/9]">
+        {/* Real App Screenshot Showcase */}
+        <div className="mt-12 sm:mt-16 relative max-w-5xl mx-auto">
+          <div className="absolute -inset-1 bg-gradient-to-r from-brand-accent/20 via-brand-accent/30 to-brand-accent/20 rounded-2xl sm:rounded-3xl blur-2xl opacity-25" />
+          <div className="relative bg-brand-surface border border-brand-border rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl aspect-[16/10] sm:aspect-[16/9]">
             <img 
               src="/screenshot-desktop.jpg" 
-              alt="ObraService Dashboard Preview" 
-              className="w-full h-full object-cover object-top opacity-90"
+              alt="Panel Operativo ObraService Pro" 
+              className="w-full h-full object-cover object-top opacity-95"
             />
-            {/* Floating Mobile Preview */}
-            <div className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 w-32 sm:w-48 aspect-[9/19.5] bg-brand-bg border-2 sm:border-4 border-brand-border rounded-xl sm:rounded-[2rem] shadow-2xl overflow-hidden hidden sm:block">
+            {/* Mobile Inset Device Preview */}
+            <div className="absolute bottom-3 right-3 sm:bottom-6 sm:right-6 w-28 sm:w-44 aspect-[9/18] bg-brand-bg border-2 border-brand-border rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden hidden xs:block">
               <img 
                 src="/screenshot-mobile.jpg" 
-                alt="ObraService Mobile App" 
+                alt="ObraService Pro en Móvil" 
                 className="w-full h-full object-cover"
               />
             </div>
           </div>
         </div>
+
       </div>
     </section>
   );

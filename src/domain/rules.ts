@@ -113,6 +113,29 @@ export function validateProjectLocation(
 }
 
 /**
+ * Calculates normal vs. extra hours based on configurable company or agreement threshold (default 8h)
+ */
+export function calculateOvertimeBreakdown(
+  totalWorkedHours: number,
+  standardDayThreshold: number = 8
+): { normalHours: number; extraHours: number } {
+  const safeTotal = Math.max(0, totalWorkedHours);
+  const safeThreshold = Math.max(1, standardDayThreshold);
+  
+  if (safeTotal <= safeThreshold) {
+    return {
+      normalHours: safeTotal,
+      extraHours: 0,
+    };
+  }
+  
+  return {
+    normalHours: safeThreshold,
+    extraHours: +(safeTotal - safeThreshold).toFixed(2),
+  };
+}
+
+/**
  * Invariant checks on Work Entries for Daily Reports
  */
 export function validateWorkEntries(entries: WorkEntry[]): { valid: boolean; errors: string[]; warnings: string[] } {

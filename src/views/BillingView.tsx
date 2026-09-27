@@ -109,13 +109,13 @@ export const BillingView: React.FC<BillingViewProps> = ({ state }) => {
       annualPrice: 1430,
       features: [
         'Obras y proyectos ilimitados',
-        'CRM Pro Max: Pipeline de licitaciones y clientes',
-        'Conexión nativa ERP: SAP, Dynamics 365, Sage, Holded',
+        'CRM de Clientes y Oportunidades de Licitación',
+        'Exportación de partes y albaranes (Excel/CSV/PDF)',
         'Certificaciones inmutables oficiales Ley 32/2006',
-        'API REST y Webhooks ilimitados en tiempo real',
+        'Generación de API Keys y Webhooks en tiempo real',
         'Portal interactivo para el Cliente / Promotor',
-        'Escáner OCR de albaranes de proveedores',
-        'Soporte prioritario 24/7 con gestor de cuenta'
+        'Gestión documental y control preventivo PRL/REA',
+        'Soporte prioritario con gestor técnico dedicado'
       ],
       popular: true,
       cta: 'Mejorar a Pro Max'

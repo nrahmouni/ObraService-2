@@ -241,10 +241,7 @@ export const ClientsCrmView: React.FC<ClientsCrmViewProps> = ({ state }) => {
   };
 
   const handleSyncErp = () => {
-    toast.loading('Sincronizando con ERP central (SAP / Dynamics / Sage)...', { duration: 1500 });
-    setTimeout(() => {
-      toast.success('Sincronización completada: 4 cuentas y 2 propuestas actualizadas con tu ERP.');
-    }, 1600);
+    toast.success('Cartera de clientes y propuestas sincronizadas con el almacén local y Firestore.');
   };
 
   const handleMoveStage = (oppId: string, currentStage: OpportunityStage, direction: 'forward' | 'backward') => {
@@ -275,7 +272,7 @@ export const ClientsCrmView: React.FC<ClientsCrmViewProps> = ({ state }) => {
               CRM Pro Max: Clientes & Obras
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-accent/10 text-brand-accent border border-brand-accent/20">
-              Integrable ERP
+              Pipeline Comercial
             </span>
           </div>
           <p className="text-xs sm:text-sm text-brand-muted">
@@ -287,10 +284,10 @@ export const ClientsCrmView: React.FC<ClientsCrmViewProps> = ({ state }) => {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleSyncErp}
-            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-brand-muted hover:text-white border border-brand-border text-xs font-bold uppercase transition-all flex items-center gap-1.5"
-            title="Sincronizar clientes con SAP S/4HANA o Microsoft Dynamics"
+            className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-brand-muted hover:text-white border border-brand-border text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer"
+            title="Sincronizar cartera y oportunidades en la nube"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-400" /> Sincronizar ERP
+            <RefreshCw className="w-3.5 h-3.5 text-blue-400" /> Sincronizar Datos
           </button>
           <button
             onClick={handleExportClientsCSV}

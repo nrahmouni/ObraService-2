@@ -534,8 +534,8 @@ function getSeedState(): StoreState {
     },
     platformSettings: {
       announcementBanner: {
-        enabled: true,
-        message: '⚡ ObraService CRM Pro Max v3.4: Sincronización bidireccional con SAP, Sage y Microsoft Dynamics activa.',
+        enabled: false,
+        message: '',
         type: 'info'
       },
       features: {
@@ -634,8 +634,8 @@ function loadInitialProductionState(): StoreState {
     },
     platformSettings: {
       announcementBanner: {
-        enabled: true,
-        message: '⚡ ObraService CRM Pro Max v3.4: Sincronización bidireccional con SAP, Sage y Dynamics activa.',
+        enabled: false,
+        message: '',
         type: 'info'
       },
       features: {
@@ -703,21 +703,33 @@ class ObraStore {
   private listeners = new Set<Listener>();
 
   constructor() {
-    const savedProd = localStorage.getItem(PROD_STORAGE_KEY);
-    if (savedProd) {
-      try {
-        const parsed = JSON.parse(savedProd);
-        if (parsed.currentUser) {
-          this.state = parsed;
+    const isDemoActive = typeof localStorage !== 'undefined' && localStorage.getItem('obraservice_is_demo') === 'true';
+    if (isDemoActive) {
+      this.state = loadInitialDemoState();
+      this.checkComplianceDocumentExpirations();
+      return;
+    }
+
+    if (typeof localStorage !== 'undefined') {
+      const savedProd = localStorage.getItem(PROD_STORAGE_KEY);
+      if (savedProd) {
+        try {
+          const parsed = JSON.parse(savedProd);
+          this.state = {
+            ...loadInitialProductionState(),
+            ...parsed,
+            isDemoMode: false,
+          };
           this.checkComplianceDocumentExpirations();
           return;
+        } catch (e) {
+          console.error('Error parsing production storage', e);
         }
-      } catch (e) {
-        console.error('Error parsing production storage', e);
       }
     }
-    // Default to fully loaded working demo state with active projects, reports and workers
-    this.state = loadInitialDemoState(); 
+    
+    // Default to clean public production state (visitor not logged in, Landing page visible)
+    this.state = loadInitialProductionState(); 
     this.checkComplianceDocumentExpirations();
   }
 
@@ -729,32 +741,39 @@ class ObraStore {
   }
 
   public notify() {
-    const storageKey = this.state.isDemoMode ? DEMO_STORAGE_KEY : PROD_STORAGE_KEY;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify({
-        theme: this.state.theme,
-        uiStyle: this.state.uiStyle || 'neumorphic',
-        viewPreference: this.state.viewPreference,
-        currentUser: this.state.currentUser,
-        companies: this.state.companies,
-        users: this.state.users,
-        projects: this.state.projects,
-        workers: this.state.workers,
-        machinery: this.state.machinery,
-        reports: this.state.reports,
-        deliveryNotes: this.state.deliveryNotes,
-        auditEvents: this.state.auditEvents,
-        invitations: this.state.invitations,
-        messages: this.state.messages,
-        notifications: this.state.notifications || [],
-        clients: this.state.clients || [],
-        crmOpportunities: this.state.crmOpportunities || [],
-        crmActivities: this.state.crmActivities || [],
-        subscription: this.state.subscription,
-        platformSettings: this.state.platformSettings
-      }));
-    } catch (e) {
-      console.error('Error saving data to localStorage', e);
+    if (typeof localStorage !== 'undefined') {
+      if (this.state.isDemoMode) {
+        localStorage.setItem('obraservice_is_demo', 'true');
+      } else {
+        localStorage.removeItem('obraservice_is_demo');
+      }
+      const storageKey = this.state.isDemoMode ? DEMO_STORAGE_KEY : PROD_STORAGE_KEY;
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({
+          theme: this.state.theme,
+          uiStyle: this.state.uiStyle || 'neumorphic',
+          viewPreference: this.state.viewPreference,
+          currentUser: this.state.currentUser,
+          companies: this.state.companies,
+          users: this.state.users,
+          projects: this.state.projects,
+          workers: this.state.workers,
+          machinery: this.state.machinery,
+          reports: this.state.reports,
+          deliveryNotes: this.state.deliveryNotes,
+          auditEvents: this.state.auditEvents,
+          invitations: this.state.invitations,
+          messages: this.state.messages,
+          notifications: this.state.notifications || [],
+          clients: this.state.clients || [],
+          crmOpportunities: this.state.crmOpportunities || [],
+          crmActivities: this.state.crmActivities || [],
+          subscription: this.state.subscription,
+          platformSettings: this.state.platformSettings
+        }));
+      } catch (e) {
+        console.error('Error saving data to localStorage', e);
+      }
     }
 
     const snapshot = { ...this.state };
@@ -849,6 +868,9 @@ class ObraStore {
   // --- Environment & Demo Mode Management ---
 
   public enterDemoMode(targetRole?: UserRole) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('obraservice_is_demo', 'true');
+    }
     this.state = loadInitialDemoState();
     this.state.isDemoMode = true;
     if (targetRole) {
@@ -856,14 +878,20 @@ class ObraStore {
       if (user) {
         this.state.currentUser = user;
       }
-    } else if (!this.state.currentUser) {
+    } else {
       this.state.currentUser = this.state.users.find(u => u.role === 'MAIN_CONTRACTOR_ADMIN') || this.state.users[0];
     }
     this.notify();
   }
 
   public enterProductionMode() {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('obraservice_is_demo');
+      localStorage.removeItem(DEMO_STORAGE_KEY);
+    }
     this.state = loadInitialProductionState();
+    this.state.currentUser = null;
+    this.state.isDemoMode = false;
     this.notify();
   }
 
@@ -991,6 +1019,10 @@ class ObraStore {
   }
 
   public async logout() {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('obraservice_is_demo');
+      localStorage.removeItem(DEMO_STORAGE_KEY);
+    }
     this.state.currentUser = null;
     this.state.isDemoMode = false;
     

@@ -198,12 +198,15 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-4xl mx-auto p-3 sm:p-4 pb-24">
+      <main className="flex-1 w-full max-w-4xl mx-auto p-3 sm:p-4 pb-24 landscape:pb-16">
         {children}
       </main>
 
       {/* Persistent Clean Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-[#18181B] border-t border-[#27272A] h-14 flex items-center justify-around px-2 z-40">
+      <nav 
+        className="fixed bottom-0 left-0 right-0 bg-[#18181B] border-t border-[#27272A] h-14 landscape:h-12 flex items-center justify-around px-2 z-40"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         {/* Tab 1: Inicio / Obras */}
         <button
           onClick={() => onSelectTab('dashboard')}
@@ -256,6 +259,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
           <span className="text-[10px] font-medium">Chat</span>
         </button>
       </nav>
+
 
       {/* Bottom Sheet Menu (Thumb-friendly slide-up popup from bottom) */}
       {bottomSheetOpen && (

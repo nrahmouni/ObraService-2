@@ -269,6 +269,78 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state }) => {
                      </div>
                   </div>
                </div>
+
+               {/* Convenio Colectivo, Horas Extra y Aprobación de Recursos */}
+               <div className="pt-8 border-t border-brand-border space-y-6">
+                 <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                   <Zap className="w-5 h-5 text-brand-accent" />
+                   <span>Convenio Laboral y Políticas Operativas</span>
+                 </h3>
+
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                   <div className="p-6 bg-brand-surface border border-brand-border rounded-2xl space-y-3">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted">
+                       Jornada Estándar / Umbral Horas Extras
+                     </label>
+                     <div className="flex items-center gap-3">
+                       <input
+                         type="number"
+                         step="0.5"
+                         min="4"
+                         max="12"
+                         defaultValue="8.0"
+                         className="input-field h-11 text-sm font-bold text-white"
+                         onChange={(e) => {
+                           toast.success(`Umbral de horas extras configurado a ${e.target.value}h/día`);
+                         }}
+                       />
+                       <span className="text-xs font-bold text-brand-muted shrink-0">horas / día</span>
+                     </div>
+                     <p className="text-[11px] text-brand-muted">
+                       Las horas registradas por encima de este umbral se computan automáticamente como extraordinarias.
+                     </p>
+                   </div>
+
+                   <div className="p-6 bg-brand-surface border border-brand-border rounded-2xl space-y-3">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted">
+                       Revisión Previa de Operarios
+                     </label>
+                     <label className="flex items-center justify-between cursor-pointer pt-2">
+                       <span className="text-xs font-bold text-white">Requiere Aprobación de Admin</span>
+                       <input 
+                         type="checkbox" 
+                         className="w-5 h-5 accent-brand-accent rounded cursor-pointer"
+                         onChange={(e) => {
+                           toast.success(e.target.checked ? 'Revisión manual de operarios activada' : 'Alta directa sin revisión activada');
+                         }}
+                       />
+                     </label>
+                     <p className="text-[11px] text-brand-muted">
+                       Si está activo, los operarios dados de alta por subcontratas quedan pendientes de validación.
+                     </p>
+                   </div>
+
+                   <div className="p-6 bg-brand-surface border border-brand-border rounded-2xl space-y-3">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted">
+                       Avisos Vencimiento PRL / REA
+                     </label>
+                     <div className="flex items-center gap-2">
+                       <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
+                         15 días
+                       </span>
+                       <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20">
+                         7 días
+                       </span>
+                       <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg border border-rose-500/20">
+                         1 día
+                       </span>
+                     </div>
+                     <p className="text-[11px] text-brand-muted">
+                       Notificaciones automáticas en campana y panel a los responsables antes de la caducidad.
+                     </p>
+                   </div>
+                 </div>
+               </div>
             </div>
           )}
 

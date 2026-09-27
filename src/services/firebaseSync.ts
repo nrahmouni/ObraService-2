@@ -14,7 +14,10 @@ import {
   query,
   where,
   orderBy,
-  limit
+  limit,
+  startAfter,
+  getDocs,
+  DocumentSnapshot
 } from 'firebase/firestore';
 import { onAuthStateChanged, User as FirebaseUser, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth, db, handleFirestoreError, OperationType, testFirebaseConnection, isFirebaseConfigured } from './firebase';
@@ -489,3 +492,106 @@ export async function persistNotificationToFirestore(notification: NotificationI
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
+
+// --- Cursor-based Pagination API ---
+
+export async function fetchPaginatedReports(
+  companyId?: string,
+  isSubcontractor: boolean = false,
+  pageSize: number = 20,
+  lastSnapshot?: DocumentSnapshot
+): Promise<{ reports: DailyReport[]; lastVisibleDoc: DocumentSnapshot | null; hasMore: boolean }> {
+  if (!isFirebaseConfigured || !db) {
+    return { reports: [], lastVisibleDoc: null, hasMore: false };
+  }
+
+  try {
+    const baseQuery = (companyId && !isSubcontractor)
+      ? query(collection(db, 'dailyReports'), where('companyId', '==', companyId), orderBy('date', 'desc'))
+      : query(collection(db, 'dailyReports'), orderBy('date', 'desc'));
+
+    const paginatedQuery = lastSnapshot 
+      ? query(baseQuery, startAfter(lastSnapshot), limit(pageSize))
+      : query(baseQuery, limit(pageSize));
+
+    const snapshot = await getDocs(paginatedQuery);
+    const reports: DailyReport[] = [];
+    snapshot.forEach(docSnap => reports.push(docSnap.data() as DailyReport));
+
+    const lastVisibleDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+    return {
+      reports,
+      lastVisibleDoc,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  } catch (err) {
+    console.warn('[FirebaseSync] Error fetching paginated reports:', err);
+    return { reports: [], lastVisibleDoc: null, hasMore: false };
+  }
+}
+
+export async function fetchPaginatedDeliveryNotes(
+  companyId?: string,
+  isSubcontractor: boolean = false,
+  pageSize: number = 20,
+  lastSnapshot?: DocumentSnapshot
+): Promise<{ notes: DeliveryNote[]; lastVisibleDoc: DocumentSnapshot | null; hasMore: boolean }> {
+  if (!isFirebaseConfigured || !db) {
+    return { notes: [], lastVisibleDoc: null, hasMore: false };
+  }
+
+  try {
+    const baseQuery = isSubcontractor
+      ? (companyId ? query(collection(db, 'deliveryNotes'), where('subcontractorCompanyId', '==', companyId), orderBy('date', 'desc')) : query(collection(db, 'deliveryNotes'), orderBy('date', 'desc')))
+      : (companyId ? query(collection(db, 'deliveryNotes'), where('companyId', '==', companyId), orderBy('date', 'desc')) : query(collection(db, 'deliveryNotes'), orderBy('date', 'desc')));
+
+    const paginatedQuery = lastSnapshot 
+      ? query(baseQuery, startAfter(lastSnapshot), limit(pageSize))
+      : query(baseQuery, limit(pageSize));
+
+    const snapshot = await getDocs(paginatedQuery);
+    const notes: DeliveryNote[] = [];
+    snapshot.forEach(docSnap => notes.push(docSnap.data() as DeliveryNote));
+
+    const lastVisibleDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+    return {
+      notes,
+      lastVisibleDoc,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  } catch (err) {
+    console.warn('[FirebaseSync] Error fetching paginated delivery notes:', err);
+    return { notes: [], lastVisibleDoc: null, hasMore: false };
+  }
+}
+
+export async function fetchPaginatedAuditEvents(
+  pageSize: number = 30,
+  lastSnapshot?: DocumentSnapshot
+): Promise<{ events: AuditEvent[]; lastVisibleDoc: DocumentSnapshot | null; hasMore: boolean }> {
+  if (!isFirebaseConfigured || !db) {
+    return { events: [], lastVisibleDoc: null, hasMore: false };
+  }
+
+  try {
+    const baseQuery = query(collection(db, 'auditEvents'), orderBy('timestamp', 'desc'));
+    const paginatedQuery = lastSnapshot
+      ? query(baseQuery, startAfter(lastSnapshot), limit(pageSize))
+      : query(baseQuery, limit(pageSize));
+
+    const snapshot = await getDocs(paginatedQuery);
+    const events: AuditEvent[] = [];
+    snapshot.forEach(docSnap => events.push(docSnap.data() as AuditEvent));
+
+    const lastVisibleDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : null;
+    return {
+      events,
+      lastVisibleDoc,
+      hasMore: snapshot.docs.length === pageSize
+    };
+  } catch (err) {
+    console.warn('[FirebaseSync] Error fetching paginated audit events:', err);
+    return { events: [], lastVisibleDoc: null, hasMore: false };
+  }
+}
+

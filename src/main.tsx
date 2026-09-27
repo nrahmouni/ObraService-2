@@ -3,14 +3,18 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import { GoogleMapsProvider } from './components/GoogleMapsProvider.tsx';
+import { I18nProvider } from './i18n';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <GoogleMapsProvider>
-        <App />
-      </GoogleMapsProvider>
+      <I18nProvider>
+        <GoogleMapsProvider>
+          <App />
+        </GoogleMapsProvider>
+      </I18nProvider>
     </BrowserRouter>
   </StrictMode>,
 );
+

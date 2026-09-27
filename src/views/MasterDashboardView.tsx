@@ -311,8 +311,8 @@ export const MasterDashboardView: React.FC = () => {
       </header>
 
       {/* Overview Stats Bar */}
-      <section className="bg-slate-900/40 border-b border-slate-900 p-6">
-        <div className="max-w-7xl mx-auto flex flex-col space-y-2">
+      <section className="bg-slate-900/40 border-b border-slate-900 p-4 sm:p-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             { label: 'Empresas Unidas', val: companies.length, color: 'text-blue-400' },
             { label: 'Usuarios Totales', val: users.length, color: 'text-amber-500' },
@@ -320,17 +320,17 @@ export const MasterDashboardView: React.FC = () => {
             { label: 'Operarios Registrados', val: workers.length, color: 'text-purple-400' },
             { label: 'Eventos Auditados', val: sampleAuditEvents.length, color: 'text-rose-400' }
           ].map((stat, i) => (
-            <div key={i} className="bg-slate-900 border border-slate-850 p-4 rounded-2xl flex flex-col justify-between">
+            <div key={i} className="bg-slate-900 border border-slate-800 p-3.5 sm:p-4 rounded-2xl flex flex-col justify-between">
               <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{stat.label}</span>
-              <span className={`text-2xl font-black ${stat.color} mt-2`}>{stat.val}</span>
+              <span className={`text-xl sm:text-2xl font-black ${stat.color} mt-2`}>{stat.val}</span>
             </div>
           ))}
         </div>
       </section>
 
       {/* Tabs navigation */}
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="flex flex-wrap gap-2 border-b border-slate-800 pb-4">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
+        <div className="flex items-center gap-2 border-b border-slate-800 pb-4 overflow-x-auto no-scrollbar whitespace-nowrap scroll-smooth">
           {[
             { key: 'companies', label: 'Empresas Globales', icon: Building2 },
             { key: 'database', label: 'Inspector Firestore', icon: Database },
@@ -344,7 +344,7 @@ export const MasterDashboardView: React.FC = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as MasterTab)}
-                className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
                   active 
                     ? 'bg-amber-600 text-white shadow-lg shadow-amber-950/40' 
                     : 'text-slate-400 hover:text-white hover:bg-slate-900'

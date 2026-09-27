@@ -79,7 +79,7 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
     try {
       await obraStore.logout();
       toast.success('Sesión cerrada correctamente');
-      navigate('/login');
+      navigate('/');
     } catch (e) {
       toast.error('Error al cerrar sesión');
     }
@@ -147,8 +147,38 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
   })).filter(group => group.items.length > 0);
 
   const isWorker = currentUser.role === Role.WORKER;
+  const isSuperAdmin = currentUser.role === Role.SUPER_ADMIN;
   const basePath = isWorker ? '/mobile' : '/admin';
   const announcement = appState.platformSettings?.announcementBanner;
+
+  // Role-aware bottom navigation tabs for mobile
+  const getMobileBottomItems = () => {
+    if (isSuperAdmin) {
+      return [
+        { key: 'web-admin', label: 'Tenants', icon: Crown, path: '/admin/web-admin' },
+        { key: 'clients', label: 'CRM', icon: Briefcase, path: '/admin/clients' },
+        { key: 'team', label: 'Empresas', icon: Building2, path: '/admin/team' },
+        { key: 'audit', label: 'Auditoría', icon: History, path: '/admin/audit' },
+      ];
+    }
+    if (isWorker || currentUser.role === 'SUBCONTRACTOR_USER') {
+      return [
+        { key: 'dashboard', label: 'Mi Tajo', icon: LayoutDashboard, path: `${basePath}/dashboard` },
+        { key: 'reports', label: 'Mis Partes', icon: FileSpreadsheet, path: `${basePath}/reports` },
+        { key: 'delivery_notes', label: 'Albaranes', icon: FileText, path: `${basePath}/delivery_notes` },
+        { key: 'docs', label: 'Docs PRL', icon: FileCheck, path: `${basePath}/docs` },
+      ];
+    }
+    // Main Contractor Admin / Site Manager
+    return [
+      { key: 'dashboard', label: 'Inicio', icon: LayoutDashboard, path: `${basePath}/dashboard` },
+      { key: 'reports', label: 'Partes', icon: FileSpreadsheet, path: `${basePath}/reports` },
+      { key: 'delivery_notes', label: 'Albaranes', icon: FileText, path: `${basePath}/delivery_notes` },
+      { key: 'projects', label: 'Obras', icon: Building2, path: `${basePath}/projects` },
+    ];
+  };
+
+  const mobileBottomItems = getMobileBottomItems();
 
   return (
     <div className={`min-h-screen bg-brand-bg text-brand-text flex flex-col font-body antialiased pb-14 sm:pb-0 ${appState.uiStyle !== 'standard' ? 'theme-neumorphic' : ''}`}>
@@ -200,38 +230,11 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
-          <button
-            onClick={() => {
-              obraStore.toggleUiStyle();
-              toast.success(`Estilo Neumórfico ${appState.uiStyle === 'standard' ? 'Activado' : 'Desactivado'}`);
-            }}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
-              appState.uiStyle !== 'standard'
-                ? 'bg-brand-accent/20 border border-brand-accent/40 text-brand-accent shadow-sm'
-                : 'bg-white/5 border border-white/10 text-brand-muted hover:text-white'
-            }`}
-            title="Alternar diseño Neumórfico (Soft UI)"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Neumorphism: {appState.uiStyle !== 'standard' ? 'ON' : 'OFF'}</span>
-          </button>
-
-          {appState.isDemoMode && (
-            <button
-              onClick={handlePopulateRandomData}
-              className="hidden sm:flex btn-secondary h-9 px-3 gap-2 text-[11px]"
-              title="Generar datos de prueba"
-            >
-              <Dices className="w-4 h-4 text-brand-accent" />
-              <span>Cargar Datos</span>
-            </button>
-          )}
-
           <NotificationBell currentUser={currentUser} />
 
           <button
             onClick={handleLogout}
-            className="hidden sm:flex p-2 text-brand-muted hover:text-white hover:bg-brand-surface-hover rounded-xl transition-colors border border-transparent hover:border-brand-border min-h-[40px] min-w-[40px] items-center justify-center"
+            className="hidden sm:flex p-2 text-brand-muted hover:text-white hover:bg-brand-surface-hover rounded-xl transition-colors border border-transparent hover:border-brand-border min-h-[40px] min-w-[40px] items-center justify-center cursor-pointer"
             title="Cerrar Sesión"
           >
             <LogOut className="w-5 h-5" />
@@ -291,29 +294,24 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
         </main>
       </div>
 
-      {/* Bottom Nav (Mobile) with Safe-Area Inset Support */}
+      {/* Bottom Nav (Mobile) with Safe-Area Inset Support & Landscape Optimization */}
       <nav 
-        className="md:hidden glass-panel border-t border-brand-border fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-2xl"
-        style={{ minHeight: 'calc(3.75rem + env(safe-area-inset-bottom, 0px))' }}
+        className="md:hidden glass-panel border-t border-brand-border fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around px-1 sm:px-2 pt-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] shadow-2xl landscape:h-12 landscape:pt-0.5"
+        style={{ minHeight: 'calc(3.5rem + env(safe-area-inset-bottom, 0px))' }}
       >
-        {[
-          { key: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
-          { key: 'reports', label: 'Partes', icon: FileSpreadsheet },
-          { key: 'delivery_notes', label: 'Albaranes', icon: FileText },
-          { key: 'projects', label: 'Obras', icon: Building2 },
-        ].map(item => {
+        {mobileBottomItems.map(item => {
           const Icon = item.icon;
           const isActive = currentTab === item.key;
           return (
             <Link
               key={item.key}
-              to={`${basePath}/${item.key}`}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-[44px] min-w-[56px] active:scale-90 ${
-                isActive ? 'text-brand-accent font-bold' : 'text-brand-muted'
+              to={item.path}
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-[40px] min-w-[50px] active:scale-90 ${
+                isActive ? 'text-brand-accent font-bold' : 'text-brand-muted hover:text-white'
               }`}
             >
-              <Icon className="w-5 h-5 mb-0.5" />
-              <span className={`text-[10px] leading-tight ${isActive ? 'text-brand-text font-black' : 'font-medium'}`}>{item.label}</span>
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
+              <span className={`text-[9px] sm:text-[10px] leading-tight ${isActive ? 'text-brand-text font-black' : 'font-medium'}`}>{item.label}</span>
             </Link>
           );
         })}
@@ -321,15 +319,16 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
         {/* More/Menu Toggle Button */}
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-[44px] min-w-[56px] active:scale-90 ${
-            mobileMenuOpen ? 'text-brand-accent' : 'text-brand-muted'
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all min-h-[40px] min-w-[50px] active:scale-90 cursor-pointer ${
+            mobileMenuOpen ? 'text-brand-accent' : 'text-brand-muted hover:text-white'
           }`}
-          aria-label="Abrir más secciones"
+          aria-label="Abrir menú de navegación completo"
         >
-          <Menu className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px] leading-tight font-medium">Más</span>
+          <Menu className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
+          <span className="text-[9px] sm:text-[10px] leading-tight font-medium">Más</span>
         </button>
       </nav>
+
 
       {/* Mobile Drawer (Accessible Sheet Overlay) */}
       {mobileMenuOpen && (

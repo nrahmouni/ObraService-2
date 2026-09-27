@@ -38,8 +38,8 @@ export const WebAdminView: React.FC<WebAdminViewProps> = ({ state }) => {
   // Platform settings local state
   const platformSettings = state.platformSettings || {
     announcementBanner: {
-      enabled: true,
-      message: '⚡ ObraService CRM Pro Max v3.4: Sincronización nativa con SAP, Sage y Dynamics activa.',
+      enabled: false,
+      message: '',
       type: 'info'
     },
     features: {
@@ -153,7 +153,7 @@ export const WebAdminView: React.FC<WebAdminViewProps> = ({ state }) => {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center p-1 bg-brand-surface border border-brand-border rounded-xl">
+        <div className="flex items-center gap-1 p-1 bg-brand-surface border border-brand-border rounded-xl overflow-x-auto max-w-full no-scrollbar whitespace-nowrap scroll-smooth w-full sm:w-auto">
           {[
             { key: 'metrics', label: 'Métricas SaaS' },
             { key: 'tenants', label: 'Empresas & Tenants' },
@@ -163,10 +163,10 @@ export const WebAdminView: React.FC<WebAdminViewProps> = ({ state }) => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all shrink-0 cursor-pointer ${
                 activeTab === tab.key
                   ? 'bg-brand-accent text-white shadow-md'
-                  : 'text-brand-muted hover:text-white'
+                  : 'text-brand-muted hover:text-white hover:bg-white/5'
               }`}
             >
               {tab.label}
@@ -259,11 +259,11 @@ export const WebAdminView: React.FC<WebAdminViewProps> = ({ state }) => {
 
               <div className="p-4 bg-brand-bg rounded-xl border border-brand-border space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white">Conectores ERP (SAP/Sage)</span>
+                  <span className="font-bold text-white">API REST & Webhooks</span>
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <div className="text-emerald-400 font-bold">Sincronización Bidireccional</div>
-                <div className="text-[10px] text-brand-muted">Webhooks activos</div>
+                <div className="text-emerald-400 font-bold">Eventos en Tiempo Real</div>
+                <div className="text-[10px] text-brand-muted">Notificaciones HTTP activas</div>
               </div>
             </div>
           </div>

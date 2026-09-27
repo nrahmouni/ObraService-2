@@ -26,35 +26,36 @@ export const Table: React.FC<TableProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`w-full overflow-hidden bg-brand-surface border border-slate-800/80 rounded-xl ${className}`}>
-      <div className="w-full overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[600px]">
+    <div className={`w-full overflow-hidden bg-brand-surface border border-brand-border rounded-xl shadow-xs ${className}`}>
+      {/* Scrollable table container with touch momentum */}
+      <div className="w-full overflow-x-auto overscroll-x-contain touch-pan-x">
+        <table className="w-full text-left border-collapse min-w-[580px] sm:min-w-full">
           <thead>
-            <tr className="border-b border-slate-800/80 bg-slate-950/40">
+            <tr className="border-b border-brand-border bg-brand-bg/50">
               {headers.map((header, idx) => (
                 <th
                   key={idx}
-                  className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 select-none"
+                  className="px-4 sm:px-6 py-3.5 text-[10px] sm:text-xs font-black uppercase tracking-widest text-brand-muted select-none whitespace-nowrap"
                 >
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-brand-border/40">
             {isLoading ? (
               Array.from({ length: skeletonRows }).map((_, rIdx) => (
-                <tr key={rIdx} className="border-b border-slate-800/40 last:border-0 animate-pulse">
+                <tr key={rIdx} className="animate-pulse">
                   {headers.map((_, hIdx) => (
-                    <td key={hIdx} className="px-6 py-4.5">
-                      <div className="h-4 bg-slate-800 rounded-md w-3/4" />
+                    <td key={hIdx} className="px-4 sm:px-6 py-4">
+                      <div className="h-4 bg-brand-border/60 rounded-md w-3/4" />
                     </td>
                   ))}
                 </tr>
               ))
             ) : isEmpty ? (
               <tr>
-                <td colSpan={headers.length} className="px-6 py-12">
+                <td colSpan={headers.length} className="px-4 sm:px-6 py-12">
                   <EmptyState
                     icon={HelpCircle}
                     title={emptyTitle}
@@ -74,3 +75,4 @@ export const Table: React.FC<TableProps> = ({
   );
 };
 export default Table;
+

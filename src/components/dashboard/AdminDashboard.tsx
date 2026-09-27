@@ -52,12 +52,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ state, onNavigat
   const blockedSubcontractors = subcontractorCompanies.filter(sub => checkOperationalStatus(sub.id).isBlocked);
   const ownCompliance = checkOperationalStatus(userCompanyId);
 
-  // Stats for the top bar
+  // Stats for the top bar - mathematically coherent and reactive to store
   const stats = [
-    { label: 'Obras Activas', value: activeProjects.length, icon: Building2, trend: '+2 esta semana', color: 'text-brand-accent' },
-    { label: 'Horas Totales', value: `${totalLaborHours}h`, icon: Clock, trend: 'En curso', color: 'text-blue-500' },
-    { label: 'Albaranes', value: companyDeliveryNotes.length, icon: FileText, trend: `${pendingNotes.length} pendientes`, color: 'text-emerald-500' },
-    { label: 'Incidencias', value: blockedSubcontractors.length, icon: AlertTriangle, trend: 'Requiere acción', color: 'text-rose-500' },
+    { 
+      label: 'Obras Activas', 
+      value: activeProjects.length, 
+      icon: Building2, 
+      trend: `${allProjects.length} registradas`, 
+      color: 'text-brand-accent' 
+    },
+    { 
+      label: 'Horas Totales', 
+      value: `${totalLaborHours}h`, 
+      icon: Clock, 
+      trend: `${companyReports.length} partes`, 
+      color: 'text-blue-500' 
+    },
+    { 
+      label: 'Albaranes', 
+      value: companyDeliveryNotes.length, 
+      icon: FileText, 
+      trend: `${pendingNotes.length} pendientes`, 
+      color: 'text-emerald-500' 
+    },
+    { 
+      label: 'Subcontratas', 
+      value: subcontractorCompanies.length, 
+      icon: Users, 
+      trend: blockedSubcontractors.length > 0 ? `${blockedSubcontractors.length} bloqueadas` : '100% PRL OK', 
+      color: blockedSubcontractors.length > 0 ? 'text-rose-500' : 'text-amber-500' 
+    },
   ];
 
   return (
@@ -145,23 +169,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ state, onNavigat
             ))}
           </div>
 
-          {/* 4. Active Map Preview (Sleek placeholder) */}
-          <div className="card p-1 overflow-hidden relative group cursor-pointer" onClick={() => onNavigate('map')}>
-             <div className="absolute inset-0 bg-brand-accent/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                <span className="btn-primary h-9 px-4 text-[11px]">Abrir Mapa en Tiempo Real</span>
+          {/* 4. Active Projects & GPS Geofence Radar Preview */}
+          <div className="card p-4 sm:p-5 overflow-hidden relative group cursor-pointer border-brand-border hover:border-brand-accent/40 transition-all" onClick={() => onNavigate('map')}>
+             <div className="flex items-center justify-between mb-3">
+               <div className="flex items-center gap-2">
+                 <div className="w-8 h-8 rounded-lg bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+                   <MapPin className="w-4 h-4" />
+                 </div>
+                 <div>
+                   <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Radar de Obras y Trazabilidad GPS</h3>
+                   <span className="text-[10px] text-brand-muted">Geolocalización activa de tajos y fichajes</span>
+                 </div>
+               </div>
+               <span className="btn-secondary h-8 px-2.5 text-[10px] font-bold gap-1 border-brand-accent/30 text-brand-accent">
+                 <span>Ver Mapa Satélite</span>
+                 <ChevronRight className="w-3.5 h-3.5" />
+               </span>
              </div>
-             <img 
-               src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=1200&h=400" 
-               className="w-full h-48 object-cover rounded-2xl opacity-60 group-hover:scale-105 transition-transform duration-700" 
-               alt="Map Preview" 
-             />
-             <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between pointer-events-none">
-                <div className="bg-brand-bg/80 backdrop-blur-md border border-brand-border px-3 py-1.5 rounded-lg">
-                   <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] font-bold text-white uppercase tracking-wider">12 Operarios Activos</span>
+
+             {/* Live Projects Location Badges Grid */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+               {activeProjects.slice(0, 4).map((p) => {
+                 const locName = typeof p.location === 'string' ? p.location : (p.location?.address || p.address || 'Madrid, España');
+                 return (
+                   <div key={p.id} className="p-3 rounded-xl bg-brand-bg/80 border border-brand-border flex items-center justify-between">
+                     <div className="flex items-center gap-2.5 min-w-0">
+                       <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                       <div className="min-w-0">
+                         <div className="text-xs font-bold text-white truncate">{p.name}</div>
+                         <div className="text-[10px] text-brand-muted truncate mt-0.5">{locName}</div>
+                       </div>
+                     </div>
+                     <span className="px-2 py-0.5 rounded-md bg-brand-surface border border-brand-border text-[9px] font-mono font-bold text-brand-accent shrink-0 ml-2">
+                       {p.code}
+                     </span>
                    </div>
-                </div>
+                 );
+               })}
+               {activeProjects.length === 0 && (
+                 <div className="col-span-full py-6 text-center text-xs text-brand-muted italic">
+                   No hay obras activas en este momento.
+                 </div>
+               )}
              </div>
           </div>
         </div>

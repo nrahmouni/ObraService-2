@@ -14,17 +14,20 @@ import {
   Bell,
   ShieldAlert,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  Globe
 } from 'lucide-react';
 import { obraStore } from '../services/store';
 import { AppState, Role } from '../types';
 import { toast } from 'react-hot-toast';
+import { useI18n } from '../i18n';
 
 interface ProfileViewProps {
   state: AppState;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ state }) => {
+  const { language, setLanguage, t } = useI18n();
   const currentUser = state.currentUser;
   const company = state.companies.find(c => c.id === currentUser?.companyId);
 
@@ -53,8 +56,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state }) => {
     localStorage.setItem(`pref_reports_${currentUser.id}`, JSON.stringify(prefReports));
     localStorage.setItem(`pref_disputes_${currentUser.id}`, JSON.stringify(prefDisputes));
     localStorage.setItem(`pref_compliance_${currentUser.id}`, JSON.stringify(prefCompliance));
-    toast.success('Perfil actualizado');
+    toast.success('Preferencias e idioma guardados correctamente');
   };
+
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,6 +181,60 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ state }) => {
                   {isUpdatingPassword ? 'Procesando...' : 'Actualizar Credenciales'}
                </button>
             </form>
+          </div>
+          {/* Language Selector Card */}
+          <div className="card p-6 sm:p-8 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent">
+                  <Globe className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-display font-black text-white uppercase tracking-tight">
+                    {t('language.select', 'Idioma')}
+                  </h2>
+                  <p className="text-[10px] font-bold text-brand-muted uppercase tracking-widest mt-0.5">
+                    Preferencias regionales y localización
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLanguage('es')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    language === 'es'
+                      ? 'bg-brand-accent/15 border-brand-accent text-white shadow-md'
+                      : 'bg-brand-bg border-brand-border text-brand-muted hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-base">🇪🇸</span>
+                    {language === 'es' && <Check className="w-4 h-4 text-brand-accent" />}
+                  </div>
+                  <div className="font-bold text-sm text-white mt-2">Español</div>
+                  <div className="text-[10px] text-brand-muted">Predeterminado</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    language === 'en'
+                      ? 'bg-brand-accent/15 border-brand-accent text-white shadow-md'
+                      : 'bg-brand-bg border-brand-border text-brand-muted hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-base">🇬🇧</span>
+                    {language === 'en' && <Check className="w-4 h-4 text-brand-accent" />}
+                  </div>
+                  <div className="font-bold text-sm text-white mt-2">English</div>
+                  <div className="text-[10px] text-brand-muted">International</div>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
