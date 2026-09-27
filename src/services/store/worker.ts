@@ -8,8 +8,14 @@ export const createWorker = (
   dispatchSync: (entity: string, item: unknown) => void
 ): { success: boolean; worker?: Worker; error?: string } => {
   const code = generateWorkerCode(state.workers.length);
+  const company = state.companies.find(c => c.id === data.companyId);
+  const isSubcontractor = company ? company.type === 'SUBCONTRACTOR' : (data.companyId !== 'comp_main');
+  const companyNameSnapshot = company ? company.name : (data.companyNameSnapshot || 'Empresa');
+
   const newWorker: Worker = {
     ...data,
+    companyNameSnapshot,
+    isSubcontractor,
     id: `wrk_${Date.now()}`,
     code,
     createdAt: new Date().toISOString(),
@@ -22,7 +28,7 @@ export const createWorker = (
     'Worker',
     newWorker.id,
     'WORKER_CREATED',
-    `Trabajador "${newWorker.name}" (${newWorker.category}) registrado para la empresa.`,
+    `Trabajador "${newWorker.name}" (${newWorker.category}) registrado para ${companyNameSnapshot}.`,
     code
   );
 
@@ -61,7 +67,17 @@ export const updateWorker = (
 ): boolean => {
   const idx = state.workers.findIndex((w: Worker) => w.id === workerId);
   if (idx === -1) return false;
-  state.workers[idx] = { ...state.workers[idx], ...data };
+
+  const updatedData = { ...data };
+  if (updatedData.companyId) {
+    const comp = state.companies.find(c => c.id === updatedData.companyId);
+    if (comp) {
+      updatedData.companyNameSnapshot = comp.name;
+      updatedData.isSubcontractor = comp.type === 'SUBCONTRACTOR';
+    }
+  }
+
+  state.workers[idx] = { ...state.workers[idx], ...updatedData };
   dispatchSync('worker', state.workers[idx]);
   logAudit(
     'Worker',

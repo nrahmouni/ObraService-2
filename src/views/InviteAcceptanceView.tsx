@@ -19,7 +19,7 @@ import { obraStore } from '../services/store';
 import { Invitation, Project, Role } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { toast } from 'react-hot-toast';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 
 interface InviteAcceptanceViewProps {
   initialCode?: string;
@@ -33,8 +33,18 @@ export const InviteAcceptanceView: React.FC<InviteAcceptanceViewProps> = ({
   onSuccess,
 }) => {
   const navigate = useNavigate();
+  const params = useParams<{ code?: string }>();
   const [searchParams] = useSearchParams();
-  const queryCode = searchParams.get('code') || initialCode;
+  
+  const queryCode = (
+    params.code || 
+    searchParams.get('code') || 
+    searchParams.get('invite') || 
+    searchParams.get('invitation') || 
+    searchParams.get('token') || 
+    initialCode || 
+    ''
+  ).trim();
   
   const [code, setCode] = useState(queryCode);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -49,6 +59,7 @@ export const InviteAcceptanceView: React.FC<InviteAcceptanceViewProps> = ({
 
   useEffect(() => {
     if (queryCode) {
+      setCode(queryCode);
       handleLookup(queryCode);
     }
   }, [queryCode]);
@@ -68,7 +79,7 @@ export const InviteAcceptanceView: React.FC<InviteAcceptanceViewProps> = ({
       }
     } else {
       setInvitation(null);
-      setSearchError('No hemos encontrado ninguna invitación válida con este código.');
+      setSearchError(`No hemos encontrado ninguna invitación válida con el código "${clean}". Revisa el enlace o introduce el código manualmente.`);
     }
   };
 

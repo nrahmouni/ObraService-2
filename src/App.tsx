@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { obraStore } from './services/store';
 import { initializeFirebaseSync } from './services/firebaseSync';
 import { AppState, Role } from './types';
@@ -25,6 +25,38 @@ const DemoEntryRedirect: React.FC = () => {
     navigate('/admin/dashboard', { replace: true });
   }, [navigate]);
   return null;
+};
+
+const RootRouteElement: React.FC<{ currentUser: any }> = ({ currentUser }) => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const inviteCode = searchParams.get('invite') || searchParams.get('code') || searchParams.get('invitation') || searchParams.get('token');
+
+  if (inviteCode) {
+    return <Navigate to={`/invitation?code=${encodeURIComponent(inviteCode)}`} replace />;
+  }
+
+  if (currentUser) {
+    return currentUser.role === Role.WORKER ? (
+      <Navigate to="/mobile/dashboard" replace />
+    ) : (
+      <Navigate to="/admin/dashboard" replace />
+    );
+  }
+
+  return (
+    <PublicEntryView 
+      onOpenLogin={() => navigate('/login')}
+      onOpenRegister={() => navigate('/onboarding')}
+      onOpenJoinCode={() => navigate('/invitation')}
+      onDemoAccess={() => {
+        obraStore.enterDemoMode();
+        toast.success('🚀 Entorno Demo CRM Pro Max activado. Has iniciado sesión como Director General.');
+        navigate('/admin/dashboard');
+      }}
+    />
+  );
 };
 
 export default function App() {
@@ -96,9 +128,11 @@ export default function App() {
         {/* Instant Demo Entry */}
         <Route path="/demo" element={<DemoEntryRedirect />} />
 
-        {/* Invite Acceptance */}
+        {/* Invite Acceptance Routes */}
         <Route path="/invitation" element={<InviteAcceptanceView />} />
+        <Route path="/invitation/:code" element={<InviteAcceptanceView />} />
         <Route path="/invite" element={<InviteAcceptanceView />} />
+        <Route path="/invite/:code" element={<InviteAcceptanceView />} />
 
         {/* Onboarding & Company Registration */}
         <Route path="/onboarding" element={<OnboardingView onComplete={() => navigate('/admin/dashboard')} />} />
@@ -126,25 +160,8 @@ export default function App() {
           </ProtectedRoute>
         } />
 
-        {/* Root Redirect to Landing Page or Dashboard */}
-        <Route path="/" element={
-          currentUser ? (
-            currentUser.role === Role.WORKER ? 
-              <Navigate to="/mobile/dashboard" replace /> : 
-              <Navigate to="/admin/dashboard" replace />
-          ) : (
-            <PublicEntryView 
-              onOpenLogin={() => navigate('/login')}
-              onOpenRegister={() => navigate('/onboarding')}
-              onOpenJoinCode={() => navigate('/invitation')}
-              onDemoAccess={() => {
-                obraStore.enterDemoMode();
-                toast.success('🚀 Entorno Demo CRM Pro Max activado. Has iniciado sesión como Director General.');
-                navigate('/admin/dashboard');
-              }}
-            />
-          )
-        } />
+        {/* Root Route Element with invitation interceptor */}
+        <Route path="/" element={<RootRouteElement currentUser={currentUser} />} />
 
         {/* Fallback 404 */}
         <Route path="*" element={<NotFoundView />} />

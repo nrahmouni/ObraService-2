@@ -9,23 +9,31 @@ export const createProject = (
 ): { success: boolean; project?: Project; error?: string } => {
   const code = generateProjectCode(state.projects.length);
   const companyId = state.currentUser?.companyId || 'comp_main';
+  const initialBudget = data.initialBudget || data.budget || 350000;
 
   const newProject: Project = {
     ...data,
     id: `proj_${Date.now()}`,
     code,
     companyId,
+    initialBudget,
+    budget: initialBudget,
+    spentBudget: 0,
+    status: data.status || 'Active',
     assignedSubcontractorIds: data.assignedSubcontractorIds || [],
   };
 
-  state.projects.push(newProject);
+  if (!state.projects) {
+    state.projects = [];
+  }
+  state.projects.unshift(newProject);
   dispatchSync('project', newProject);
 
   logAudit(
     'Project',
     newProject.id,
     'PROJECT_CREATED',
-    `Obra "${newProject.name}" registrada con éxito (Presupuesto: €${newProject.budget || 0}).`,
+    `Obra "${newProject.name}" registrada con éxito (Presupuesto: €${initialBudget}).`,
     code
   );
 

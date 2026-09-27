@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Grid, List as ListIcon } from 'lucide-react';
+import { Plus, Search, Filter, Grid, List as ListIcon, Building2, Sparkles } from 'lucide-react';
 import { obraStore } from '../services/store';
 import { Project, ProjectStatus, AppState } from '../types';
 import { ProjectSetupWizard } from '../components/ProjectSetupWizard';
@@ -32,49 +32,27 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   
   // Modals & Selection
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [subAssignmentOpen, setSubAssignmentOpen] = useState(false);
 
-  // Auto-select project if header filter matches a specific project
-  useEffect(() => {
-    const headerProjectId = localStorage.getItem('selected_project_id');
-    if (headerProjectId) {
-      const match = state.projects.find(p => p.id === headerProjectId);
-      if (match) {
-        setSelectedProject(match);
-      }
-    } else {
-      setSelectedProject(null);
-    }
-  }, [state.projects]);
-
-  // Handle cross-storage changes
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const headerProjectId = localStorage.getItem('selected_project_id');
-      if (headerProjectId) {
-        const match = state.projects.find(p => p.id === headerProjectId);
-        if (match) setSelectedProject(match);
-      } else {
-        setSelectedProject(null);
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [state.projects]);
+  // Sync selected project with store state
+  const selectedProject = selectedProjectId 
+    ? (state.projects || []).find(p => p.id === selectedProjectId) || null 
+    : null;
 
   if (!user) return null;
   const isAdmin = user.role === 'MAIN_CONTRACTOR_ADMIN' || user.role === 'SITE_MANAGER';
 
   // Filters
   const filteredProjects = (state.projects || []).filter(p => {
-    const matchesSearch = 
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.client && p.client.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.address && p.address.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.location?.address && p.location.address.toLowerCase().includes(searchQuery.toLowerCase()));
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query || 
+      (p.name && p.name.toLowerCase().includes(query)) ||
+      (p.code && p.code.toLowerCase().includes(query)) ||
+      (p.client && p.client.toLowerCase().includes(query)) ||
+      (p.address && p.address.toLowerCase().includes(query)) ||
+      (p.location?.address && p.location.address.toLowerCase().includes(query));
 
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -92,7 +70,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
       const res = obraStore.deleteProject(projectId);
       if (res) {
         toast.success(`Proyecto "${name}" eliminado con éxito.`);
-        setSelectedProject(null);
+        setSelectedProjectId(null);
       } else {
         toast.error("No se pudo eliminar el proyecto.");
       }
@@ -106,7 +84,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
   };
 
   const getProjectBudgetStats = (project: Project) => {
-    const budget = project.initialBudget || 350000;
+    const budget = project.initialBudget || project.budget || 350000;
     const reportHours = (state.reports || [])
       .filter(r => r.projectId === project.id)
       .reduce((acc, r) => acc + (r.totalHours || 0), 0);
@@ -125,25 +103,21 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6">
       {/* 1. Detail View */}
       {selectedProject ? (
-        <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+        <div className="space-y-6 animate-in fade-in duration-200">
           <ProjectDetailHero
             selectedProject={selectedProject}
             coverUrl={selectedProject.coverImage || DEFAULT_COVERS[0]}
             isAdmin={isAdmin}
-            onBack={() => {
-              localStorage.removeItem('selected_project_id');
-              setSelectedProject(null);
-              window.dispatchEvent(new Event('storage'));
-            }}
+            onBack={() => setSelectedProjectId(null)}
             onNavigateToTeam={onNavigate ? () => onNavigate('team') : undefined}
             onToggleStatus={handleToggleStatus}
             onDeleteProject={handleDeleteProjectClick}
           />
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <ProjectDetailBudget
                 selectedProject={selectedProject}
@@ -155,6 +129,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
               <ProjectDetailSubcontractors
                 selectedProject={selectedProject}
                 companies={state.companies || []}
+                workers={state.workers || []}
+                deliveryNotes={state.deliveryNotes || []}
                 isAdmin={isAdmin}
                 isOpen={subAssignmentOpen}
                 setIsOpen={setSubAssignmentOpen}
@@ -165,19 +141,23 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
         </div>
       ) : (
         /* 2. List / Gallery View */
-        <div className="space-y-8">
-          <div className="space-y-4 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-6">
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">Obras y Proyectos</h1>
-              <p className="text-xs sm:text-sm text-brand-muted font-medium mt-0.5">Gestión centralizada de todos tus tajos activos.</p>
+              <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
+                Obras y Proyectos
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">
+                Gestión centralizada de todos tus tajos activos ({state.projects?.length || 0} obras registradas).
+              </p>
             </div>
 
             {isAdmin && (
               <button
                 onClick={() => setWizardOpen(true)}
-                className="btn-primary h-11 sm:h-12 px-6 shadow-lg shadow-brand-accent/20 w-full sm:w-auto justify-center text-xs uppercase tracking-wider"
+                className="btn-primary h-11 px-5 shadow-lg shadow-brand-accent/20 w-full sm:w-auto justify-center text-xs uppercase tracking-wider gap-2 shrink-0 cursor-pointer"
               >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Plus className="w-4 h-4" />
                 <span>Nueva Obra</span>
               </button>
             )}
@@ -193,11 +173,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
             setViewMode={setViewMode}
             getProjectBudgetStats={getProjectBudgetStats}
             getReportCount={getReportCount}
-            onSelectProject={(p) => {
-              setSelectedProject(p);
-              localStorage.setItem('selected_project_id', p.id);
-              window.dispatchEvent(new Event('storage'));
-            }}
+            onSelectProject={(p) => setSelectedProjectId(p.id)}
             onToggleStatus={handleToggleStatus}
             isAdmin={isAdmin}
             onOpenWizard={() => setWizardOpen(true)}
@@ -211,11 +187,13 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({ state, onNavigate })
         isOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
         onSuccess={(newProject) => {
-          setSelectedProject(newProject);
-          localStorage.setItem('selected_project_id', newProject.id);
-          window.dispatchEvent(new Event('storage'));
+          // Keep wizard open on step 4 or close to view in list
+          setSelectedProjectId(null); // Shows list with new project on top
         }}
-        onNavigateToTeam={onNavigate ? () => onNavigate('team') : undefined}
+        onNavigateToTeam={onNavigate ? () => {
+          setWizardOpen(false);
+          onNavigate('team');
+        } : undefined}
       />
     </div>
   );

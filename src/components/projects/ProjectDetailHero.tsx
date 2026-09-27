@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Users, Building2, MapPin, Trash2, Pause, Play, ChevronLeft } from 'lucide-react';
+import { Building2, MapPin, Trash2, Play, ChevronLeft, Users } from 'lucide-react';
 import { Project } from '../../types';
 
 interface ProjectDetailHeroProps {
@@ -24,31 +24,31 @@ export const ProjectDetailHero: React.FC<ProjectDetailHeroProps> = ({
   const isActive = selectedProject.status === 'Active';
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-4">
       {/* Top Breadcrumb & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button
           onClick={onBack}
-          className="group flex items-center gap-2 text-brand-muted hover:text-white transition-colors"
+          className="group flex items-center gap-2 text-slate-300 hover:text-white transition-colors cursor-pointer w-fit"
         >
-          <div className="w-8 h-8 rounded-lg bg-brand-surface border border-brand-border flex items-center justify-center group-hover:border-brand-accent transition-colors">
-            <ChevronLeft className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center group-hover:border-brand-accent transition-colors">
+            <ChevronLeft className="w-4 h-4 text-slate-300 group-hover:text-white" />
           </div>
-          <span className="text-xs font-black uppercase tracking-widest">Volver a Obras</span>
+          <span className="text-xs font-black uppercase tracking-wider">Volver al Listado de Obras</span>
         </button>
 
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => onToggleStatus(e, selectedProject)}
-            className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border ${
+            className={`h-9 px-4 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer border ${
               isActive
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
-                : 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20'
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                : 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
             }`}
           >
             {isActive ? (
               <>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span>Obra Activa</span>
               </>
             ) : (
@@ -62,7 +62,7 @@ export const ProjectDetailHero: React.FC<ProjectDetailHeroProps> = ({
           {isAdmin && (
             <button
               onClick={() => onDeleteProject(selectedProject.id, selectedProject.name)}
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500/20 transition-all"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition-all cursor-pointer"
               title="Eliminar Obra"
             >
               <Trash2 className="w-4 h-4" />
@@ -72,35 +72,35 @@ export const ProjectDetailHero: React.FC<ProjectDetailHeroProps> = ({
       </div>
 
       {/* Main Identity Card */}
-      <div className="card overflow-hidden group">
-        <div className="relative h-48 sm:h-64 overflow-hidden">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+        <div className="relative h-48 sm:h-64 overflow-hidden bg-slate-950">
           <img 
             src={coverUrl} 
             alt={selectedProject.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-brand-bg/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
           
-          <div className="absolute bottom-6 left-6 right-6 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-            <div className="space-y-3">
+          <div className="absolute bottom-5 left-5 right-5 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded bg-brand-accent text-white font-mono text-[10px] font-black uppercase tracking-widest shadow-lg">
+                <span className="px-2.5 py-0.5 rounded-lg bg-brand-accent text-white font-mono text-[11px] font-black uppercase tracking-wider shadow-md">
                   {selectedProject.code}
                 </span>
-                <span className="text-white/60 font-medium text-xs">• {selectedProject.projectType || 'Construcción'}</span>
+                <span className="text-slate-300 font-bold text-xs">• {selectedProject.projectType || 'Construcción'}</span>
               </div>
-              <h1 className="text-3xl sm:text-5xl font-display font-black text-white tracking-tight uppercase">
+              <h1 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight uppercase">
                 {selectedProject.name}
               </h1>
-              <div className="flex items-center gap-4 text-xs font-medium text-brand-muted">
+              <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-300">
                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-brand-accent" />
+                    <MapPin className="w-4 h-4 text-brand-accent shrink-0" />
                     <span>{selectedProject.address || 'Ubicación no registrada'}</span>
                  </div>
                  {selectedProject.client && (
-                    <div className="flex items-center gap-1.5 border-l border-brand-border pl-4">
-                       <Building2 className="w-4 h-4 text-brand-accent" />
-                       <span>Cliente: <span className="text-white">{selectedProject.client}</span></span>
+                    <div className="flex items-center gap-1.5 border-l border-slate-700 pl-3">
+                       <Building2 className="w-4 h-4 text-brand-accent shrink-0" />
+                       <span>Cliente: <strong className="text-white">{selectedProject.client}</strong></span>
                     </div>
                  )}
               </div>
@@ -109,7 +109,7 @@ export const ProjectDetailHero: React.FC<ProjectDetailHeroProps> = ({
             {onNavigateToTeam && (
               <button
                 onClick={onNavigateToTeam}
-                className="btn-primary h-11 px-6 gap-2 shadow-2xl shadow-brand-accent/30"
+                className="btn-primary h-11 px-5 gap-2 shadow-lg text-xs uppercase tracking-wider shrink-0 cursor-pointer"
               >
                 <Users className="w-4 h-4" />
                 <span>Gestión de Equipo</span>

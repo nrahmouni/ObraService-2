@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
@@ -43,7 +44,7 @@ const grantRoleSchema = z.object({
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT || 8080);
+  const PORT = Number(process.env.PORT || 3000);
   const NODE_ENV = process.env.NODE_ENV || 'development';
 
   console.log('--- STARTING OBRASERVICE PRO BACKEND ---');
@@ -51,23 +52,6 @@ async function startServer() {
   console.log(`[Config] Environment: ${NODE_ENV}`);
   console.log(`[Config] Firebase Project: ${process.env.FIREBASE_PROJECT_ID || 'NOT_SET (Check config file)'}`);
   console.log(`[Config] DB Status: ${process.env.SQL_HOST ? 'SQL_HOST SET' : (process.env.DATABASE_URL ? 'DATABASE_URL SET' : 'NOT_SET')}`);
-
-  if (NODE_ENV === 'production') {
-    const distExists = path.join(process.cwd(), 'dist');
-    console.log(`[Config] Production Dist Path: ${distExists}`);
-
-    // If SQL_HOST is not set, we might be using DATABASE_URL or we might not have SQL yet.
-    // However, if the app *requires* DB to function, we should check it.
-    // Let's be a bit more permissive with Firebase as it has a fallback in src/services/firebase-admin.ts
-    const requiredVars = ['SQL_HOST']; // Database is usually required for this app
-    const missing = requiredVars.filter(v => !process.env[v] && !process.env.DATABASE_URL);
-    
-    if (missing.length > 0) {
-      console.warn(`[Warning] Missing database configuration (SQL_HOST or DATABASE_URL).`);
-      // console.error(`[FATAL] Missing required production environment variables: ${missing.join(', ')}`);
-      // process.exit(1);
-    }
-  }
 
   // Trust proxy for Cloud Run ingress / reverse proxies
   app.set('trust proxy', 1);
@@ -79,28 +63,9 @@ async function startServer() {
       crossOriginOpenerPolicy: false,
       crossOriginResourcePolicy: false,
       crossOriginEmbedderPolicy: false,
-      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://apis.google.com", "https://maps.googleapis.com"],
-          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-          fontSrc: ["'self'", "https://fonts.gstatic.com"],
-          imgSrc: ["'self'", "data:", "https:", "blob:"],
-          connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseio.com", "https://*.cloudfunctions.net"],
-          frameSrc: ["'self'", "https://*.firebaseapp.com", "https://accounts.google.com"],
-          frameAncestors: ["'self'", "https://*.google.com", "https://*.run.app", "http://localhost:*", "https://localhost:*"],
-        },
-      } : false,
+      contentSecurityPolicy: false, // Disabled to prevent blocking scripts/styles inside dev/preview iframe
     })
   );
-
-  // Force HTTPS in production (Cloud Run Forwarded Proto check)
-  app.use((req, res, next) => {
-    if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
-      return res.redirect(301, `https://${req.headers.host || req.hostname}${req.url}`);
-    }
-    next();
-  });
 
   app.use(express.json({ limit: '5mb' }));
 
@@ -416,7 +381,15 @@ Comentarios: "${report.comments || 'Ninguno'}"`;
   });
 
   // --- Vite Middleware or Static Production Serving ---
-  if (process.env.NODE_ENV !== 'production') {
+  const distPath = path.join(process.cwd(), 'dist');
+  const distIndexHtml = path.join(distPath, 'index.html');
+
+  if (process.env.NODE_ENV === 'production' && fs.existsSync(distIndexHtml)) {
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(distIndexHtml);
+    });
+  } else {
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
@@ -425,12 +398,6 @@ Comentarios: "${report.comments || 'Ninguno'}"`;
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
   app.listen(PORT, '0.0.0.0', () => {

@@ -1109,6 +1109,7 @@ class ObraStore {
     name: string;
     taxId: string;
     address: string;
+    assignedProjectIds?: string[];
   }): { success: boolean; error?: string; company?: Company } {
     const res = companyModule.createSubcontractor(this.state, data, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
@@ -1143,6 +1144,8 @@ class ObraStore {
     if (!identifier) return undefined;
     const clean = identifier.trim().toUpperCase();
     const cleanEmail = identifier.trim().toLowerCase();
+
+    // 1. Search in current state
     const found = (this.state.invitations || []).find(
       (i: Invitation) => i.code?.toUpperCase() === clean || 
            i.id === identifier || 
@@ -1162,9 +1165,80 @@ class ObraStore {
         status: 'Pending',
         invitedBy: 'usr_admin',
         createdAt: new Date().toISOString(),
-        assignedProjectIds: (this.state.projects || []).filter((p: Project) => p.companyId === company.id).map((p: Project) => p.id)
+        assignedProjectIds: (this.state.projects || []).filter((p: Project) => p.companyId === company.id || (p.assignedSubcontractorIds || []).includes(company.id)).map((p: Project) => p.id)
       };
     }
+
+    // 2. Fallback to seed catalog
+    const seed = getSeedState();
+    const seedInv = (seed.invitations || []).find(
+      (i: Invitation) => i.code?.toUpperCase() === clean || i.id === identifier || (i.email?.toLowerCase() === cleanEmail)
+    );
+    if (seedInv) {
+      if (!this.state.invitations) this.state.invitations = [];
+      if (!this.state.invitations.some(i => i.id === seedInv.id)) {
+        this.state.invitations.push(seedInv);
+      }
+      return seedInv;
+    }
+
+    const seedCompany = seed.companies.find((c: Company) => c.inviteCode?.toUpperCase() === clean || c.id === identifier);
+    if (seedCompany) {
+      if (!this.state.companies.some(c => c.id === seedCompany.id)) {
+        this.state.companies.push(seedCompany);
+      }
+      return {
+        id: `inv_${seedCompany.inviteCode}`,
+        code: seedCompany.inviteCode,
+        email: `alta_${seedCompany.inviteCode.toLowerCase()}@obra.es`,
+        role: seedCompany.type === 'SUBCONTRACTOR' ? 'SUBCONTRACTOR_USER' : 'SITE_MANAGER',
+        companyId: seedCompany.id,
+        companyName: seedCompany.name,
+        status: 'Pending',
+        invitedBy: 'usr_admin',
+        createdAt: new Date().toISOString(),
+        assignedProjectIds: (seed.projects || []).filter((p: Project) => p.companyId === seedCompany.id || (p.assignedSubcontractorIds || []).includes(seedCompany.id)).map((p: Project) => p.id)
+      };
+    }
+
+    // 3. Fallback to localStorage demo/prod snapshot if loaded
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const demoRaw = localStorage.getItem(DEMO_STORAGE_KEY) || localStorage.getItem(PROD_STORAGE_KEY);
+        if (demoRaw) {
+          const parsed = JSON.parse(demoRaw);
+          const snapInv = (parsed.invitations || []).find((i: Invitation) => i.code?.toUpperCase() === clean || i.id === identifier);
+          if (snapInv) {
+            if (!this.state.invitations) this.state.invitations = [];
+            if (!this.state.invitations.some(i => i.id === snapInv.id)) {
+              this.state.invitations.push(snapInv);
+            }
+            return snapInv;
+          }
+          const snapComp = (parsed.companies || []).find((c: Company) => c.inviteCode?.toUpperCase() === clean || c.id === identifier);
+          if (snapComp) {
+            if (!this.state.companies.some(c => c.id === snapComp.id)) {
+              this.state.companies.push(snapComp);
+            }
+            return {
+              id: `inv_${snapComp.inviteCode}`,
+              code: snapComp.inviteCode,
+              email: `alta_${snapComp.inviteCode.toLowerCase()}@obra.es`,
+              role: snapComp.type === 'SUBCONTRACTOR' ? 'SUBCONTRACTOR_USER' : 'SITE_MANAGER',
+              companyId: snapComp.id,
+              companyName: snapComp.name,
+              status: 'Pending',
+              invitedBy: 'usr_admin',
+              createdAt: new Date().toISOString(),
+              assignedProjectIds: (parsed.projects || []).filter((p: Project) => p.companyId === snapComp.id || (p.assignedSubcontractorIds || []).includes(snapComp.id)).map((p: Project) => p.id)
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error querying storage for invitation fallback', e);
+    }
+
     return undefined;
   }
 
@@ -1322,6 +1396,45 @@ class ObraStore {
     const res = projectModule.updateProjectAssignments(this.state, projectId, subcontractorIds, this.logAuditAdapter, this.dispatchSync.bind(this));
     this.notify();
     return res;
+  }
+
+  public updateCompanyProjectAssignments(companyId: string, projectIds: string[]): boolean {
+    if (!this.state.projects) return false;
+    let changed = false;
+    for (const p of this.state.projects) {
+      const assigned = p.assignedSubcontractorIds || [];
+      const shouldBeAssigned = projectIds.includes(p.id);
+      const isCurrentlyAssigned = assigned.includes(companyId);
+
+      if (shouldBeAssigned && !isCurrentlyAssigned) {
+        p.assignedSubcontractorIds = [...assigned, companyId];
+        this.dispatchSync('project', p);
+        changed = true;
+      } else if (!shouldBeAssigned && isCurrentlyAssigned) {
+        p.assignedSubcontractorIds = assigned.filter(id => id !== companyId);
+        this.dispatchSync('project', p);
+        changed = true;
+      }
+    }
+
+    // Sync users belonging to that company
+    const companyUsers = (this.state.users || []).filter(u => u.companyId === companyId);
+    for (const u of companyUsers) {
+      u.assignedProjectIds = projectIds;
+      this.dispatchSync('user', u);
+      changed = true;
+    }
+
+    if (changed) {
+      this.logAuditAdapter(
+        'Company',
+        companyId,
+        'COMPANY_PROJECTS_UPDATED',
+        `Asignaciones de obras actualizadas para la empresa (${projectIds.length} obras autorizadas).`
+      );
+      this.notify();
+    }
+    return true;
   }
 
   public createMachinery(data: Omit<Machinery, 'id' | 'code' | 'createdAt'>): { success: boolean; machinery?: Machinery; error?: string } {

@@ -739,7 +739,7 @@ export const ClientsCrmView: React.FC<ClientsCrmViewProps> = ({ state }) => {
                   <label className="block text-[11px] font-bold text-brand-muted uppercase mb-1">Importe Presupuestado (€)</label>
                   <input
                     type="number"
-                    step="1000"
+                    step="any"
                     value={oppValue}
                     onChange={(e) => setOppValue(e.target.value)}
                     placeholder="1850000"

@@ -1,5 +1,21 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, HardHat, ShieldCheck, Sparkles, User, IdCard, Building2, Briefcase, ChevronRight, X } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  Edit2, 
+  HardHat, 
+  ShieldCheck, 
+  Sparkles, 
+  User, 
+  IdCard, 
+  Building2, 
+  Briefcase, 
+  ChevronRight, 
+  X,
+  FolderKanban,
+  CheckCircle2,
+  Filter
+} from 'lucide-react';
 import { Worker, WorkerCategory, Company, AppState } from '../../types';
 import { obraStore } from '../../services/store';
 import { Modal } from '../ui/Modal';
@@ -11,41 +27,78 @@ interface WorkersSubTabProps {
   searchQuery: string;
 }
 
+const CATEGORIES: WorkerCategory[] = [
+  'Encargado General',
+  'Jefe de Equipo',
+  'Oficial 1ª',
+  'Oficial 2ª',
+  'Oficial de 1ª',
+  'Encofrador',
+  'Ferrallista',
+  'Peón Especialista',
+  'Peón Ordinario',
+  'Maquinista',
+  'Electricista',
+  'Fontanero'
+];
+
 export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery }) => {
   const currentUser = state.currentUser;
   
+  // Filters
+  const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('ALL');
+
   // Modals & Forms
   const [modalOpen, setModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [workerName, setWorkerName] = useState('');
-  const [workerCategory, setWorkerCategory] = useState<WorkerCategory>('Oficial de 1ª');
+  const [workerCategory, setWorkerCategory] = useState<WorkerCategory>('Oficial 1ª');
   const [workerCompanyId, setWorkerCompanyId] = useState(currentUser?.companyId || '');
   const [workerDni, setWorkerDni] = useState('');
+  const [workerPhone, setWorkerPhone] = useState('');
+  const [assignedProjectIds, setAssignedProjectIds] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   if (!currentUser) return null;
-
   const isAdmin = currentUser.role === 'MAIN_CONTRACTOR_ADMIN' || currentUser.role === 'SITE_MANAGER';
 
-  // Filters
-  const filteredWorkers = (state.workers || []).filter(w =>
-    w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    w.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const mainCompany = (state.companies || []).find(c => c.type === 'MAIN_CONTRACTOR') || state.companies[0];
+  const subcontractors = (state.companies || []).filter(c => c.type === 'SUBCONTRACTOR');
 
-  const applyWorkerPreset = (name: string, cat: WorkerCategory) => {
+  // Filter workers based on search and company
+  const filteredWorkers = (state.workers || []).filter(w => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q ||
+      w.name.toLowerCase().includes(q) ||
+      w.category.toLowerCase().includes(q) ||
+      (w.nationalId && w.nationalId.toLowerCase().includes(q));
+
+    let matchesCompany = true;
+    if (selectedCompanyFilter === 'MAIN') {
+      matchesCompany = w.companyId === mainCompany?.id || !w.isSubcontractor;
+    } else if (selectedCompanyFilter !== 'ALL') {
+      matchesCompany = w.companyId === selectedCompanyFilter;
+    }
+
+    return matchesSearch && matchesCompany;
+  });
+
+  const applyWorkerPreset = (name: string, cat: WorkerCategory, compId?: string) => {
     setWorkerName(name);
     setWorkerCategory(cat);
     setWorkerDni('5' + Math.floor(1000000 + Math.random() * 9000000) + 'X');
+    if (compId) setWorkerCompanyId(compId);
   };
 
   const handleOpenCreate = () => {
     setEditingWorker(null);
     setWorkerName('');
-    setWorkerCategory('Oficial de 1ª');
-    setWorkerCompanyId(currentUser.companyId || state.companies[0]?.id || '');
+    setWorkerCategory('Oficial 1ª');
+    setWorkerCompanyId(mainCompany?.id || state.companies[0]?.id || '');
     setWorkerDni('');
+    setWorkerPhone('');
+    setAssignedProjectIds((state.projects || []).map(p => p.id));
     setFormError('');
     setModalOpen(true);
   };
@@ -55,7 +108,9 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
     setWorkerName(w.name);
     setWorkerCategory(w.category);
     setWorkerCompanyId(w.companyId);
-    setWorkerDni(w.nationalId || '');
+    setWorkerDni(w.nationalId || w.taxId || '');
+    setWorkerPhone(w.phone || '');
+    setAssignedProjectIds(w.assignedProjectIds || (state.projects || []).map(p => p.id));
     setFormError('');
     setModalOpen(true);
   };
@@ -65,19 +120,17 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
     setFormError('');
 
     if (!workerName.trim() || workerName.trim().length < 3) {
-      setFormError('Nombre inválido.');
-      return;
-    }
-    if (!workerDni.trim() || workerDni.trim().length < 5) {
-      setFormError('DNI inválido.');
+      setFormError('Por favor introduce un nombre válido.');
       return;
     }
 
-    const targetCompanyId = workerCompanyId || state.companies[0]?.id;
+    const targetCompanyId = workerCompanyId || mainCompany?.id || state.companies[0]?.id;
     if (!targetCompanyId) {
-      setFormError('Se requiere asignar una empresa.');
+      setFormError('Se requiere asignar una empresa empleadora.');
       return;
     }
+
+    const comp = state.companies.find(c => c.id === targetCompanyId);
 
     setIsSaving(true);
     setTimeout(() => {
@@ -86,22 +139,30 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
           name: workerName.trim(),
           category: workerCategory,
           companyId: targetCompanyId,
-          nationalId: workerDni.trim().toUpperCase()
+          companyNameSnapshot: comp?.name || 'Empresa',
+          isSubcontractor: comp?.type === 'SUBCONTRACTOR',
+          nationalId: workerDni.trim().toUpperCase(),
+          phone: workerPhone.trim(),
+          assignedProjectIds,
         });
-        toast.success(`Actualizado: ${workerName.trim()}`);
+        toast.success(`Ficha de ${workerName.trim()} actualizada.`);
       } else {
         obraStore.createWorker({
           name: workerName.trim(),
           category: workerCategory,
           companyId: targetCompanyId,
-          nationalId: workerDni.trim().toUpperCase(),
+          companyNameSnapshot: comp?.name || 'Empresa',
+          isSubcontractor: comp?.type === 'SUBCONTRACTOR',
+          nationalId: workerDni.trim().toUpperCase() || 'S/N',
+          phone: workerPhone.trim(),
           active: true,
+          assignedProjectIds,
         });
-        toast.success(`Registrado: ${workerName.trim()}`);
+        toast.success(`Operario ${workerName.trim()} registrado en ${comp?.name || 'plantilla'}.`);
       }
       setModalOpen(false);
       setIsSaving(false);
-    }, 400);
+    }, 300);
   };
 
   const handleDelete = (workerId: string, name: string) => {
@@ -117,12 +178,57 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
 
   return (
     <div className="space-y-6 animate-in fade-in">
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <h2 className="text-xs font-black text-brand-muted uppercase tracking-[0.2em]">Listado de Cuadrillas</h2>
-        
+      {/* Header Actions & Company Filter Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Company Quick-Filter Pills */}
+        <div className="flex items-center gap-1.5 p-1 bg-brand-surface border border-brand-border rounded-2xl overflow-x-auto no-scrollbar max-w-full">
+          <button
+            onClick={() => setSelectedCompanyFilter('ALL')}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+              selectedCompanyFilter === 'ALL'
+                ? 'bg-brand-accent text-white shadow'
+                : 'text-brand-muted hover:text-white hover:bg-brand-bg'
+            }`}
+          >
+            Todas las Cuadrillas ({state.workers?.length || 0})
+          </button>
+
+          {mainCompany && (
+            <button
+              onClick={() => setSelectedCompanyFilter('MAIN')}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                selectedCompanyFilter === 'MAIN'
+                  ? 'bg-blue-600 text-white shadow'
+                  : 'text-brand-muted hover:text-white hover:bg-brand-bg'
+              }`}
+            >
+              Personal Propio ({(state.workers || []).filter(w => w.companyId === mainCompany.id || !w.isSubcontractor).length})
+            </button>
+          )}
+
+          {subcontractors.map(sub => {
+            const count = (state.workers || []).filter(w => w.companyId === sub.id).length;
+            return (
+              <button
+                key={sub.id}
+                onClick={() => setSelectedCompanyFilter(sub.id)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                  selectedCompanyFilter === sub.id
+                    ? 'bg-emerald-600 text-white shadow'
+                    : 'text-brand-muted hover:text-white hover:bg-brand-bg'
+                }`}
+              >
+                {sub.name} ({count})
+              </button>
+            );
+          })}
+        </div>
+
         {isAdmin && (
-          <button onClick={handleOpenCreate} className="btn-primary h-11 sm:h-10 px-6 w-full sm:w-auto justify-center text-xs uppercase tracking-wider">
+          <button 
+            onClick={handleOpenCreate} 
+            className="btn-primary h-11 px-5 shadow-lg shadow-brand-accent/20 cursor-pointer text-xs uppercase tracking-wider gap-2 shrink-0 justify-center"
+          >
             <Plus className="w-4 h-4" />
             <span>Añadir Operario</span>
           </button>
@@ -130,187 +236,308 @@ export const WorkersSubTab: React.FC<WorkersSubTabProps> = ({ state, searchQuery
       </div>
 
       {/* Workers Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredWorkers.map(w => {
-          const comp = state.companies.find(c => c.id === w.companyId);
+          const comp = (state.companies || []).find(c => c.id === w.companyId);
+          const isMainWorker = !w.isSubcontractor && (comp?.type === 'MAIN_CONTRACTOR' || w.companyId === mainCompany?.id);
+          const workerProjects = (state.projects || []).filter(p => (w.assignedProjectIds || []).includes(p.id));
+
           return (
-            <div key={w.id} className="card group hover:border-brand-accent/40 transition-all duration-300">
-              <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-accent group-hover:bg-brand-accent group-hover:text-white transition-all shrink-0">
-                      <User className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div 
+              key={w.id} 
+              className="card group hover:border-brand-accent/40 transition-all duration-300 flex flex-col justify-between"
+            >
+              <div className="p-5 space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold shrink-0 transition-transform group-hover:scale-105 ${
+                      isMainWorker
+                        ? 'bg-blue-500/15 border border-blue-500/30 text-blue-400'
+                        : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                    }`}>
+                      <User className="w-5 h-5" />
                     </div>
-                    <div>
-                      <div className="text-xs sm:text-sm font-black text-white uppercase tracking-tight group-hover:text-brand-accent transition-colors">
+                    <div className="min-w-0">
+                      <div className="text-sm font-black text-white uppercase tracking-tight truncate group-hover:text-brand-accent transition-colors">
                         {w.name}
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-brand-muted uppercase">
-                        <IdCard className="w-3 h-3 text-brand-accent" />
-                        <span>{w.nationalId || 'S/N'}</span>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-brand-muted uppercase mt-0.5">
+                        <span className="text-brand-accent">{w.category}</span>
+                        <span>•</span>
+                        <span>DNI: {w.nationalId || w.taxId || 'S/N'}</span>
                       </div>
                     </div>
                   </div>
-                  <Badge status="Active" className="text-[9px] px-2 py-0.5 rounded uppercase font-black" />
+
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 ${
+                    w.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {w.active ? 'Activo' : 'Baja'}
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-brand-border/50">
-                  <div className="space-y-1">
-                    <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
-                       <Briefcase className="w-3 h-3 text-brand-accent" />
-                       Categoría
+                {/* Company Link Badge */}
+                <div className="p-2.5 rounded-xl bg-brand-bg border border-brand-border flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Building2 className={`w-4 h-4 shrink-0 ${isMainWorker ? 'text-blue-400' : 'text-emerald-400'}`} />
+                    <div className="min-w-0">
+                      <div className="text-[9px] font-black uppercase tracking-wider text-brand-muted">
+                        {isMainWorker ? 'Personal Propio' : 'Subcontrata'}
+                      </div>
+                      <div className="text-xs font-bold text-white uppercase truncate">
+                        {comp ? comp.name : (w.companyNameSnapshot || 'Constructora')}
+                      </div>
                     </div>
-                    <div className="text-[11px] font-bold text-white uppercase truncate">{w.category}</div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-[9px] font-black text-brand-muted uppercase tracking-widest flex items-center gap-1.5">
-                       <Building2 className="w-3.5 h-3.5 text-brand-accent" />
-                       Empresa
-                    </div>
-                    <div className="text-[11px] font-bold text-white uppercase truncate">{comp ? comp.name : 'Externa'}</div>
-                  </div>
+
+                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                    isMainWorker ? 'bg-blue-500/20 text-blue-300' : 'bg-emerald-500/20 text-emerald-300'
+                  }`}>
+                    {isMainWorker ? 'Directo' : 'Externo'}
+                  </span>
                 </div>
 
-                {isAdmin && (
-                  <div className="pt-2 flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleOpenEdit(w)}
-                      className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl bg-brand-surface border border-brand-border text-brand-muted hover:text-brand-accent hover:border-brand-accent transition-all flex items-center justify-center"
-                      title="Editar"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(w.id, w.name)}
-                      className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl bg-brand-surface border border-brand-border text-brand-muted hover:text-rose-500 hover:border-rose-500 transition-all flex items-center justify-center"
-                      title="Baja"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                {/* Assigned Projects */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-brand-muted">
+                    <span className="flex items-center gap-1">
+                      <FolderKanban className="w-3 h-3 text-brand-accent" />
+                      Obras Asignadas
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-400">
+                      {workerProjects.length > 0 ? `${workerProjects.length} tajos` : 'Todas'}
+                    </span>
                   </div>
-                )}
+
+                  <div className="flex flex-wrap gap-1">
+                    {workerProjects.length > 0 ? (
+                      workerProjects.slice(0, 2).map(p => (
+                        <span 
+                          key={p.id}
+                          className="text-[9px] font-bold bg-brand-surface border border-brand-border text-slate-300 px-2 py-0.5 rounded-lg truncate max-w-[150px]"
+                        >
+                          {p.name}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        Habilitado para cualquier obra autorizada
+                      </span>
+                    )}
+                    {workerProjects.length > 2 && (
+                      <span className="text-[9px] font-bold bg-brand-surface border border-brand-border text-brand-accent px-1.5 py-0.5 rounded-lg">
+                        +{workerProjects.length - 2}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Card Footer Actions */}
+              {isAdmin && (
+                <div className="p-3 bg-brand-bg/50 border-t border-brand-border/60 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => handleOpenEdit(w)}
+                    className="w-8 h-8 rounded-lg bg-brand-surface hover:bg-brand-surface-hover border border-brand-border text-slate-300 hover:text-white transition-colors flex items-center justify-center cursor-pointer"
+                    title="Editar ficha de operario"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(w.id, w.name)}
+                    className="w-8 h-8 rounded-lg bg-brand-surface hover:bg-rose-500/20 border border-brand-border text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-colors flex items-center justify-center cursor-pointer"
+                    title="Dar de baja operario"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
 
         {filteredWorkers.length === 0 && (
-          <div className="md:col-span-2 lg:col-span-3 card p-16 text-center flex flex-col items-center gap-4 border-dashed border-brand-border">
-            <div className="w-20 h-20 rounded-3xl bg-brand-bg border border-brand-border flex items-center justify-center text-brand-muted opacity-30">
-              <HardHat className="w-10 h-10" />
+          <div className="col-span-full card p-12 text-center flex flex-col items-center gap-3 border-dashed border-brand-border">
+            <div className="w-14 h-14 rounded-2xl bg-brand-surface border border-brand-border flex items-center justify-center text-brand-muted">
+              <HardHat className="w-7 h-7" />
             </div>
-            <p className="text-sm font-bold text-brand-muted uppercase tracking-widest">Sin operarios registrados</p>
+            <div>
+              <h3 className="text-sm font-black text-white uppercase">No hay operarios que coincidan</h3>
+              <p className="text-xs text-brand-muted font-medium mt-1">
+                Ajusta el filtro por empresa o registra nuevos operarios en la plantilla.
+              </p>
+            </div>
+            {isAdmin && (
+              <button 
+                onClick={handleOpenCreate}
+                className="btn-primary h-10 px-5 text-xs uppercase tracking-wider mt-2 cursor-pointer"
+              >
+                + Alta de Operario
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Modal Overhaul */}
+      {/* CREATE / EDIT WORKER MODAL */}
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editingWorker ? 'Editar Perfil Operario' : 'Registrar Nuevo Operario'}
+        title={editingWorker ? 'Editar Operario' : 'Alta de Nuevo Operario'}
       >
-        <form onSubmit={handleSave} className="space-y-5 p-2">
+        <form onSubmit={handleSave} className="space-y-4">
           {formError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
-              <X className="w-4 h-4" />
+            <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs font-semibold text-rose-400">
               {formError}
             </div>
           )}
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Nombre Completo</label>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-brand-muted">
+              Nombre Completo <span className="text-brand-accent">*</span>
+            </label>
             <input
               type="text"
+              required
               value={workerName}
               onChange={(e) => setWorkerName(e.target.value)}
-              placeholder="Manuel García López"
-              className="input"
-              required
+              placeholder="Ej. José María Beltrán"
+              className="input-field"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Documento ID</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-wider text-brand-muted">
+                DNI / NIE / Documento ID
+              </label>
               <input
                 type="text"
                 value={workerDni}
                 onChange={(e) => setWorkerDni(e.target.value)}
-                placeholder="12345678Z"
-                className="input font-mono"
-                required
+                placeholder="48291044M"
+                className="input-field font-mono uppercase"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Categoría</label>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-wider text-brand-muted">
+                Categoría Profesional
+              </label>
               <select
                 value={workerCategory}
                 onChange={(e) => setWorkerCategory(e.target.value as WorkerCategory)}
-                className="select"
+                className="input-field cursor-pointer"
               >
-                <option value="Oficial de 1ª">Oficial de 1ª</option>
-                <option value="Oficial de 2ª">Oficial de 2ª</option>
-                <option value="Peón Especialista">Peón Especialista</option>
-                <option value="Peón Ordinario">Peón Ordinario</option>
-                <option value="Encargado de Obra">Encargado de Obra</option>
+                {CATEGORIES.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-brand-muted block ml-1">Empresa / Empleador</label>
+          {/* Empresa Empleadora (CRITICAL LINKAGE) */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-wider text-brand-muted flex items-center justify-between">
+              <span>Empresa Empleadora <span className="text-brand-accent">*</span></span>
+              <span className="text-slate-400 font-normal">Personal Propio o Subcontrata</span>
+            </label>
             <select
               value={workerCompanyId}
               onChange={(e) => setWorkerCompanyId(e.target.value)}
-              className="select"
+              className="input-field cursor-pointer"
+              required
             >
-              {state.companies.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.id === currentUser.companyId ? '(Principal)' : '(Subcontrata)'}
-                </option>
-              ))}
+              <optgroup label="🏢 Empresa Principal (Personal Propio)">
+                {mainCompany && (
+                  <option value={mainCompany.id}>
+                    {mainCompany.name} (Contratista General)
+                  </option>
+                )}
+              </optgroup>
+              <optgroup label="🔗 Subcontratistas Homologadas">
+                {subcontractors.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.taxId})
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
+          {/* Obras Asignadas */}
+          <div className="space-y-2 pt-1">
+            <label className="text-[10px] font-black uppercase tracking-wider text-brand-muted block">
+              Obras en las que opera habitualmente
+            </label>
+            <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+              {(state.projects || []).map(p => {
+                const checked = assignedProjectIds.includes(p.id);
+                return (
+                  <label
+                    key={p.id}
+                    className={`flex items-center gap-2.5 p-2 rounded-xl border text-xs cursor-pointer transition-colors ${
+                      checked ? 'bg-orange-500/10 border-brand-accent text-white' : 'bg-brand-surface border-brand-border text-slate-400'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setAssignedProjectIds(prev =>
+                          checked ? prev.filter(id => id !== p.id) : [...prev, p.id]
+                        );
+                      }}
+                      className="accent-orange-500 w-4 h-4 rounded"
+                    />
+                    <span className="font-bold uppercase truncate">{p.name}</span>
+                    <span className="text-[10px] font-mono text-slate-500 ml-auto">{p.code}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Demo Quick Presets */}
           {!editingWorker && (
-            <div className="p-4 bg-brand-surface/50 border border-brand-border rounded-2xl space-y-3">
+            <div className="p-3 bg-brand-surface rounded-xl border border-brand-border space-y-2">
               <span className="text-[9px] font-black uppercase tracking-widest text-brand-muted block">
-                Completado Rápido (Demo):
+                Completado Rápido de Prueba:
               </span>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { name: 'Javier Sotomayor', cat: 'Oficial de 1ª' },
-                  { name: 'Sofía Benítez Rivas', cat: 'Encargado de Obra' },
-                ].map((p, idx) => (
+                  { name: 'Antonio Rivas Cano', cat: 'Encargado General', comp: mainCompany?.id },
+                  { name: 'Manuel Domínguez', cat: 'Encofrador', comp: subcontractors[0]?.id || mainCompany?.id },
+                  { name: 'Lucas Santana', cat: 'Oficial 1ª', comp: subcontractors[1]?.id || mainCompany?.id },
+                ].map((preset, i) => (
                   <button
-                    key={idx}
+                    key={i}
                     type="button"
-                    onClick={() => applyWorkerPreset(p.name, p.cat as WorkerCategory)}
-                    className="px-3 py-1.5 rounded-xl bg-brand-bg hover:bg-brand-surface border border-brand-border text-[9px] font-black text-brand-muted hover:text-brand-accent uppercase tracking-widest transition-all flex items-center gap-2 cursor-pointer"
+                    onClick={() => applyWorkerPreset(preset.name, preset.cat as WorkerCategory, preset.comp)}
+                    className="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-slate-800 border border-brand-border text-[9px] font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
                   >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>{p.name}</span>
+                    {preset.name} ({preset.cat})
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="pt-4 flex items-center justify-end gap-3">
+          <div className="pt-3 border-t border-brand-border flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setModalOpen(false)}
-              className="btn-secondary px-6"
+              className="btn-secondary h-11 px-4 text-xs cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="btn-primary px-8"
+              className="btn-primary h-11 px-6 text-xs uppercase tracking-wider cursor-pointer"
             >
-              {isSaving ? 'Procesando...' : editingWorker ? 'Actualizar Operario' : 'Dar de Alta'}
+              {isSaving ? 'Guardando...' : editingWorker ? 'Actualizar Ficha' : 'Dar de Alta'}
             </button>
           </div>
         </form>

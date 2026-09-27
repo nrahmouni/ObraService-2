@@ -84,6 +84,7 @@ export const createSubcontractor = (
     name: string;
     taxId: string;
     address: string;
+    assignedProjectIds?: string[];
   },
   logAudit: (affectedEntity: string, recordId: string, operation: string, details: string) => void,
   dispatchSync: (entity: string, item: unknown) => void
@@ -112,6 +113,19 @@ export const createSubcontractor = (
 
   state.companies.push(newCompany);
   dispatchSync('company', newCompany);
+
+  // If projects were assigned at creation time, link them immediately
+  if (data.assignedProjectIds && data.assignedProjectIds.length > 0) {
+    for (const proj of state.projects || []) {
+      if (data.assignedProjectIds.includes(proj.id)) {
+        if (!proj.assignedSubcontractorIds) proj.assignedSubcontractorIds = [];
+        if (!proj.assignedSubcontractorIds.includes(newCompany.id)) {
+          proj.assignedSubcontractorIds.push(newCompany.id);
+          dispatchSync('project', proj);
+        }
+      }
+    }
+  }
 
   logAudit(
     'Company',
@@ -221,7 +235,7 @@ export const createInvitation = (
   dispatchSync('invitation', invite);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://obraservice.app';
-  const magicLink = `${origin}/?invite=${invite.code}`;
+  const magicLink = `${origin}/invitation?code=${invite.code}`;
 
   logAudit(
     'Company',
@@ -253,6 +267,10 @@ export const acceptInvitation = (
   if (!inv) {
     const matchingCompany = state.companies.find((c: Company) => c.inviteCode?.toUpperCase() === clean || c.id === codeOrId);
     if (matchingCompany) {
+      const authorizedProjects = (state.projects || []).filter(
+        (p: Project) => p.companyId === matchingCompany.id || (p.assignedSubcontractorIds || []).includes(matchingCompany.id)
+      ).map((p: Project) => p.id);
+
       inv = {
         id: `inv_${Date.now()}`,
         code: matchingCompany.inviteCode,
@@ -263,7 +281,7 @@ export const acceptInvitation = (
         status: 'Pending',
         invitedBy: 'usr_admin',
         createdAt: new Date().toISOString(),
-        assignedProjectIds: state.projects.filter((p: Project) => p.companyId === matchingCompany.id).map((p: Project) => p.id)
+        assignedProjectIds: authorizedProjects.length > 0 ? authorizedProjects : (state.projects || []).map((p: Project) => p.id)
       };
       state.invitations.push(inv);
     }
