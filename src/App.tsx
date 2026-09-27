@@ -18,6 +18,15 @@ import { OnboardingView } from './views/OnboardingView';
 import { NotFoundView } from './views/NotFoundView';
 import { toast } from 'react-hot-toast';
 
+const DemoEntryRedirect: React.FC = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    obraStore.enterDemoMode();
+    navigate('/admin/dashboard', { replace: true });
+  }, [navigate]);
+  return null;
+};
+
 export default function App() {
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>(obraStore.getState());
@@ -85,12 +94,7 @@ export default function App() {
         } />
 
         {/* Instant Demo Entry */}
-        <Route path="/demo" element={
-          (() => {
-            obraStore.enterDemoMode();
-            return <Navigate to="/admin/dashboard" replace />;
-          })()
-        } />
+        <Route path="/demo" element={<DemoEntryRedirect />} />
 
         {/* Invite Acceptance */}
         <Route path="/invitation" element={<InviteAcceptanceView />} />
