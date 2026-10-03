@@ -12,6 +12,7 @@ import { MobileShell } from './components/MobileShell';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Toaster, toast } from 'react-hot-toast';
 import { PublicEntryView } from './views/PublicEntryView';
+import { PresentationPageView } from './views/PresentationPageView';
 import { MasterDashboardView } from './views/MasterDashboardView';
 import { OnboardingView } from './views/OnboardingView';
 import { NotFoundView } from './views/NotFoundView';
@@ -36,7 +37,13 @@ const RootRouteElement: React.FC<{ currentUser: any; isMobile: boolean }> = ({ c
     return <Navigate to={`/invitation?code=${encodeURIComponent(inviteCode)}`} replace />;
   }
 
-  if (currentUser) {
+  // Open presentation directly if requested via param
+  if (searchParams.get('presentation') === '1' || searchParams.get('p') === '1' || searchParams.get('keynote') === '1') {
+    return <PresentationPageView />;
+  }
+
+  // Allow direct access to dashboard only when explicitly asked
+  if (currentUser && searchParams.get('goto') === 'dashboard') {
     if (currentUser.role === Role.WORKER) {
       return <Navigate to="/mobile/dashboard" replace />;
     }
@@ -45,12 +52,13 @@ const RootRouteElement: React.FC<{ currentUser: any; isMobile: boolean }> = ({ c
 
   return (
     <PublicEntryView 
+      currentUser={currentUser}
       onOpenLogin={() => navigate('/login')}
       onOpenRegister={() => navigate('/onboarding')}
       onOpenJoinCode={() => navigate('/invitation')}
       onDemoAccess={() => {
         obraStore.enterDemoMode();
-        toast.success('🚀 Entorno Demo CRM Pro Max activado. Has iniciado sesión como Director General.');
+        toast.success('🚀 Entorno Demo activado. Has iniciado sesión como Director General.');
         navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard');
       }}
     />
@@ -128,6 +136,34 @@ export default function App() {
 
         {/* Instant Demo Entry */}
         <Route path="/demo" element={<DemoEntryRedirect isMobile={isMobile} />} />
+
+        {/* Dedicated Presentation Routes (Direct Access) */}
+        <Route path="/presentation" element={<PresentationPageView />} />
+        <Route path="/keynote" element={<PresentationPageView />} />
+
+        {/* Landing Page */}
+        <Route path="/landing" element={
+          <PublicEntryView 
+            currentUser={currentUser}
+            onOpenLogin={() => navigate('/login')}
+            onOpenRegister={() => navigate('/onboarding')}
+            onOpenJoinCode={() => navigate('/invitation')}
+            onDemoAccess={() => {
+              obraStore.enterDemoMode();
+              toast.success('🚀 Entorno Demo activado. Has iniciado sesión como Director General.');
+              navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard');
+            }}
+          />
+        } />
+
+        {/* Direct Dashboard Access */}
+        <Route path="/dashboard" element={
+          currentUser ? (
+            currentUser.role === Role.WORKER || isMobile ?
+              <Navigate to="/mobile/dashboard" replace /> :
+              <Navigate to="/admin/dashboard" replace />
+          ) : <Navigate to="/login" replace />
+        } />
 
         {/* Invite Acceptance Routes */}
         <Route path="/invitation" element={<InviteAcceptanceView />} />

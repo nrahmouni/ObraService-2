@@ -95,8 +95,7 @@ export default defineConfig(() => {
           ],
         },
         devOptions: {
-          enabled: true,
-          type: 'module'
+          enabled: false
         }
       })
     ],
@@ -105,7 +104,7 @@ export default defineConfig(() => {
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve('.'),
       },
     },
     test: {
@@ -114,8 +113,7 @@ export default defineConfig(() => {
       include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}'],
     },
     server: {
-      hmr: process.env.DISABLE_HMR !== 'true',
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      hmr: false,
     },
   };
 });

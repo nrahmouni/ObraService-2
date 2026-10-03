@@ -1,7 +1,12 @@
 import { jsPDF } from 'jspdf';
+import { toast } from 'react-hot-toast';
 import { DeliveryNote } from '../types';
 
 export const exportDeliveryNoteToPDF = (note: DeliveryNote): void => {
+  if (!note) {
+    toast.error('No se especificó ningún albarán para exportar');
+    return;
+  }
   try {
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -174,8 +179,9 @@ export const exportDeliveryNoteToPDF = (note: DeliveryNote): void => {
     doc.text(`Sello de auditoría de ObraService. Cadena de Custodia Inmutable para Empresas Subcontratistas.`, margin, 282);
 
     doc.save(`Albaran_Socio_${note.code}.pdf`);
+    toast.success(`Albarán ${note.code} exportado a PDF`);
   } catch (err) {
-    console.error(err);
-    alert('Error al exportar el albarán a PDF.');
+    console.warn('Error al exportar el albarán a PDF:', err);
+    toast.error('Error al exportar el albarán a PDF.');
   }
 };

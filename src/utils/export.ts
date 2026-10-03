@@ -1,9 +1,22 @@
+import { toast } from 'react-hot-toast';
+
 /**
- * Utility to export JSON data to CSV and trigger download
+ * Utility to export JSON data to CSV and trigger download.
+ * If data is empty but fallbackHeaders are provided, exports a CSV with just the headers (template).
  */
-export function exportToCSV(data: any[], fileName: string) {
+export function exportToCSV(data: any[], fileName: string, fallbackHeaders?: string[]) {
   if (!data || !data.length) {
-    console.error('No data to export');
+    if (fallbackHeaders && fallbackHeaders.length > 0) {
+      // Export header-only CSV template
+      const headerRow = fallbackHeaders.map(h => `"${String(h).replace(/"/g, '""')}"`).join(',');
+      const blob = new Blob([headerRow + '\r\n'], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, `${fileName}.csv`);
+      toast.success('Plantilla CSV generada (sin registros)');
+      return;
+    }
+
+    // Gracefully inform user without throwing console.error
+    toast.error('No hay datos disponibles para exportar');
     return;
   }
 
@@ -12,7 +25,7 @@ export function exportToCSV(data: any[], fileName: string) {
   
   // Build CSV rows
   const csvRows = [
-    headers.join(','), // header row
+    headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(','), // header row
     ...data.map(row => 
       headers.map(fieldName => {
         const value = row[fieldName];
@@ -24,18 +37,24 @@ export function exportToCSV(data: any[], fileName: string) {
     )
   ];
 
-  const csvContent = csvRows.join('\n');
+  const csvContent = csvRows.join('\r\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  
-  // Trigger download
+  downloadBlob(blob, `${fileName}.csv`);
+  toast.success('Archivo CSV exportado correctamente');
+}
+
+function downloadBlob(blob: Blob, fullFileName: string) {
   const link = document.createElement('a');
   if (link.download !== undefined) {
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `${fileName}.csv`);
+    link.setAttribute('download', fullFileName);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
   }
 }

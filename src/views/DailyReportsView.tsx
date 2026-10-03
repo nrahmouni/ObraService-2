@@ -204,16 +204,33 @@ export const DailyReportsView: React.FC<DailyReportsViewProps> = ({ state, onOpe
       doc.text(`Documento certificado digitalmente por ObraService en fecha ${new Date().toLocaleDateString()}.`, margin, 282);
 
       doc.save(`Parte_Obra_${report.code}.pdf`);
+      toast.success(`Parte ${report.code} exportado a PDF`);
     } catch (err) {
-      console.error(err);
-      alert('Error al generar el PDF.');
+      console.warn('Error al generar el PDF del parte:', err);
+      toast.error('Error al generar el PDF del parte.');
     }
   };
 
   const handleExportAll = () => {
+    const defaultHeaders = [
+      'Codigo',
+      'Proyecto',
+      'Fecha',
+      'Estado',
+      'TotalHoras',
+      'Normales',
+      'Extras',
+      'Comentarios'
+    ];
+
+    if (!filteredReports || filteredReports.length === 0) {
+      exportToCSV([], `Partes_ObraService_${new Date().toISOString().split('T')[0]}`, defaultHeaders);
+      return;
+    }
+
     const dataToExport = filteredReports.map(r => ({
       Codigo: r.code,
-      Proyecto: r.projectNameSnapshot,
+      Proyecto: r.projectNameSnapshot || '',
       Fecha: r.date,
       Estado: r.status,
       TotalHoras: r.totalHours,
@@ -221,7 +238,7 @@ export const DailyReportsView: React.FC<DailyReportsViewProps> = ({ state, onOpe
       Extras: r.totalExtraHours,
       Comentarios: r.comments || ''
     }));
-    exportToCSV(dataToExport, `Partes_ObraService_${new Date().toISOString().split('T')[0]}`);
+    exportToCSV(dataToExport, `Partes_ObraService_${new Date().toISOString().split('T')[0]}`, defaultHeaders);
   };
 
   const canCreateReport = user.role === 'SUBCONTRACTOR_USER' || (user.role as string) === 'WORKER' || user.role === 'SITE_MANAGER';

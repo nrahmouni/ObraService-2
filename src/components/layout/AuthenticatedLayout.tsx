@@ -230,6 +230,16 @@ export const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* Keynote Presentation Link */}
+          <Link
+            to="/presentation"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-brand-accent/40 text-brand-accent hover:text-orange-400 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+            title="Abrir Presentación Ejecutiva Keynote Pro"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-orange-400 animate-pulse" />
+            <span className="hidden sm:inline">Keynote Pro</span>
+          </Link>
+
           <NotificationBell currentUser={currentUser} />
 
           <button

@@ -1,18 +1,20 @@
 import React from 'react';
-import { ShieldCheck, ArrowRight, Sparkles, KeyRound, MapPin, Smartphone, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Sparkles, KeyRound, CheckCircle2, Play } from 'lucide-react';
 
 interface LandingHeroProps {
   onStart: (plan?: string) => void;
   onLogin: () => void;
   onDemo: () => void;
   onJoinCode: () => void;
+  onViewPresentation?: () => void;
 }
 
 export const LandingHero: React.FC<LandingHeroProps> = ({ 
   onStart, 
   onLogin, 
   onDemo,
-  onJoinCode 
+  onJoinCode,
+  onViewPresentation
 }) => {
   return (
     <section className="relative pt-24 sm:pt-32 pb-16 sm:pb-24 overflow-hidden bg-brand-bg">
@@ -23,12 +25,32 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
         <div className="text-center space-y-6 sm:space-y-8 max-w-4xl mx-auto">
           
-          {/* Legal Compliance Badge */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-brand-surface/90 border border-brand-accent/30 shadow-lg backdrop-blur-md">
-            <ShieldCheck className="w-4 h-4 text-brand-accent shrink-0" />
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-text">
-              Conforme Ley 32/2006 • Seguridad Jurídica y Control PRL
-            </span>
+          {/* Top Badges & Apple-Style View Presentation Trigger */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            {/* Legal Compliance Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-brand-surface/90 border border-brand-accent/30 shadow-lg backdrop-blur-md">
+              <ShieldCheck className="w-4 h-4 text-brand-accent shrink-0" />
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-brand-text">
+                Conforme Ley 32/2006 • Seguridad Jurídica y Control PRL
+              </span>
+            </div>
+
+            {/* Apple-style "View Presentation" Button */}
+            {onViewPresentation && (
+              <button
+                onClick={onViewPresentation}
+                className="group relative inline-flex items-center gap-2.5 px-4.5 py-1.5 sm:py-2 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-white/30 text-white text-[11px] sm:text-xs font-medium tracking-wide backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_4px_20px_rgba(0,0,0,0.4)] hover:shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_0_25px_rgba(255,102,0,0.35)] transition-all duration-300 ease-out transform hover:scale-[1.03] active:scale-[0.98] cursor-pointer"
+                title="Abrir presentación ejecutiva interactiva"
+              >
+                <div className="w-5 h-5 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-orange-400 group-hover:scale-110 group-hover:bg-orange-500/20 transition-all duration-300">
+                  <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+                </div>
+                <span className="text-[#f5f5f7] font-semibold">Ver Presentación</span>
+                <span className="text-[9px] font-mono uppercase bg-white/10 text-orange-300 px-2 py-0.5 rounded-full border border-white/10">
+                  Keynote Pro
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Main Headline */}
@@ -52,11 +74,21 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
               <span>Probar Demo Interactiva (1 Clic)</span>
             </button>
             
+            {onViewPresentation && (
+              <button
+                onClick={onViewPresentation}
+                className="btn-secondary h-12 sm:h-14 px-5 sm:px-7 text-xs sm:text-sm uppercase tracking-wider gap-2 min-h-[48px] justify-center inline-flex items-center border-brand-accent/40 bg-white/[0.04] hover:bg-white/[0.08] hover:border-brand-accent text-white group cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.25)] transition-all"
+              >
+                <Play className="w-4 h-4 text-brand-accent fill-brand-accent/30 group-hover:scale-110 transition-transform" />
+                <span>Ver Presentación</span>
+              </button>
+            )}
+
             <a
               href="#precios"
-              className="btn-secondary h-12 sm:h-14 px-6 sm:px-8 text-xs sm:text-sm uppercase tracking-wider gap-2 min-h-[48px] justify-center text-center inline-flex items-center"
+              className="btn-secondary h-12 sm:h-14 px-5 sm:px-7 text-xs sm:text-sm uppercase tracking-wider gap-2 min-h-[48px] justify-center text-center inline-flex items-center"
             >
-              <span>Ver Planes & Precios</span>
+              <span>Planes</span>
               <ArrowRight className="w-4 h-4 text-brand-accent shrink-0" />
             </a>
           </div>

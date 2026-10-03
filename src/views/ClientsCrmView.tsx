@@ -221,6 +221,26 @@ export const ClientsCrmView: React.FC<ClientsCrmViewProps> = ({ state }) => {
   };
 
   const handleExportClientsCSV = () => {
+    const defaultHeaders = [
+      'Razón Social',
+      'Nombre Comercial',
+      'CIF/NIF',
+      'Tipo de Cliente',
+      'Persona de Contacto',
+      'Email',
+      'Teléfono',
+      'Rating Solvencia',
+      'Días de Pago',
+      'Total Facturado (€)',
+      'Pendiente de Cobro (€)',
+      'Acceso Portal'
+    ];
+
+    if (!clients || clients.length === 0) {
+      exportToCSV([], `CRM_Cartera_Clientes_${new Date().toISOString().split('T')[0]}`, defaultHeaders);
+      return;
+    }
+
     const data = clients.map(c => ({
       'Razón Social': c.name,
       'Nombre Comercial': c.tradeName || c.name,
@@ -236,8 +256,7 @@ export const ClientsCrmView: React.FC<ClientsCrmViewProps> = ({ state }) => {
       'Acceso Portal': c.portalAccessEnabled ? 'Sí' : 'No'
     }));
 
-    exportToCSV(data, `CRM_Cartera_Clientes_${new Date().toISOString().split('T')[0]}`);
-    toast.success('Cartera de clientes exportada en CSV');
+    exportToCSV(data, `CRM_Cartera_Clientes_${new Date().toISOString().split('T')[0]}`, defaultHeaders);
   };
 
   const handleSyncErp = () => {
