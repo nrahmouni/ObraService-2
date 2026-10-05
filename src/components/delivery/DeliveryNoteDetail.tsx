@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { exportDeliveryNoteToPDF } from '../../utils/deliveryPdf';
 import { obraStore } from '../../services/store';
 import { Badge } from '../ui/Badge';
+import { CertificationStamp } from '../ui/CertificationStamp';
 
 interface DeliveryNoteDetailProps {
   note: DeliveryNote;
@@ -41,7 +42,18 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
   const handleConfirm = () => {
     const res = obraStore.confirmDeliveryNote(note.id);
     if (res.success) {
-      toast.success('Albarán confirmado y certificado.');
+      toast.success('✨ ¡Albarán certificado con Sello Digital Criptográfico!', {
+        icon: '🛡️',
+        duration: 4000,
+        style: {
+          borderRadius: '14px',
+          background: '#121215',
+          color: '#f59e0b',
+          border: '1px solid rgba(245, 158, 11, 0.4)',
+          fontWeight: 'bold',
+          fontSize: '13px'
+        }
+      });
       const updated = obraStore.getState().deliveryNotes.find(n => n.id === note.id);
       if (updated) onRefreshNote(updated);
     } else {
@@ -238,6 +250,18 @@ export const DeliveryNoteDetail: React.FC<DeliveryNoteDetailProps> = ({
                         ? `Disputa levantada por la dirección de obra. Motivo: ${note.disputeRecord?.reason || note.dispute?.reason || ''}. Auditoría propuesta: ${note.disputeRecord?.proposedNormalHours || note.dispute?.proposedNormalHours || ''}H.`
                         : `Este pre-albarán requiere la firma digital del representante de la subcontrata para formalizar la producción del día.`}
                     </p>
+
+                    {note.status === 'Confirmed' && (
+                      <div className="pt-4 flex justify-end">
+                        <CertificationStamp 
+                          code={note.code}
+                          date={new Date(note.confirmationDetails?.confirmedAt || note.date).toLocaleDateString()}
+                          signatory={note.confirmationDetails?.confirmedByUserName || 'Responsable de Subcontrata'}
+                          companyName={note.subcontractorCompanyName}
+                          variant="emerald"
+                        />
+                      </div>
+                    )}
                  </div>
               </div>
 

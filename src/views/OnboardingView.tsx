@@ -34,14 +34,13 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
   
   const [mode, setMode] = useState<'wizard' | 'join'>('wizard');
 
-  // Progressive section expansion state (1: User, 2: Company, 3: Project, 4: Finish)
+  // Progressive section expansion state (1: User, 2: Company, 3: Project)
   const [unlockedSection, setUnlockedSection] = useState<number>(1);
   const [expandedSection, setExpandedSection] = useState<number>(1);
 
   // Section 1: User data
   const [adminName, setAdminName] = useState(existingUser?.name || '');
   const [adminEmail, setAdminEmail] = useState(existingUser?.email || '');
-  const [adminPassword, setAdminPassword] = useState('');
 
   // Section 2: Company data
   const [companyName, setCompanyName] = useState('');
@@ -69,7 +68,10 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
   const section2Ref = useRef<HTMLDivElement>(null);
   const section3Ref = useRef<HTMLDivElement>(null);
 
-  // Validations & Progressive Unlocking
+  // Real-time CIF validation
+  const taxIdValidation = validateSpanishTaxId(taxId);
+
+  // Section 1 Completion
   const handleCompleteSection1 = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!adminName.trim()) {
@@ -77,7 +79,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
       return;
     }
     if (!adminEmail.trim() || !adminEmail.includes('@')) {
-      setErrorMsg('Por favor, introduce un correo electrónico válido.');
+      setErrorMsg('Por favor, introduce un correo electrónico corporativo válido.');
       return;
     }
     setErrorMsg('');
@@ -88,6 +90,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
     }, 100);
   };
 
+  // Section 2 Completion
   const handleCompleteSection2 = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!companyName.trim()) {
@@ -99,8 +102,9 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
       return;
     }
     const cleanTax = taxId.trim().toUpperCase();
-    if (!validateSpanishTaxId(cleanTax)) {
-      setErrorMsg('El formato del CIF/NIF no es válido (ej. B12345678, A28000000 o 12345678Z).');
+    const validation = validateSpanishTaxId(cleanTax);
+    if (!validation.valid) {
+      setErrorMsg(validation.message || 'El CIF/NIF introducido no es válido.');
       return;
     }
 
@@ -112,6 +116,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
     }, 100);
   };
 
+  // Final Registration Persistence
   const handleFinalizeRegistration = async () => {
     if (!projectName.trim()) {
       setErrorMsg('Indica el nombre de tu primera obra o proyecto.');
@@ -121,14 +126,14 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
     setErrorMsg('');
     setIsFinalizing(true);
     try {
-      // 1. Create or register user
+      // 1. Ensure or register user in store
       let user = existingUser;
       if (!user) {
         const res = obraStore.register(adminName.trim(), adminEmail.trim());
         user = res.user!;
       }
 
-      // 2. Persist new Company in store & Firestore
+      // 2. Persist new Company directly in store & Firestore
       const compRes = obraStore.createCompany({
         name: companyName.trim(),
         taxId: taxId.trim().toUpperCase(),
@@ -139,7 +144,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
       if (compRes.company) {
         setFinalCompanyCode(compRes.company.inviteCode);
         
-        // 3. Persist initial Project in store & Firestore
+        // 3. Persist initial Project directly in store & Firestore
         obraStore.createProject({
           name: projectName.trim(),
           address: projectAddress.trim() || 'Ubicación de obra',
@@ -150,7 +155,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
       }
 
       setIsCompleted(true);
-      toast.success('🎉 ¡Empresa y obra inicial creadas con éxito!');
+      toast.success('🎉 ¡Empresa y obra inicial persistidas con éxito en el sistema!');
     } catch (e) {
       console.error(e);
       setErrorMsg('Error al persistir el registro. Por favor, inténtalo de nuevo.');
@@ -187,7 +192,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
               ¡Empresa Configurada!
             </h1>
             <p className="text-xs sm:text-sm text-brand-muted">
-              Tu organización <strong className="text-white">{companyName}</strong> y la obra <strong className="text-white">{projectName}</strong> están listas para operar.
+              Tu organización <strong className="text-white">{companyName}</strong> (CIF: <span className="font-mono text-amber-400">{taxId}</span>) y la obra <strong className="text-white">{projectName}</strong> están listas para operar.
             </p>
           </div>
 
@@ -244,7 +249,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
             Alta de Empresa y Obra
           </h1>
           <p className="text-xs sm:text-sm text-brand-muted">
-            Configuración progresiva en una sola pantalla. Completa cada bloque para avanzar.
+            Flujo progresivo en acordeón en una sola pantalla. Completa los bloques para activar tu empresa.
           </p>
         </div>
 
@@ -279,7 +284,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
         {mode === 'wizard' ? (
           <div className="space-y-4">
             
-            {/* PROGRESS VISUAL GUIDE */}
+            {/* PROGRESS VISUAL ACCORDION INDICATOR */}
             <div className="bg-brand-surface/60 border border-brand-border p-3 rounded-2xl flex items-center justify-between gap-2">
               {[
                 { step: 1, label: 'Tus Datos' },
@@ -342,28 +347,28 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
 
               {expandedSection === 1 && (
                 <div className="pt-4 mt-4 border-t border-brand-border space-y-4 animate-in fade-in duration-200">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                      Tu Nombre y Apellidos <span className="text-rose-400">*</span>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                      Nombre y Apellidos del Administrador <span className="text-rose-400">*</span>
                     </label>
                     <input 
                       type="text" 
                       value={adminName}
                       onChange={(e) => setAdminName(e.target.value)}
-                      className="input h-11 text-sm placeholder:text-zinc-500" 
+                      className="input h-11 text-sm text-white placeholder:text-zinc-500 w-full" 
                       placeholder="Ej. Juan Gómez Ruiz" 
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                       Correo Electrónico Corporativo <span className="text-rose-400">*</span>
                     </label>
                     <input 
                       type="email" 
                       value={adminEmail}
                       onChange={(e) => setAdminEmail(e.target.value)}
-                      className="input h-11 text-sm placeholder:text-zinc-500" 
+                      className="input h-11 text-sm text-white placeholder:text-zinc-500 w-full" 
                       placeholder="juan@tuconstructora.es" 
                     />
                   </div>
@@ -382,7 +387,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
               )}
             </div>
 
-            {/* SECTION 2: COMPANY DATA (Unfolds progressively) */}
+            {/* SECTION 2: COMPANY DATA & REAL-TIME CIF VALIDATION */}
             {unlockedSection >= 2 && (
               <div 
                 ref={section2Ref}
@@ -416,41 +421,66 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
 
                 {expandedSection === 2 && (
                   <div className="pt-4 mt-4 border-t border-brand-border space-y-4 animate-in fade-in duration-200">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                         Razón Social / Nombre Comercial <span className="text-rose-400">*</span>
                       </label>
                       <input 
                         type="text" 
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        className="input h-11 text-sm placeholder:text-zinc-500" 
+                        className="input h-11 text-sm text-white placeholder:text-zinc-500 w-full" 
                         placeholder="Ej. Construcciones Ibéricas Levante S.L." 
                       />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                          CIF / NIF Español <span className="text-rose-400">*</span>
-                        </label>
+                      {/* CIF Input with Real-time Validation */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                            CIF / NIF Español <span className="text-rose-400">*</span>
+                          </label>
+                        </div>
                         <input 
                           type="text" 
                           value={taxId}
                           onChange={(e) => setTaxId(e.target.value.toUpperCase())}
-                          className="input h-11 text-sm uppercase placeholder:text-zinc-500 font-mono" 
+                          className={`input h-11 text-sm uppercase font-mono tracking-wider w-full ${
+                            taxId && !taxIdValidation.valid 
+                              ? 'border-rose-500 focus:border-rose-400 text-rose-300' 
+                              : taxId && taxIdValidation.valid 
+                                ? 'border-emerald-500 focus:border-emerald-400 text-emerald-300' 
+                                : 'text-white'
+                          }`} 
                           placeholder="Ej. B12345678" 
                         />
+                        {/* Real-time Validation Badge */}
+                        {taxId.trim().length > 0 && (
+                          <div className="pt-1">
+                            {taxIdValidation.valid ? (
+                              <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1.5 w-max">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>CIF/NIF Válido (Formato Oficial Registrado)</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded flex items-center gap-1.5 w-max">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                <span>{taxIdValidation.message}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
-                      <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                           Tipo de Empresa
                         </label>
                         <select
                           value={companyType}
                           onChange={(e) => setCompanyType(e.target.value as CompanyType)}
-                          className="input h-11 text-sm"
+                          className="input h-11 text-sm text-white w-full"
                         >
                           <option value="MAIN_CONTRACTOR">Contratista Principal</option>
                           <option value="SUBCONTRACTOR">Subcontratista Especializado</option>
@@ -458,15 +488,15 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                         Domicilio Social / Sede Central
                       </label>
                       <input 
                         type="text" 
                         value={companyAddress}
                         onChange={(e) => setCompanyAddress(e.target.value)}
-                        className="input h-11 text-sm placeholder:text-zinc-500" 
+                        className="input h-11 text-sm text-white placeholder:text-zinc-500 w-full" 
                         placeholder="Ej. Paseo de la Castellana 45, Madrid" 
                       />
                     </div>
@@ -486,7 +516,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
               </div>
             )}
 
-            {/* SECTION 3: INITIAL PROJECT (Unfolds progressively) */}
+            {/* SECTION 3: INITIAL PROJECT */}
             {unlockedSection >= 3 && (
               <div 
                 ref={section3Ref}
@@ -518,34 +548,34 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
 
                 {expandedSection === 3 && (
                   <div className="pt-4 mt-4 border-t border-brand-border space-y-4 animate-in fade-in duration-200">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                         Nombre de la Obra <span className="text-rose-400">*</span>
                       </label>
                       <input 
                         type="text" 
                         value={projectName}
                         onChange={(e) => setProjectName(e.target.value)}
-                        className="input h-11 text-sm placeholder:text-zinc-500" 
+                        className="input h-11 text-sm text-white placeholder:text-zinc-500 w-full" 
                         placeholder="Ej. Residencial Las Canteras - Fase I" 
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                         Dirección / Emplazamiento
                       </label>
                       <input 
                         type="text" 
                         value={projectAddress}
                         onChange={(e) => setProjectAddress(e.target.value)}
-                        className="input h-11 text-sm placeholder:text-zinc-500" 
+                        className="input h-11 text-sm text-white placeholder:text-zinc-500 w-full" 
                         placeholder="Ej. Avda. de la Construcción 14, Valencia" 
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
                         Radio de Validación GPS (Geofence en Tajo)
                       </label>
                       <div className="grid grid-cols-3 gap-2">
@@ -578,7 +608,7 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
                         className="btn-primary w-full h-12 text-sm font-bold uppercase tracking-wider gap-2 cursor-pointer shadow-xl shadow-brand-accent/25"
                       >
                         {isFinalizing ? (
-                          <span>Guardando datos en Firestore...</span>
+                          <span>Guardando datos en el backend...</span>
                         ) : (
                           <>
                             <span>Finalizar y Crear Espacio de Trabajo</span>
@@ -609,15 +639,15 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
             </div>
 
             <form onSubmit={handleJoinByCode} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 text-center">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 text-center">
                   Código de Invitación (6-8 Caracteres)
                 </label>
                 <input 
                   type="text" 
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                  className="input h-14 text-center text-2xl font-mono font-black tracking-widest uppercase placeholder:text-zinc-600" 
+                  className="input h-14 text-center text-2xl font-mono font-black tracking-widest uppercase text-white placeholder:text-zinc-600 w-full" 
                   placeholder="OBRA-ABC12" 
                 />
               </div>

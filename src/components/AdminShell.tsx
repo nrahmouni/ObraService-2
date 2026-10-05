@@ -18,8 +18,8 @@ import { NotFoundView } from '../views/NotFoundView';
 import { BillingView } from '../views/BillingView';
 import { ClientsCrmView } from '../views/ClientsCrmView';
 import { WebAdminView } from '../views/WebAdminView';
+import { MobileReleaseView } from '../views/MobileReleaseView';
 import { AppState } from '../types';
-import { obraStore } from '../services/store';
 
 interface AdminShellProps {
   state: AppState;
@@ -39,44 +39,47 @@ export const AdminShell: React.FC<AdminShellProps> = ({ state }) => {
       currentUser={currentUser}
       state={state}
     >
-      <Routes>
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
-        <Route path="/dashboard" element={
-          <DashboardView 
-            state={state} 
-            onNavigate={(t) => navigate(`/admin/${t}`)} 
-            onOpenNewReport={() => navigate('/admin/reports/nuevo')} 
-          />
-        } />
-        <Route path="/clients" element={<ClientsCrmView state={state} />} />
-        <Route path="/crm" element={<Navigate to="/admin/clients" replace />} />
-        <Route path="/reports" element={
-          <DailyReportsView 
-            state={state} 
-            onOpenReportModal={() => navigate('/admin/reports/nuevo')} 
-          />
-        } />
-        <Route path="/reports/nuevo" element={
-          <DailyReportWizard state={state} />
-        } />
-        <Route path="/delivery_notes" element={<DeliveryNotesView state={state} />} />
-        <Route path="/projects" element={
-          <ProjectsView state={state} onNavigate={(t) => navigate(`/admin/${t}`)} />
-        } />
-        <Route path="/map" element={<MapView state={state} />} />
-        <Route path="/team" element={<TeamView state={state} />} />
-        <Route path="/workers" element={<WorkersManagementView state={state} />} />
-        <Route path="/audit" element={<AuditTrailView state={state} />} />
-        <Route path="/settings" element={<SettingsView state={state} />} />
-        <Route path="/integrations" element={<IntegrationsView state={state} />} />
-        <Route path="/docs" element={<DocsView state={state} />} />
-        <Route path="/profile" element={<ProfileView state={state} />} />
-        <Route path="/billing" element={<BillingView state={state} />} />
-        <Route path="/web-admin" element={<WebAdminView state={state} />} />
-        <Route path="/master" element={<Navigate to="/admin/web-admin" replace />} />
-        <Route path="*" element={<NotFoundView />} />
-      </Routes>
+      {/* Strict Responsive Bounds: 100% fluid from 320px to 1440px without horizontal overflow */}
+      <div className="w-full max-w-[1440px] min-w-0 mx-auto overflow-x-hidden transition-all duration-200 px-3 sm:px-6 py-3 sm:py-6">
+        <Routes>
+          <Route path="/" element={<Navigate to="dashboard" replace />} />
+          <Route path="/dashboard" element={
+            <DashboardView 
+              state={state} 
+              onNavigate={(t) => navigate(`/admin/${t}`)} 
+              onOpenNewReport={() => navigate('/admin/reports/nuevo')} 
+            />
+          } />
+          <Route path="/clients" element={<ClientsCrmView state={state} />} />
+          <Route path="/crm" element={<Navigate to="/admin/clients" replace />} />
+          <Route path="/reports" element={
+            <DailyReportsView 
+              state={state} 
+              onOpenReportModal={() => navigate('/admin/reports/nuevo')} 
+            />
+          } />
+          <Route path="/reports/nuevo" element={
+            <DailyReportWizard state={state} />
+          } />
+          <Route path="/delivery_notes" element={<DeliveryNotesView state={state} />} />
+          <Route path="/projects" element={
+            <ProjectsView state={state} onNavigate={(t) => navigate(`/admin/${t}`)} />
+          } />
+          <Route path="/map" element={<MapView state={state} />} />
+          <Route path="/team" element={<TeamView state={state} />} />
+          <Route path="/workers" element={<WorkersManagementView state={state} />} />
+          <Route path="/audit" element={<AuditTrailView state={state} />} />
+          <Route path="/settings" element={<SettingsView state={state} />} />
+          <Route path="/integrations" element={<IntegrationsView state={state} />} />
+          <Route path="/docs" element={<DocsView state={state} />} />
+          <Route path="/profile" element={<ProfileView state={state} />} />
+          <Route path="/billing" element={<BillingView state={state} />} />
+          <Route path="/web-admin" element={<WebAdminView state={state} />} />
+          <Route path="/mobile-release" element={<MobileReleaseView state={state} />} />
+          <Route path="/master" element={<Navigate to="/admin/web-admin" replace />} />
+          <Route path="*" element={<NotFoundView />} />
+        </Routes>
+      </div>
     </AuthenticatedLayout>
   );
 };
-

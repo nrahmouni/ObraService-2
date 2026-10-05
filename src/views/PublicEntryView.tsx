@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { ObraServiceLogo } from '../components/ObraServiceLogo';
 import { LandingHero } from '../components/landing/LandingHero';
-import { LandingValueProp } from '../components/landing/LandingValueProp';
-import { LandingHowItWorks } from '../components/landing/LandingHowItWorks';
+import { LandingBentoFeatures } from '../components/landing/LandingBentoFeatures';
+import { LandingCircuit } from '../components/landing/LandingCircuit';
+import { LandingCalculator } from '../components/landing/LandingCalculator';
 import { LandingTrust } from '../components/landing/LandingTrust';
 import { LandingPricing } from '../components/landing/LandingPricing';
 import { LandingFooter } from '../components/landing/LandingFooter';
 import { ImmersivePresentation } from '../components/presentation/ImmersivePresentation';
-import { ThreePageCanvas } from '../components/three/ThreePageCanvas';
 import { 
   KeyRound, 
   LogIn, 
-  Sparkles, 
   Menu, 
   X, 
-  Play
+  Play, 
+  Zap, 
+  ArrowRight,
+  ShieldCheck,
+  Sparkles 
 } from 'lucide-react';
 
 interface PublicEntryViewProps {
@@ -33,7 +36,6 @@ export const PublicEntryView: React.FC<PublicEntryViewProps> = ({
   currentUser,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [isPresentationOpen, setIsPresentationOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const search = window.location.search;
@@ -42,200 +44,205 @@ export const PublicEntryView: React.FC<PublicEntryViewProps> = ({
     return false;
   });
 
+  // Global Keyboard Shortcuts (Senior Developer craft)
   useEffect(() => {
-    const handleScroll = () => {
-      const total = document.documentElement.scrollHeight - window.innerHeight;
-      if (total > 0) {
-        setScrollProgress(window.scrollY / total);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If modal is not open and user is not in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      if ((e.key === 'k' || e.key === 'K' || e.key === 'p' || e.key === 'P') && !isPresentationOpen) {
+        e.preventDefault();
+        setIsPresentationOpen(true);
       }
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPresentationOpen]);
 
   return (
-    <div className="relative flex flex-col bg-[#09090b]/85 min-h-screen text-brand-text font-body selection:bg-brand-accent selection:text-white antialiased">
-      {/* Full-Page Three.js WebGL Interactive BIM Canvas */}
-      <ThreePageCanvas scrollProgress={scrollProgress} isPresentation={false} />
+    <div className="relative flex flex-col bg-[#0B0F17] min-h-screen text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950 antialiased">
       
-      {/* Active Session Top Bar (if logged in, allows instant switch between landing/presentation and dashboard) */}
-      {currentUser && (
-        <div className="bg-brand-surface/95 border-b border-brand-accent/30 px-4 py-2 text-xs flex items-center justify-between z-50 backdrop-blur-md">
-          <div className="flex items-center gap-2 text-zinc-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Sesión activa: <strong>{currentUser.name}</strong> ({currentUser.companyName || 'ObraService'})</span>
-          </div>
+      {/* 1. TOP BAR CONTRACT: One-Row, Three-Zone Layout */}
+      <header className="sticky top-0 z-40 w-full bg-[#0B0F17]/90 backdrop-blur-md border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
+          
+          {/* Zone 1: Brand Wordmark (Single Element) */}
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsPresentationOpen(true)}
-              className="text-brand-accent font-bold hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <Play className="w-3 h-3 fill-current" />
-              <span>Ver Keynote</span>
-            </button>
-            <a
-              href="/admin/dashboard"
-              className="px-3 py-1 rounded-lg bg-brand-accent hover:bg-orange-600 text-white font-bold transition-colors shadow-sm"
-            >
-              Ir a Mi Panel →
+            <a href="/" className="flex items-center gap-2 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-md">
+              <ObraServiceLogo className="w-9 h-9 text-amber-500" />
+              <div className="flex flex-col">
+                <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-amber-400 transition-colors">
+                  ObraService <span className="text-amber-500">Pro</span>
+                </span>
+              </div>
             </a>
           </div>
-        </div>
-      )}
 
-      {/* 1. Fixed Header with High Contrast and Real Actions */}
-      <header className="sticky top-0 left-0 w-full z-40 px-4 sm:px-6 py-3 sm:py-3.5 backdrop-blur-xl bg-brand-bg/90 border-b border-brand-border">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          
-          {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <ObraServiceLogo className="w-32 sm:w-40 h-auto" />
-          </div>
-
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-brand-muted uppercase tracking-wider">
-            <a href="#funciones" className="hover:text-white transition-colors">Funcionalidades</a>
-            <a href="#como-funciona" className="hover:text-white transition-colors">Cómo Funciona</a>
-            <a href="#precios" className="hover:text-white transition-colors">Precios</a>
-            
-            {/* Nav Presentation Shortcut */}
-            <button
-              onClick={() => setIsPresentationOpen(true)}
-              className="flex items-center gap-1.5 text-brand-accent hover:text-orange-400 transition-colors cursor-pointer"
-            >
-              <Play className="w-3 h-3 fill-current" />
-              <span>Ver Presentación</span>
-            </button>
+          {/* Zone 2: 4 Clean Text Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+            <a href="#funcionalidades" className="hover:text-white transition-colors">Funcionalidades</a>
+            <a href="#circuito" className="hover:text-white transition-colors">Circuito Digital</a>
+            <a href="#calculadora" className="hover:text-white transition-colors">Impacto ROI</a>
+            <a href="#precios" className="hover:text-white transition-colors">Planes & Tarifas</a>
           </nav>
 
-          {/* Action CTAs (Desktop & Mobile) */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Zone 3: Primary Actions (Single-Line Controls) */}
+          <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={() => setIsPresentationOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-amber-400 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all whitespace-nowrap cursor-pointer"
+              title="Presentación Ejecutiva [K]"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Keynote 2026</span>
+            </button>
+
             <button
               onClick={onOpenJoinCode}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-surface hover:bg-brand-surface-hover border border-brand-border text-brand-muted hover:text-white text-xs font-bold transition-all cursor-pointer min-h-[40px]"
-              title="Canjear código de invitación a obra"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors whitespace-nowrap cursor-pointer"
             >
-              <KeyRound className="w-3.5 h-3.5 text-brand-accent" />
-              <span>Unirme con Código</span>
+              <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+              <span>Código de Obra</span>
             </button>
 
-            <button 
+            <button
               onClick={onOpenLogin}
-              className="px-3 sm:px-4 py-2 rounded-xl bg-brand-surface hover:bg-brand-surface-hover border border-brand-border text-xs font-bold text-white uppercase tracking-wider transition-all min-h-[40px] cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 transition-colors whitespace-nowrap cursor-pointer"
             >
-              Acceso
+              <LogIn className="w-3.5 h-3.5 text-slate-400" />
+              <span>Iniciar Sesión</span>
             </button>
 
-            <button 
-              onClick={() => onOpenRegister()}
-              className="btn-primary h-10 px-3.5 sm:px-5 text-xs uppercase tracking-wider shadow-lg shadow-brand-accent/20 min-h-[40px] cursor-pointer"
+            <button
+              onClick={onDemoAccess}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 shadow-md shadow-amber-500/20 transition-all whitespace-nowrap cursor-pointer"
             >
-              <span>Comenzar Gratis</span>
+              <Zap className="w-3.5 h-3.5 fill-slate-950" />
+              <span>Probar Demo</span>
             </button>
+          </div>
 
-            {/* Mobile Hamburger Toggle */}
+          {/* Mobile Menu Trigger */}
+          <div className="flex lg:hidden items-center gap-2">
+            <button
+              onClick={() => setIsPresentationOpen(true)}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Keynote</span>
+            </button>
+            <button
+              onClick={onDemoAccess}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 transition-colors"
+            >
+              Demo
+            </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-brand-muted hover:text-white hover:bg-brand-surface transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
-              aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+              className="p-2 text-slate-300 hover:text-white rounded-lg border border-slate-800 bg-slate-900"
+              aria-label="Abrir menú"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
+
         </div>
 
-        {/* Mobile Dropdown Panel */}
+        {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-3 pt-3 border-t border-brand-border space-y-3 pb-2 animate-in fade-in duration-150">
-            <div className="flex flex-col space-y-1 text-xs font-bold text-brand-muted uppercase tracking-wider">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setIsPresentationOpen(true);
-                }}
-                className="p-2.5 rounded-lg bg-brand-accent/10 border border-brand-accent/30 text-brand-accent font-bold text-left flex items-center gap-2 cursor-pointer"
-              >
-                <Play className="w-4 h-4 fill-current" />
-                <span>Ver Presentación Inmersiva 3D</span>
-              </button>
-
+          <div className="lg:hidden border-b border-slate-800 bg-[#0B0F17]/95 px-4 py-6 space-y-4 backdrop-blur-xl">
+            <nav className="flex flex-col space-y-3 text-sm font-medium text-slate-300">
               <a 
-                href="#funciones" 
+                href="#funcionalidades" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded-lg hover:bg-brand-surface hover:text-white"
+                className="py-1 hover:text-white transition-colors"
               >
                 Funcionalidades
               </a>
               <a 
-                href="#como-funciona" 
+                href="#circuito" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded-lg hover:bg-brand-surface hover:text-white"
+                className="py-1 hover:text-white transition-colors"
               >
-                Cómo Funciona
+                Circuito Digital
+              </a>
+              <a 
+                href="#calculadora" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1 hover:text-white transition-colors"
+              >
+                Impacto ROI
               </a>
               <a 
                 href="#precios" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2.5 rounded-lg hover:bg-brand-surface hover:text-brand-accent"
+                className="py-1 hover:text-white transition-colors"
               >
-                Planes y Precios
+                Planes & Tarifas
               </a>
-            </div>
+            </nav>
 
-            <div className="pt-2 border-t border-brand-border flex flex-col gap-2">
+            <div className="pt-4 border-t border-slate-800 flex flex-col gap-2.5">
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenJoinCode();
-                }}
-                className="btn-secondary h-10 w-full justify-center text-xs gap-2"
+                onClick={() => { setMobileMenuOpen(false); onOpenJoinCode(); }}
+                className="w-full py-2.5 px-4 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 flex items-center justify-center gap-2"
               >
-                <KeyRound className="w-4 h-4 text-brand-accent" />
-                <span>Unirme con Código de Invitación</span>
+                <KeyRound className="w-4 h-4 text-amber-400" />
+                <span>Canjear Código de Obra</span>
               </button>
-              
+
               <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onDemoAccess();
-                }}
-                className="btn-secondary h-10 w-full justify-center text-xs gap-2 border-brand-accent/30 text-brand-accent"
+                onClick={() => { setMobileMenuOpen(false); onOpenLogin(); }}
+                className="w-full py-2.5 px-4 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>Probar Demo Interactiva</span>
+                <LogIn className="w-4 h-4 text-slate-400" />
+                <span>Iniciar Sesión</span>
+              </button>
+
+              <button
+                onClick={() => { setMobileMenuOpen(false); onOpenRegister(); }}
+                className="w-full py-2.5 px-4 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
+              >
+                <span>Crear Cuenta de Constructora</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
       </header>
 
-      {/* Main Content Sections */}
+      {/* 2. MAIN SECTIONS FLOW */}
       <main className="flex-1">
-        {/* 2. Hero Section with View Presentation Button */}
+        {/* Section 1: Hero with Interactive Tajo Simulator */}
         <LandingHero 
-          onStart={(plan) => onOpenRegister(plan)} 
-          onLogin={onOpenLogin} 
+          onStart={(plan) => onOpenRegister(plan)}
+          onLogin={onOpenLogin}
           onDemo={onDemoAccess}
           onJoinCode={onOpenJoinCode}
           onViewPresentation={() => setIsPresentationOpen(true)}
         />
 
-        {/* 3. Core Functional Capabilities */}
-        <LandingValueProp />
+        {/* Section 2: Asymmetric Bento Grid Features */}
+        <LandingBentoFeatures />
 
-        {/* 4. How It Works Workflow */}
-        <LandingHowItWorks />
+        {/* Section 3: 4-Step Digital Circuit */}
+        <LandingCircuit />
 
-        {/* 5. Real Trust & Legal Pillars */}
+        {/* Section 4: ROI / Savings Calculator */}
+        <div id="calculadora">
+          <LandingCalculator onStart={() => onOpenRegister()} />
+        </div>
+
+        {/* Section 5: Trust & Compliance Guarantees */}
         <LandingTrust />
 
-        {/* 6. Pricing Plans */}
-        <LandingPricing 
-          onSelect={(plan) => onOpenRegister(plan)}
-        />
+        {/* Section 6: Transparent Pricing */}
+        <LandingPricing onSelect={(plan) => onOpenRegister(plan)} />
       </main>
 
-      {/* 7. Footer */}
+      {/* 3. FOOTER */}
       <LandingFooter 
         onOpenLogin={onOpenLogin}
         onOpenRegister={onOpenRegister}
@@ -243,12 +250,17 @@ export const PublicEntryView: React.FC<PublicEntryViewProps> = ({
         onDemoAccess={onDemoAccess}
       />
 
-      {/* 8. Fullscreen Apple-Style Keynote 3D Immersive Presentation Modal */}
-      <ImmersivePresentation 
-        isOpen={isPresentationOpen}
-        onClose={() => setIsPresentationOpen(false)}
-        onLaunchDemo={onDemoAccess}
-      />
+      {/* 4. MODAL DE PRESENTACIÓN EJECUTIVA / KEYNOTE */}
+      {isPresentationOpen && (
+        <ImmersivePresentation
+          isOpen={isPresentationOpen}
+          onClose={() => setIsPresentationOpen(false)}
+          onLaunchDemo={() => {
+            setIsPresentationOpen(false);
+            onDemoAccess();
+          }}
+        />
+      )}
 
     </div>
   );

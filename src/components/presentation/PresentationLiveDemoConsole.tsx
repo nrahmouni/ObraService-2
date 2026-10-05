@@ -47,8 +47,12 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
     ctx.beginPath();
     ctx.moveTo(x, y);
   };
@@ -60,11 +64,15 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
-    const x = 'touches' in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left;
-    const y = 'touches' in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top;
-    ctx.lineWidth = 2.5;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#f97316';
+    ctx.strokeStyle = '#f59e0b';
     ctx.lineTo(x, y);
     ctx.stroke();
   };
@@ -98,18 +106,20 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto rounded-3xl bg-[#121215]/90 border border-white/[0.08] backdrop-blur-2xl shadow-2xl overflow-hidden text-left">
+    <div className="w-full max-w-4xl mx-auto rounded-2xl sm:rounded-3xl bg-[#121215]/95 border border-white/[0.08] backdrop-blur-2xl shadow-2xl overflow-hidden text-left">
       {/* 1. Device Mockup Chrome Bar */}
-      <div className="px-5 py-3.5 bg-black/50 border-b border-white/[0.06] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-          <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-          <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-          <span className="text-[11px] font-mono text-[#86868b] ml-2">ObraService Pro // Terminal Tajo v4.2</span>
+      <div className="px-3.5 sm:px-5 py-3 bg-black/60 border-b border-white/[0.06] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80 shrink-0" />
+          <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80 shrink-0" />
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 shrink-0" />
+          <span className="text-[10px] sm:text-[11px] font-mono text-[#86868b] ml-1 sm:ml-2 truncate">
+            ObraService Pro · Terminal Tajo
+          </span>
         </div>
 
         {/* Live Network & GPS Indicators */}
-        <div className="flex items-center gap-3">
+        <div className="shrink-0">
           <button
             onClick={() => {
               setIsOffline(!isOffline);
@@ -123,13 +133,14 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
             title="Haz clic para simular pérdida de red"
           >
             {isOffline ? <WifiOff className="w-3 h-3 text-amber-400" /> : <Wifi className="w-3 h-3 text-emerald-400" />}
-            <span>{isOffline ? 'MODO OFFLINE (IndexedDB)' : 'ONLINE 5G (Cloud Sync)'}</span>
+            <span className="hidden sm:inline">{isOffline ? 'MODO OFFLINE (IndexedDB)' : 'ONLINE (Cloud Sync)'}</span>
+            <span className="sm:hidden">{isOffline ? 'OFFLINE' : 'ONLINE'}</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Interactive Feature Tabs */}
-      <div className="flex border-b border-white/[0.06] bg-white/[0.02] overflow-x-auto no-scrollbar">
+      {/* 2. Interactive Feature Tabs (Scrollable on mobile) */}
+      <div className="flex border-b border-white/[0.06] bg-white/[0.02] overflow-x-auto no-scrollbar scroll-smooth">
         {[
           { id: 'geofence', label: t.tabs.geofence, icon: MapPin },
           { id: 'report', label: t.tabs.dailyReport, icon: FileText },
@@ -146,13 +157,13 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
                 setActiveTab(tab.id as any);
                 presentationAudio.playTick();
               }}
-              className={`flex items-center gap-2 px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border-b-2 ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer border-b-2 shrink-0 ${
                 isActive
-                  ? 'border-orange-500 text-white bg-white/[0.04]'
+                  ? 'border-amber-500 text-white bg-white/[0.04]'
                   : 'border-transparent text-[#86868b] hover:text-white hover:bg-white/[0.02]'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-orange-400' : 'text-[#86868b]'}`} />
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-400' : 'text-[#86868b]'}`} />
               <span>{tab.label}</span>
             </button>
           );
@@ -160,37 +171,38 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
       </div>
 
       {/* 3. Interactive Stage */}
-      <div className="p-6 sm:p-8">
+      <div className="p-4 sm:p-6 md:p-8">
+        
         {/* TAB 1: GEOFENCE CLOCK-IN */}
         {activeTab === 'geofence' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-mono font-bold">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-mono font-bold">
                 <Radio className="w-3.5 h-3.5 animate-pulse" />
                 <span>Geocerca Haversine Activa (250m)</span>
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                 Verificación Geodésica en Tiempo Real
               </h3>
               <p className="text-xs text-[#86868b] leading-relaxed">
-                El operario solo puede fichar si sus coordenadas GPS coinciden matemáticamente con el radio de la obra asignada. Cero fichajes falsos desde casa.
+                El operario solo puede fichar si sus coordenadas GPS coinciden matemáticamente con el radio de la obra asignada.
               </p>
 
               {/* Simulation Switcher */}
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex flex-wrap items-center gap-2 pt-1">
                 <button
                   onClick={() => {
                     setIsInsideSite(true);
                     setHasClockedIn(false);
                     presentationAudio.playTick();
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     isInsideSite
                       ? 'bg-emerald-500 text-black shadow-md'
                       : 'bg-white/[0.06] text-[#86868b] hover:text-white'
                   }`}
                 >
-                  Simular "En Obra (38m)"
+                  En Obra (38m)
                 </button>
                 <button
                   onClick={() => {
@@ -198,30 +210,30 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
                     setHasClockedIn(false);
                     presentationAudio.playTick();
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     !isInsideSite
                       ? 'bg-rose-500 text-white shadow-md'
                       : 'bg-white/[0.06] text-[#86868b] hover:text-white'
                   }`}
                 >
-                  Simular "Fuera (840m)"
+                  Fuera (840m)
                 </button>
               </div>
             </div>
 
             {/* Interactive Phone UI */}
-            <div className="p-5 rounded-2xl bg-black/60 border border-white/[0.08] space-y-4 shadow-xl">
-              <div className="flex items-center justify-between text-xs border-b border-white/[0.06] pb-3">
-                <span className="font-mono text-[#86868b]">Obra: Metro Línea 5</span>
+            <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-black/60 border border-white/[0.08] space-y-3 sm:space-y-4 shadow-xl">
+              <div className="flex items-center justify-between text-xs border-b border-white/[0.06] pb-2.5">
+                <span className="font-mono text-[#86868b] text-[11px]">Obra: Metro Línea 5</span>
                 <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded ${
                   isInsideSite ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
                 }`}>
-                  {isInsideSite ? 'GPS: 40.4202°N, -3.7041°W (OK)' : 'GPS: Fuera de Zona (DESVÍO)'}
+                  {isInsideSite ? 'GPS: OK (38m)' : 'DESVÍO (+840m)'}
                 </span>
               </div>
 
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] text-center space-y-1">
-                <div className="text-3xl font-mono font-black text-white">
+              <div className="p-3 sm:p-4 rounded-xl bg-white/[0.02] border border-white/[0.04] text-center space-y-1">
+                <div className="text-2xl sm:text-3xl font-mono font-black text-white">
                   07:58:42
                 </div>
                 <div className="text-[11px] text-[#86868b]">
@@ -232,11 +244,11 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
               <button
                 onClick={handleClockIn}
                 disabled={!isInsideSite || hasClockedIn}
-                className={`w-full h-12 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                className={`w-full h-11 sm:h-12 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   hasClockedIn
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                     : isInsideSite
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/25 active:scale-98'
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/25 active:scale-98'
                     : 'bg-white/[0.05] text-[#86868b] cursor-not-allowed border border-white/5'
                 }`}
               >
@@ -248,12 +260,12 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
                 ) : isInsideSite ? (
                   <>
                     <Clock className="w-4 h-4" />
-                    <span>Fichar Entrada Ahora (1 Toque)</span>
+                    <span>Confirmar Entrada en Tajo</span>
                   </>
                 ) : (
                   <>
                     <AlertTriangle className="w-4 h-4 text-rose-400" />
-                    <span>Bloqueado: Acércate a la obra</span>
+                    <span>Fuera de Perímetro</span>
                   </>
                 )}
               </button>
@@ -261,27 +273,27 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
           </div>
         )}
 
-        {/* TAB 2: DAILY REPORT WIZARD */}
+        {/* TAB 2: DAILY REPORT HOURS */}
         {activeTab === 'report' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-mono font-bold">
-                <FileText className="w-3.5 h-3.5" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-mono font-bold">
+                <Clock className="w-3.5 h-3.5" />
                 <span>Cálculo Automático por Convenio</span>
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">
-                Parte Diario Sin Errores Humanos
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                Parte Diario Sin Errores de Liquidación
               </h3>
               <p className="text-xs text-[#86868b] leading-relaxed">
-                El sistema segrega instantáneamente horas ordinarias y extras según las tarifas pactadas de cada subcontrata, evitando discrepancias en la liquidación mensual.
+                El sistema segrega instantáneamente horas ordinarias y extras según las tarifas pactadas de cada subcontrata.
               </p>
 
               {/* Scrubber Controls */}
-              <div className="space-y-3 pt-2">
+              <div className="space-y-3 pt-1">
                 <div>
                   <div className="flex justify-between text-xs text-white mb-1">
                     <span>Horas Ordinarias (Convenio)</span>
-                    <span className="font-mono text-orange-400 font-bold">{ordinarias} h</span>
+                    <span className="font-mono text-amber-400 font-bold">{ordinarias} h</span>
                   </div>
                   <input
                     type="range"
@@ -290,7 +302,7 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
                     step="0.5"
                     value={ordinarias}
                     onChange={(e) => setOrdinarias(parseFloat(e.target.value))}
-                    className="w-full accent-orange-500 cursor-pointer"
+                    className="w-full accent-amber-500 cursor-pointer"
                   />
                 </div>
 
@@ -312,37 +324,37 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
               </div>
             </div>
 
-            {/* Live Certified Summary Card */}
-            <div className="p-5 rounded-2xl bg-black/60 border border-white/[0.08] space-y-4 shadow-xl">
-              <div className="flex items-center justify-between text-xs border-b border-white/[0.06] pb-3">
-                <span className="text-white font-bold">Subcontrata: Estructuras Levante S.L.</span>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            {/* Certified Summary Card */}
+            <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-black/60 border border-white/[0.08] space-y-3 sm:space-y-4 shadow-xl">
+              <div className="flex items-center justify-between text-xs border-b border-white/[0.06] pb-2.5">
+                <span className="text-white font-bold truncate">Estructuras Levante S.L.</span>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
                   CIF B12345678
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="text-[10px] text-[#86868b] uppercase font-mono">Coste Ordinario (22€/h)</div>
-                  <div className="text-xl font-mono font-bold text-white mt-1">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <div className="text-[10px] text-[#86868b] uppercase font-mono">Ord (22€/h)</div>
+                  <div className="text-base sm:text-lg font-mono font-bold text-white mt-0.5">
                     {(ordinarias * 22).toFixed(2)} €
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <div className="text-[10px] text-[#86868b] uppercase font-mono">Coste Extra (30€/h)</div>
-                  <div className="text-xl font-mono font-bold text-amber-400 mt-1">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <div className="text-[10px] text-[#86868b] uppercase font-mono">Extra (30€/h)</div>
+                  <div className="text-base sm:text-lg font-mono font-bold text-amber-400 mt-0.5">
                     {(extras * 30).toFixed(2)} €
                   </div>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
                 <div>
-                  <div className="text-[11px] text-orange-300 font-bold">Liquidación Certificada del Día</div>
-                  <div className="text-[10px] text-zinc-400 font-mono">Total horas: {ordinarias + extras}h</div>
+                  <div className="text-[11px] text-amber-300 font-bold">Liquidación Certificada</div>
+                  <div className="text-[10px] text-zinc-400 font-mono">{ordinarias + extras} horas validadas</div>
                 </div>
-                <div className="text-2xl font-mono font-black text-orange-400">
+                <div className="text-xl sm:text-2xl font-mono font-black text-amber-400">
                   {((ordinarias * 22) + (extras * 30)).toFixed(2)} €
                 </div>
               </div>
@@ -352,28 +364,22 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
 
         {/* TAB 3: SIGNATURE & ALBARAN */}
         {activeTab === 'signature' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-bold">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono font-bold">
                 <PenTool className="w-3.5 h-3.5" />
                 <span>Albarán con Firma Digital Fechada</span>
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                 Firma Táctil Directa en Pantalla
               </h3>
               <p className="text-xs text-[#86868b] leading-relaxed">
-                El encargado de obra y el responsable de la subcontrata firman digitalmente al terminar la jornada. Genera un PDF inmutable con hash criptográfico.
+                El encargado de obra y el subcontratista firman digitalmente al terminar la jornada, generando un albarán inmutable con sello SHA-256.
               </p>
-
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-[11px] text-zinc-400 font-mono space-y-1">
-                <div>• Sellado de tiempo: {new Date().toLocaleTimeString()}</div>
-                <div>• ID Certificado: SHA256:7b91e4a...f8902</div>
-                <div>• Validez jurídica conforme eIDAS UE 910/2014</div>
-              </div>
             </div>
 
-            {/* Interactive Signature Pad */}
-            <div className="p-5 rounded-2xl bg-black/60 border border-white/[0.08] space-y-3 shadow-xl">
+            {/* Signature Pad */}
+            <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-black/60 border border-white/[0.08] space-y-3 shadow-xl">
               <div className="flex items-center justify-between text-xs text-white">
                 <span className="font-bold">{t.signPrompt}</span>
                 <button
@@ -385,10 +391,10 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
                 </button>
               </div>
 
-              <div className="rounded-xl border border-dashed border-white/20 bg-zinc-950/80 overflow-hidden relative h-36 flex items-center justify-center">
+              <div className="rounded-xl border border-dashed border-white/20 bg-zinc-950/80 overflow-hidden relative h-32 sm:h-36 flex items-center justify-center">
                 <canvas
                   ref={canvasRef}
-                  width={340}
+                  width={360}
                   height={144}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
@@ -401,7 +407,7 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
                 />
                 {!signatureDone && (
                   <div className="absolute pointer-events-none text-zinc-600 text-xs font-mono">
-                    [ Dibuja tu firma aquí ]
+                    [ Dibuja tu firma táctil aquí ]
                   </div>
                 )}
               </div>
@@ -411,7 +417,7 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
                 className={`w-full h-11 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   signatureDone
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                    : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/25 active:scale-98'
+                    : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/25 active:scale-98'
                 }`}
               >
                 {signatureDone ? (
@@ -432,87 +438,81 @@ export const PresentationLiveDemoConsole: React.FC<PresentationLiveDemoConsolePr
 
         {/* TAB 4: COMPLIANCE PRL & REA */}
         {activeTab === 'compliance' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-mono font-bold">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-mono font-bold">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>Prevención Solidaria Ley 32/2006</span>
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                 Semáforo Legal Anti-Sanciones
               </h3>
               <p className="text-xs text-[#86868b] leading-relaxed">
-                Control continuo de certificados REA, pólizas de Responsabilidad Civil y TC2 de seguridad social de subcontratas para evitar responsabilidad subsidiaria ante la ITSS.
+                Control continuo de certificados REA, pólizas de Responsabilidad Civil y TC2 de seguridad social de subcontratas.
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-black/60 border border-white/[0.08] space-y-3 shadow-xl">
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+            <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-black/60 border border-white/[0.08] space-y-2.5 shadow-xl">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
                 <div>
-                  <div className="text-xs font-bold text-white">Certificado REA (Comunidad de Madrid)</div>
-                  <div className="text-[10px] text-zinc-400 font-mono">Válido hasta: 14/11/2026</div>
+                  <div className="font-bold text-emerald-400">Certificado REA Vigente</div>
+                  <div className="text-[10px] text-zinc-400">Caduca en 84 días</div>
                 </div>
-                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">
-                  CONFORME
-                </span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs">
                 <div>
-                  <div className="text-xs font-bold text-white">Póliza Responsabilidad Civil (Mapfre)</div>
-                  <div className="text-[10px] text-amber-300 font-mono">Vence en 12 días (Aviso preventivo enviado)</div>
+                  <div className="font-bold text-emerald-400">Seguro Resp. Civil (RC)</div>
+                  <div className="text-[10px] text-zinc-400">Póliza 300.000€ al corriente</div>
                 </div>
-                <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">
-                  ALERTA
-                </span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               </div>
 
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-xs">
                 <div>
-                  <div className="text-xs font-bold text-white">Reconocimiento Médico Cuadrilla (8 operarios)</div>
-                  <div className="text-[10px] text-zinc-400 font-mono">100% en vigor</div>
+                  <div className="font-bold text-amber-400">Aptitud Médica (PRL)</div>
+                  <div className="text-[10px] text-zinc-400">1 renovación pendiente (12 días)</div>
                 </div>
-                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">
-                  AL DÍA
-                </span>
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 5: AUDIT & OFFLINE QUEUE */}
+        {/* TAB 5: OFFLINE AUDIT LEDGER */}
         {activeTab === 'offline' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-mono font-bold">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-center">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] font-mono font-bold">
                 <Layers className="w-3.5 h-3.5" />
-                <span>Pista de Auditoría Forense</span>
+                <span>Libro de Auditoría Inmutable</span>
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">
-                Transparencia Criptográfica Total
+              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                Trazabilidad Criptográfica SHA-256
               </h3>
               <p className="text-xs text-[#86868b] leading-relaxed">
-                Cada evento (fichaje, aprobación, disputa o edición de horas) genera una entrada inmutable con ID de usuario, timestamp atómico y dirección IP.
+                Cada modificación, firma y sincronización genera un bloque encadenado permanente sin posibilidad de manipulación retroactiva.
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-black/60 border border-white/[0.08] space-y-2.5 font-mono text-[11px] shadow-xl">
-              {[
-                { time: '17:42:01', action: 'SIGNATURE_ISSUED', entity: 'ALBARAN #ALB-4091-08', actor: 'Carlos Soler' },
-                { time: '17:35:14', action: 'REPORT_SUBMITTED', entity: 'PARTE DIARIO #PAR-992', actor: 'Javier Ortiz' },
-                { time: '08:01:22', action: 'CLOCK_IN_GEOFENCE', entity: 'OPERARIO Manuel Vega', actor: 'GPS_VALIDATOR' },
-              ].map((log, i) => (
-                <div key={i} className="p-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-zinc-500">{log.time}</span>
-                    <span className="text-orange-400 font-bold">{log.action}</span>
-                  </div>
-                  <span className="text-zinc-400 truncate max-w-[120px]">{log.actor}</span>
-                </div>
-              ))}
+            <div className="p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-black/60 border border-white/[0.08] space-y-2 text-[11px] font-mono shadow-xl">
+              <div className="p-2 bg-white/[0.02] rounded-lg border border-white/5 flex items-center justify-between">
+                <span className="text-slate-400">GENESIS_PARTE_0042</span>
+                <span className="text-emerald-400">VALID</span>
+              </div>
+              <div className="p-2 bg-white/[0.02] rounded-lg border border-white/5 flex items-center justify-between">
+                <span className="text-slate-400">GPS_HAVERSINE_LOCK</span>
+                <span className="text-emerald-400">38.4m</span>
+              </div>
+              <div className="p-2 bg-white/[0.02] rounded-lg border border-white/5 flex items-center justify-between">
+                <span className="text-slate-400">DIGITAL_SIGNATURE_SEAL</span>
+                <span className="text-amber-400">e8b94f...</span>
+              </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

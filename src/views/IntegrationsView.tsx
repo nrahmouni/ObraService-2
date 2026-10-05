@@ -40,12 +40,12 @@ export const IntegrationsView: React.FC<IntegrationsViewProps> = ({ state }) => 
   const [apiKey, setApiKey] = useState('os_live_51P2jA9H3LqW4XzR7V8m9N0k2B1C3D4E5');
 
   const [connectors, setConnectors] = useState([
-    { id: 'sap', name: 'SAP S/4HANA', type: 'ERP', status: 'Available', icon: Database, color: 'text-blue-500' },
-    { id: 'dynamics', name: 'Microsoft Dynamics 365', type: 'ERP', status: 'Available', icon: Cloud, color: 'text-blue-600' },
-    { id: 'autodesk', name: 'Autodesk Construction', type: 'BIM', status: 'Connected', icon: Layers, color: 'text-rose-500' },
-    { id: 'google', name: 'Google Workspace', type: 'Auth / Storage', status: 'Connected', icon: Globe, color: 'text-emerald-500' },
-    { id: 'sage', name: 'Sage 50 Cloud', type: 'Contabilidad', status: 'Available', icon: Database, color: 'text-emerald-500' },
-    { id: 'dropbox', name: 'Dropbox Business', type: 'Cloud Storage', status: 'Available', icon: ExternalLink, color: 'text-blue-400' },
+    { id: 'google', name: 'Google Workspace & Gmail', type: 'OAuth & Notificaciones', status: 'Connected', icon: Globe, color: 'text-emerald-500' },
+    { id: 'firebase', name: 'Firebase Cloud Firestore', type: 'Sincronización en Tiempo Real', status: 'Connected', icon: Cloud, color: 'text-amber-500' },
+    { id: 'postgres', name: 'Cloud SQL PostgreSQL', type: 'Base de Datos Relacional', status: 'Connected', icon: Database, color: 'text-blue-500' },
+    { id: 'maps', name: 'Google Maps Platform', type: 'Geolocalización & Haversine', status: 'Connected', icon: Layers, color: 'text-rose-500' },
+    { id: 'pdf_engine', name: 'Motor PDF Homologado', type: 'Certificación Digital Inmutable', status: 'Connected', icon: CheckCircle2, color: 'text-indigo-400' },
+    { id: 'webhooks_api', name: 'REST Webhooks & Eventos', type: 'Ingesta Externa de Datos', status: 'Connected', icon: Zap, color: 'text-orange-400' },
   ]);
 
   const [webhooks, setWebhooks] = useState([

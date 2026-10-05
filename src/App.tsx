@@ -17,6 +17,7 @@ import { MasterDashboardView } from './views/MasterDashboardView';
 import { OnboardingView } from './views/OnboardingView';
 import { NotFoundView } from './views/NotFoundView';
 import { useIsMobile } from './hooks/useIsMobile';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const DemoEntryRedirect: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const navigate = useNavigate();
@@ -124,85 +125,87 @@ export default function App() {
           },
         }} 
       />
-      <Routes>
-        {/* Public Login */}
-        <Route path="/login" element={
-          currentUser ? (
-            currentUser.role === Role.WORKER || isMobile ? 
-              <Navigate to="/mobile/dashboard" replace /> : 
-              <Navigate to="/admin/dashboard" replace />
-          ) : <LoginView />
-        } />
+      <ErrorBoundary>
+        <Routes>
+          {/* Public Login */}
+          <Route path="/login" element={
+            currentUser ? (
+              currentUser.role === Role.WORKER || isMobile ? 
+                <Navigate to="/mobile/dashboard" replace /> : 
+                <Navigate to="/admin/dashboard" replace />
+            ) : <LoginView />
+          } />
 
-        {/* Instant Demo Entry */}
-        <Route path="/demo" element={<DemoEntryRedirect isMobile={isMobile} />} />
+          {/* Instant Demo Entry */}
+          <Route path="/demo" element={<DemoEntryRedirect isMobile={isMobile} />} />
 
-        {/* Dedicated Presentation Routes (Direct Access) */}
-        <Route path="/presentation" element={<PresentationPageView />} />
-        <Route path="/keynote" element={<PresentationPageView />} />
+          {/* Dedicated Presentation Routes (Direct Access) */}
+          <Route path="/presentation" element={<PresentationPageView />} />
+          <Route path="/keynote" element={<PresentationPageView />} />
 
-        {/* Landing Page */}
-        <Route path="/landing" element={
-          <PublicEntryView 
-            currentUser={currentUser}
-            onOpenLogin={() => navigate('/login')}
-            onOpenRegister={() => navigate('/onboarding')}
-            onOpenJoinCode={() => navigate('/invitation')}
-            onDemoAccess={() => {
-              obraStore.enterDemoMode();
-              toast.success('🚀 Entorno Demo activado. Has iniciado sesión como Director General.');
-              navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard');
-            }}
-          />
-        } />
+          {/* Landing Page */}
+          <Route path="/landing" element={
+            <PublicEntryView 
+              currentUser={currentUser}
+              onOpenLogin={() => navigate('/login')}
+              onOpenRegister={() => navigate('/onboarding')}
+              onOpenJoinCode={() => navigate('/invitation')}
+              onDemoAccess={() => {
+                obraStore.enterDemoMode();
+                toast.success('🚀 Entorno Demo activado. Has iniciado sesión como Director General.');
+                navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard');
+              }}
+            />
+          } />
 
-        {/* Direct Dashboard Access */}
-        <Route path="/dashboard" element={
-          currentUser ? (
-            currentUser.role === Role.WORKER || isMobile ?
-              <Navigate to="/mobile/dashboard" replace /> :
-              <Navigate to="/admin/dashboard" replace />
-          ) : <Navigate to="/login" replace />
-        } />
+          {/* Direct Dashboard Access */}
+          <Route path="/dashboard" element={
+            currentUser ? (
+              currentUser.role === Role.WORKER || isMobile ? 
+                <Navigate to="/mobile/dashboard" replace /> : 
+                <Navigate to="/admin/dashboard" replace />
+            ) : <Navigate to="/login" replace />
+          } />
 
-        {/* Invite Acceptance Routes */}
-        <Route path="/invitation" element={<InviteAcceptanceView />} />
-        <Route path="/invitation/:code" element={<InviteAcceptanceView />} />
-        <Route path="/invite" element={<InviteAcceptanceView />} />
-        <Route path="/invite/:code" element={<InviteAcceptanceView />} />
+          {/* Invite Acceptance Routes */}
+          <Route path="/invitation" element={<InviteAcceptanceView />} />
+          <Route path="/invitation/:code" element={<InviteAcceptanceView />} />
+          <Route path="/invite" element={<InviteAcceptanceView />} />
+          <Route path="/invite/:code" element={<InviteAcceptanceView />} />
 
-        {/* Onboarding & Company Registration */}
-        <Route path="/onboarding" element={<OnboardingView onComplete={() => navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard')} />} />
-        <Route path="/register" element={<OnboardingView onComplete={() => navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard')} />} />
+          {/* Onboarding & Company Registration */}
+          <Route path="/onboarding" element={<OnboardingView onComplete={() => navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard')} />} />
+          <Route path="/register" element={<OnboardingView onComplete={() => navigate(isMobile ? '/mobile/dashboard' : '/admin/dashboard')} />} />
 
-        {/* King Master Admin Panel */}
-        <Route path="/admin/master" element={
-          <ProtectedRoute currentUser={currentUser}>
-            <MasterDashboardView />
-          </ProtectedRoute>
-        } />
-        <Route path="/master" element={<Navigate to="/admin/master" replace />} />
+          {/* King Master Admin Panel */}
+          <Route path="/admin/master" element={
+            <ProtectedRoute currentUser={currentUser}>
+              <MasterDashboardView />
+            </ProtectedRoute>
+          } />
+          <Route path="/master" element={<Navigate to="/admin/master" replace />} />
 
-        {/* Admin / Manager Experience: Forces MobileShell on viewports < 768px */}
-        <Route path="/admin/*" element={
-          <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
-            {isMobile ? <MobileShell state={appState} /> : <AdminShell state={appState} />}
-          </ProtectedRoute>
-        } />
+          {/* Admin / Manager Experience: Forces MobileShell on viewports < 768px */}
+          <Route path="/admin/*" element={
+            <ProtectedRoute currentUser={currentUser} minRole={Role.MANAGER}>
+              {isMobile ? <MobileShell state={appState} /> : <AdminShell state={appState} />}
+            </ProtectedRoute>
+          } />
 
-        {/* Mobile Field / Worker Experience */}
-        <Route path="/mobile/*" element={
-          <ProtectedRoute currentUser={currentUser}>
-            <MobileShell state={appState} />
-          </ProtectedRoute>
-        } />
+          {/* Mobile Field / Worker Experience */}
+          <Route path="/mobile/*" element={
+            <ProtectedRoute currentUser={currentUser}>
+              <MobileShell state={appState} />
+            </ProtectedRoute>
+          } />
 
-        {/* Root Route Element with invitation interceptor and responsive landing */}
-        <Route path="/" element={<RootRouteElement currentUser={currentUser} isMobile={isMobile} />} />
+          {/* Root Route Element with invitation interceptor and responsive landing */}
+          <Route path="/" element={<RootRouteElement currentUser={currentUser} isMobile={isMobile} />} />
 
-        {/* Fallback 404 */}
-        <Route path="*" element={<NotFoundView />} />
-      </Routes>
+          {/* Fallback 404 */}
+          <Route path="*" element={<NotFoundView />} />
+        </Routes>
+      </ErrorBoundary>
     </AppDataProvider>
   );
 }

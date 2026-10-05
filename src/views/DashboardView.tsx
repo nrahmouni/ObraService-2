@@ -3,7 +3,9 @@ import { AppState } from '../types';
 import { TabKey } from '../components/layout/AuthenticatedLayout';
 import { MobileLanding } from '../components/MobileLanding';
 import { AdminDashboard } from '../components/dashboard/AdminDashboard';
+import { AdminMobileDashboard } from '../components/dashboard/AdminMobileDashboard';
 import { ManagerDashboard } from '../components/dashboard/ManagerDashboard';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 interface DashboardViewProps {
   state: AppState;
@@ -17,6 +19,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenNewReport,
 }) => {
   const user = state.currentUser;
+  const isMobile = useIsMobile(768);
 
   if (!user) return null;
 
@@ -36,7 +39,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }
 
-  // Segment dashboards for site managers and master administrators
+  // Segment dashboards for site managers
   if (isManager) {
     return (
       <div className="animate-in fade-in duration-300">
@@ -49,6 +52,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }
 
+  // Dedicated Mobile Dashboard for Admins under 768px viewport width
+  if (isMobile) {
+    return (
+      <div className="animate-in fade-in duration-300">
+        <AdminMobileDashboard
+          state={state}
+          onNavigate={onNavigate}
+          onOpenNewReport={onOpenNewReport}
+        />
+      </div>
+    );
+  }
+
+  // High-density Desktop Admin Dashboard (>= 768px)
   return (
     <div className="animate-in fade-in duration-300">
       <AdminDashboard 

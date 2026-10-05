@@ -43,7 +43,18 @@ export const DeliveryNotesView: React.FC<DeliveryNotesViewProps> = ({ state }) =
   const handleBatchConfirm = () => {
     const res = obraStore.confirmAllPendingDeliveryNotes();
     if (res.success) {
-      toast.success(`¡${res.count} albaranes confirmados con éxito!`);
+      toast.success(`✨ ¡${res.count} albaranes certificados con Sello Oficial Criptográfico!`, {
+        icon: '🛡️',
+        duration: 4000,
+        style: {
+          borderRadius: '14px',
+          background: '#121215',
+          color: '#f59e0b',
+          border: '1px solid rgba(245, 158, 11, 0.4)',
+          fontWeight: 'bold',
+          fontSize: '13px'
+        }
+      });
     } else {
       toast.error(res.error || 'Error al certificar lote.');
     }

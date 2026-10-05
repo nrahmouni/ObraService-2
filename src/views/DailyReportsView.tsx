@@ -31,6 +31,7 @@ import { obraStore } from '../services/store';
 import { DailyReport, WorkEntry, AppState } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { exportToCSV } from '../utils/export';
+import { BehavioralNudges } from '../components/nudges/BehavioralNudges';
 
 interface DailyReportsViewProps {
   state: AppState;
@@ -292,7 +293,14 @@ export const DailyReportsView: React.FC<DailyReportsViewProps> = ({ state, onOpe
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Behavioral Nudges Bar (Product Behavioral Nudge Engine Agent) */}
+      <BehavioralNudges 
+        reportsCount={state.reports.length} 
+        pendingDeliveryNotes={state.deliveryNotes.filter(n => n.status === 'Pending').length} 
+        streakDays={5}
+      />
+
       {/* Header Section */}
       <div className="space-y-4 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-6">
         <div>
